@@ -1,0 +1,5 @@
+<button (click)="openModal()">Open Modal</button>
+
+<app-modal [isOpen]="isModalOpen" [title]="'My Custom Modal'" (closeModal)="closeModal()">
+  <p>This is the content of the modal.</p>
+</app-modal>  
