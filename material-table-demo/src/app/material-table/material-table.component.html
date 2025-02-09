@@ -4,6 +4,7 @@
     <input matInput (keyup)="applyFilter($event)" placeholder="Search" />
   </mat-form-field>
 
+  <table mat-table [dataSource]="dataSource" matSort>
     <!-- ID Column -->
     <ng-container matColumnDef="id">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
