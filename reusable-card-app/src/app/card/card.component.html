@@ -1,0 +1,10 @@
+<div class="card">
+   @if(imageUrl){
+    <img src="{{ imageUrl }}" alt="{{ title }}" class="card-image" />
+   }
+  <div class="card-content">
+    <h3 class="card-title">{{ title }}</h3>
+    <p class="card-description">{{ description }}</p>
+    <ng-content></ng-content> <!-- For projected content -->
+  </div>
+</div>
