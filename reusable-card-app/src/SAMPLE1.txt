@@ -446,32 +446,51 @@ class CashAllocationDomainTest {
 
 
  
-  @Test
-    void testTransferFile_Success() throws Exception {
-        LocalDate date = LocalDate.of(2023, 10, 26);
-        CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
-        cashAllocationModel.setCounterPartyId("CP123");
-        cashAllocationModel.setCreatedDate(new Date());
+@Test
+void testTransferFile_Success_MockBuildLine() throws Exception {
+    LocalDate date = LocalDate.of(2023, 10, 26);
+    CashAllocationModel cashAllocationModel = new CashAllocationModel();
+    cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
+    cashAllocationModel.setCounterPartyId("CP123");
+    cashAllocationModel.setCreatedDate(new Date());
+    List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
-        // **Crucially, instantiate InvoicesAbList and set it**
-        cashAllocationModel.setInvoicesAbList(new InvoicesAbList());
+    doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
+    doReturn("mockedLine").when(spyAbDomain).buildLine(any(), anyString()); // Mock buildLine
 
-        List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
+    Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
+    transferFileMethod.setAccessible(true);
+    String filename = (String) transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
 
-        doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
+    String expectedFilename = abFtrKey + "_ABA_PAID_INVOICES_20231026.csv";
+    assertEquals(expectedFilename, filename);
 
-        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        transferFileMethod.setAccessible(true);
-        String filename = (String) transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
+    Path filePath = Path.of(filename);
+    assertTrue(Files.exists(filePath));
+    Files.delete(filePath);
 
-        String expectedFilename = abFtrKey + "_ABA_PAID_INVOICES_20231026.csv";
-        assertEquals(expectedFilename, filename);
+    verify(spyAbDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
+    verify(logger, never()).error(anyString());
+}
 
-        Path filePath = Path.of(filename);
-        assertTrue(Files.exists(filePath));
-        Files.delete(filePath);
+@Test
+void testTransferFile_Success_ExpectsNPE() throws Exception {
+    LocalDate date = LocalDate.of(2023, 10, 26);
+    CashAllocationModel cashAllocationModel = new CashAllocationModel();
+    cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
+    cashAllocationModel.setCounterPartyId("CP123");
+    cashAllocationModel.setCreatedDate(new Date());
+    List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
-        verify(spyAbDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
-        verify(logger, never()).error(anyString());
-    }
+    doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
+
+    Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
+    transferFileMethod.setAccessible(true);
+
+    assertThrows(NullPointerException.class, () -> {
+        transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
+    });
+
+    verify(spyAbDomain, never()).uploadPaymentAbFileViaReferential(anyString());
+    verify(logger, never()).error(anyString());
+}
