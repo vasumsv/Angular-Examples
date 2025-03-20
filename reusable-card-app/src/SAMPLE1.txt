@@ -446,21 +446,111 @@ class CashAllocationDomainTest {
 
 
 
- paymentList = new ArrayList<>();
-        InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
-        InvoicePayable invoicePayable = new InvoicePayable();
-        invoicePayable.setFeeBdrId(123L);
-        payment.setInvoicePayable(invoicePayable);
-        payment.setEntity("ENTITY1");
-        payment.setCurrency("USD");
-        payment.setProviderId("PROVIDER1");
-        payment.setFeeCategory("CATEGORY1");
+ @Test
+    void getPaymentLinesFromPaymentReference_validReferences_returnsPaymentLines() {
+        String[] paymentReferences = {"REF1", "REF2"};
 
-        // Use Reflection to set providerMemo
-        Field providerMemoField = InvoicePayableModelForPayment.class.getDeclaredField("providerMemo");
-        providerMemoField.setAccessible(true);
-        providerMemoField.set(payment, "MEMO1");
+        List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
+        SrgPaymentModel model1 = new SrgPaymentModel();
+        model1.setId(1L);
+        model1.setProviderBdrId("PROVIDER1");
+        model1.setPaymentCurrency("USD");
+        model1.setSgEntity("ENTITY1");
+        model1.setFeeCategory("CATEGORY1");
+        model1.setInvoiceReference("INV1,INV2");
+        model1.setProviderName("PROVIDER_NAME");
+        model1.setValueDate(LocalDate.now());
+        model1.setSendingDate(LocalDate.now());
+        model1.setPaymentAmount(BigDecimal.TEN);
+        model1.setPaymentType("TYPE1");
+        model1.setDebitCredit("DEBIT");
+        model1.setPaymentMode("MODE1");
+        model1.setPaymentStatus("STATUS1");
+        model1.setRcCode("RC1");
+        model1.setComment("COMMENT1");
+        srgPaymentModels.add(model1);
 
-        paymentList.add(payment);
+        List<String> ssiDetails = Arrays.asList("SSI1", "SSI2");
 
-        user = "testUser";
+        when(cashAllocationDomain.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
+        when(cashAllocationDomain.getSsiDetails("PROVIDER1", "USD", "ENTITY1", "CATEGORY1")).thenReturn(ssiDetails);
+
+        List<PaymentLinesModel> result = cashAllocationDomainActual.getPaymentLinesFromPaymentReference(paymentReferences);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        PaymentLinesModel paymentLinesModel = result.get(0);
+        assertEquals(1L, paymentLinesModel.getId());
+        assertEquals("PROVIDER_NAME", paymentLinesModel.getBrokerName());
+        assertEquals(2, paymentLinesModel.getNumberOfInvoices());
+        assertEquals(ssiDetails, paymentLinesModel.getSsiAccountCode());
+        assertEquals(2, paymentLinesModel.getNumberOfSSI());
+        assertEquals("ENTITY1", paymentLinesModel.getSgEntity());
+        assertEquals("INV1,INV2", paymentLinesModel.getInvoiceReference());
+        assertEquals("CATEGORY1", paymentLinesModel.getFeeCategory());
+        assertEquals("PROVIDER1", paymentLinesModel.getProviderId());
+        assertEquals(LocalDate.now(), paymentLinesModel.getValueDate());
+        assertEquals(LocalDate.now(), paymentLinesModel.getSendingDate());
+        assertEquals(BigDecimal.TEN, paymentLinesModel.getAmount());
+        assertEquals("USD", paymentLinesModel.getCurrency());
+        assertEquals("TYPE1", paymentLinesModel.getInvoiceType());
+        assertEquals("INV", paymentLinesModel.getFeeType());
+        assertEquals("DEBIT", paymentLinesModel.getPaymentDirection());
+        assertEquals("MODE1", paymentLinesModel.getPaymentMode());
+        assertEquals("STATUS1", paymentLinesModel.getPaymentStatus());
+        assertEquals("RC1", paymentLinesModel.getRc());
+        assertEquals("COMMENT1", paymentLinesModel.getComment());
+
+        verify(cashAllocationDomain).findPaymentLinesFromPaymentReferences(paymentReferences);
+        verify(cashAllocationDomain).getSsiDetails("PROVIDER1", "USD", "ENTITY1", "CATEGORY1");
+    }
+
+    @Test
+    void getPaymentLinesFromPaymentReference_emptyReferences_returnsEmptyList() {
+        String[] paymentReferences = {};
+
+        List<PaymentLinesModel> result = cashAllocationDomainActual.getPaymentLinesFromPaymentReference(paymentReferences);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+        verify(cashAllocationDomain, never()).findPaymentLinesFromPaymentReferences(any());
+    }
+
+    @Test
+    void getPaymentLinesFromPaymentReference_noModelsFound_returnsEmptyList() {
+        String[] paymentReferences = {"REF1"};
+
+        when(cashAllocationDomain.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(new ArrayList<>());
+
+        List<PaymentLinesModel> result = cashAllocationDomainActual.getPaymentLinesFromPaymentReference(paymentReferences);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+        verify(cashAllocationDomain).findPaymentLinesFromPaymentReferences(paymentReferences);
+        verify(cashAllocationDomain, never()).getSsiDetails(any(), any(), any(), any());
+    }
+
+    @Test
+    void getPaymentLinesFromPaymentReference_exceptionInSsiDetails_setsEmptySsiDetails() {
+        String[] paymentReferences = {"REF1"};
+
+        List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
+        SrgPaymentModel model1 = new SrgPaymentModel();
+        model1.setId(1L);
+        model1.setProviderBdrId("PROVIDER1");
+        model1.setPaymentCurrency("USD");
+        model1.setSgEntity("ENTITY1");
+        model1.setFeeCategory("CATEGORY1");
+        model1.setInvoiceReference("INV1,INV2");
+        srgPaymentModels.add(model1);
+
+        when(cashAllocationDomain.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
+        when(cashAllocationDomain.getSsiDetails("PROVIDER1", "USD", "ENTITY1", "CATEGORY1")).thenThrow(new RuntimeException("SSI Details Exception"));
+
+        List<PaymentLinesModel> result = cashAllocationDomainActual.getPaymentLinesFromPaymentReference(paymentReferences);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        PaymentLinesModel paymentLinesModel = result.get(0);
+        assertEquals(new ArrayList<>(), paymentLinesModel.getSsiAccountCode());
+    }
