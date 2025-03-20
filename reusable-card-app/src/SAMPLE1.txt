@@ -447,25 +447,64 @@ class CashAllocationDomainTest {
 
 
 
-  // Mock invoiceServiceApi to return List<InvoiceAb>
-        List<InvoiceAb> invoiceList = new ArrayList<>();
-        InvoiceAb invoice = new InvoiceAb();
-        invoiceList.add(invoice);
-        when(invoiceServiceApi.getInvoice(any())).thenReturn(invoiceList);
+  @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        invoiceRefReceived = "SG-SHA-123";
+        paymentListForCashRequest = new ArrayList<>();
+        paymentAmount = BigDecimal.ZERO;
+        //Initialize variables inside of CashAllocationDomain, that are used in the method.
+        cashAllocationDomain.paymentListForCashRequest = paymentListForCashRequest;
+        cashAllocationDomain.paymentAmount = paymentAmount;
     }
 
     @Test
-    void updateCashAllocationStatus_unmatched_rsfPrefix_updatesModels() {
-        when(cashAllocationRepositoryApi.findByInvoiceMatched(anyList()))
-                .thenReturn(Arrays.asList(cashAllocationModel));
+    void autoPaymentMatching_notAllocatedModels_updatesPaymentListAndAmount() {
+        List<CashAllocationModel> models = new ArrayList<>();
+        CashAllocationModel model1 = new CashAllocationModel();
+        model1.setId(1L);
+        model1.setAmount(BigDecimal.TEN);
+        model1.setStatus("NOT_ALLOCATED");
+        models.add(model1);
 
-        cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "user");
+        CashAllocationModel model2 = new CashAllocationModel();
+        model2.setId(2L);
+        model2.setAmount(BigDecimal.ONE);
+        model2.setStatus("ALLOCATED");
+        models.add(model2);
 
-        verify(cashAllocationRepositoryApi).save(cashAllocationModel);
-        assertEquals("UNMATCHED", cashAllocationModel.getStatus());
-        assertNull(cashAllocationModel.getInvoiceMatched());
-        assertEquals("UNMATCHED", cashDetails.getStatus());
-        assertNull(cashDetails.getInvoiceMatched());
-        assertEquals("MSS_TYPE", cashAllocationModel.getMsgType());
-        assertEquals(Arrays.asList("RSF-123", "RSF-456"), processCashRequest.getInvoiceRefs());
+        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(models);
+
+        cashAllocationDomain.autoPaymentMatching();
+
+        assertEquals(1, paymentListForCashRequest.size());
+        assertEquals("1", paymentListForCashRequest.get(0));
+        assertEquals(BigDecimal.TEN, cashAllocationDomain.paymentAmount);
+    }
+
+    @Test
+    void autoPaymentMatching_noNotAllocatedModels_noUpdates() {
+        List<CashAllocationModel> models = new ArrayList<>();
+        CashAllocationModel model1 = new CashAllocationModel();
+        model1.setId(1L);
+        model1.setAmount(BigDecimal.TEN);
+        model1.setStatus("ALLOCATED");
+        models.add(model1);
+
+        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(models);
+
+        cashAllocationDomain.autoPaymentMatching();
+
+        assertEquals(0, paymentListForCashRequest.size());
+        assertEquals(BigDecimal.ZERO, cashAllocationDomain.paymentAmount);
+    }
+
+    @Test
+    void autoPaymentMatching_emptyModelList_noUpdates() {
+        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(new ArrayList<>());
+
+        cashAllocationDomain.autoPaymentMatching();
+
+        assertEquals(0, paymentListForCashRequest.size());
+        assertEquals(BigDecimal.ZERO, cashAllocationDomain.paymentAmount);
     }
