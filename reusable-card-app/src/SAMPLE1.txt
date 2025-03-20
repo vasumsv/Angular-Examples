@@ -449,102 +449,61 @@ class CashAllocationDomainTest {
 
 
  
- @Test
-    void testFetchAckDetails_Success() {
-        // Mock Payment Entities
-        List<PaymentEntity> paymentEntities = new ArrayList<>();
-        PaymentEntity paymentEntity = new PaymentEntity();
-        paymentEntity.setReference("REF123");
-        paymentEntity.setPaymentAmount(BigDecimal.TEN);
-        paymentEntity.setDebitCredit("C");
-        paymentEntity.setPayCreationUser("TEST");
-        paymentEntity.setSendingDate(LocalDate.now());
-        paymentEntity.setValueDate(LocalDate.now());
-        paymentEntity.setPaymentMode("MODE");
-        paymentEntity.setProviderAccountNumber("ACC123");
-        paymentEntity.setProviderBankName("BANK");
-        paymentEntity.setProviderBankSwift("SWIFT");
-        paymentEntity.setNumCptCor("NUM");
-        paymentEntity.setInvoiceReference("INV123");
-        paymentEntities.add(paymentEntity);
+ 
+    @Test
+    void savePaymentDetails_validFile_callsRepositorySave() {
+        String filePath = "testFile.txt";
+        List<String> fileLines = new ArrayList<>();
+        fileLines.add("line1");
+        fileLines.add("line2");
+        when(fileProcessingService.getFile(filePath)).thenReturn(new File(filePath));
+        when(fileProcessingService.readFile(any(File.class))).thenReturn(fileLines);
+        when(cashAllocationDomain.cashAllocationModelList(fileLines, new File(filePath))).thenReturn(new ArrayList<>());
 
-        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenReturn(paymentEntities);
+        cashAllocationDomain.savePaymentDetails(filePath);
 
-        // Mock SRG Response
-        SrgAckSentResponse srgAckSentResponse = new SrgAckSentResponse();
-        srgAckSentResponse.setData("{\"flowStatus\":\"ACCEPTED\",\"flowStatusDesc\":\"ACCEPTED\",\"identification\":\"ID123\",\"errorMessage\":\"\"}");
-        ResponseEntity<SrgAckSentResponse> responseEntity = ResponseEntity.ok(srgAckSentResponse);
-        when(srgAckApiClient.sendHttpRequest(any(SrgRequest.class))).thenReturn(responseEntity);
-
-        // Mock Invoice Service API
-        doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
-
-        srgAckApiClient.fetchAckDetails();
-
-        verify(paymentRepository).updateCommentsAndFlowstatus(eq("ACCEPTED"), eq(""), eq("REF123"));
-        verify(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
-        verify(logger, never()).error(anyString());
+        verify(cashAllocationRepositoryApi).savePaymentDetails(anyList());
+        verify(logger, times(2)).info(anyString()); // Verify logger calls
     }
 
     @Test
-    void testFetchAckDetails_SrgResponseNull() {
-        // Mock Payment Entities
-        List<PaymentEntity> paymentEntities = new ArrayList<>();
-        PaymentEntity paymentEntity = new PaymentEntity();
-        paymentEntity.setReference("REF123");
-        paymentEntities.add(paymentEntity);
+    void saveDetails_validFile_callsRepositorySave() {
+        File file = new File("test.txt");
+        List<String> fileLines = new ArrayList<>();
+        fileLines.add("line1");
+        fileLines.add("line2");
+        when(fileProcessingService.readFile(file)).thenReturn(fileLines);
+        when(cashAllocationDomain.cashAllocationModelList(fileLines, file.getName())).thenReturn(new ArrayList<>());
 
-        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenReturn(paymentEntities);
+        cashAllocationDomain.saveDetails(file);
 
-        // Mock SRG Response to return null
-        when(srgAckApiClient.sendHttpRequest(any(SrgRequest.class))).thenReturn(null);
-
-        srgAckApiClient.fetchAckDetails();
-
-        verify(logger).info(contains("No response found from SRG"));
+        verify(cashAllocationRepositoryApi).savePaymentDetails(anyList());
+        verify(logger, times(2)).info(anyString()); // Verify logger calls
     }
 
     @Test
-    void testFetchAckDetails_InvoiceServiceException() {
-        // Mock Payment Entities
-        List<PaymentEntity> paymentEntities = new ArrayList<>();
-        PaymentEntity paymentEntity = new PaymentEntity();
-        paymentEntity.setReference("REF123");
-        paymentEntities.add(paymentEntity);
+    void saveFile_validFile_callsRepositorySaveFile() {
+        File file = new File("test.txt");
+        List<String> fileLines = new ArrayList<>();
+        fileLines.add("line1");
+        fileLines.add("line2");
+        when(fileProcessingService.readFile(file)).thenReturn(fileLines);
+        when(cashAllocationDomain.cashAllocationModels(fileLines, file.getName())).thenReturn(new ArrayList<>());
 
-        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenReturn(paymentEntities);
+        cashAllocationDomain.saveFile(file);
 
-        // Mock SRG Response
-        SrgAckSentResponse srgAckSentResponse = new SrgAckSentResponse();
-        srgAckSentResponse.setData("{\"flowStatus\":\"ACCEPTED\",\"flowStatusDesc\":\"ACCEPTED\",\"identification\":\"ID123\",\"errorMessage\":\"\"}");
-        ResponseEntity<SrgAckSentResponse> responseEntity = ResponseEntity.ok(srgAckSentResponse);
-        when(srgAckApiClient.sendHttpRequest(any(SrgRequest.class))).thenReturn(responseEntity);
-
-        // Mock Invoice Service API to throw an exception
-        doThrow(new RuntimeException("Invoice Service Error")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
-
-        srgAckApiClient.fetchAckDetails();
-
-        verify(logger).error(contains("Error occurred while saving the updated payment details in invoice-service"));
+        verify(cashAllocationRepositoryApi).saveFile(anyList());
+        verify(logger, times(2)).info(anyString()); // Verify logger calls
     }
 
     @Test
-    void testFetchAckDetails_EmptyPaymentEntities() {
-        // Mock Payment Entities to return empty list
-        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenReturn(new ArrayList<>());
+    void paymentDetailsByAccountNumber_validAccountNumber_callsRepository() {
+        String accountNumber = "12345";
+        List<CashDetails> expectedDetails = new ArrayList<>();
+        when(cashAllocationRepositoryApi.paymentDetailsByAccountNumber(accountNumber)).thenReturn(expectedDetails);
 
-        srgAckApiClient.fetchAckDetails();
+        cashAllocationDomain.paymentDetailsByAccountNumber(accountNumber);
 
-        verify(logger).info(contains("No payments available to send for the moment"));
-    }
-
-    @Test
-    void testFetchAckDetails_GeneralException() {
-        // Mock Payment Repository to throw exception
-        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenThrow(new RuntimeException("Payment Repository Error"));
-
-        srgAckApiClient.fetchAckDetails();
-
-        verify(logger).info(contains("Error occurred in fetchAckDetails"));
+        verify(cashAllocationRepositoryApi).paymentDetailsByAccountNumber(accountNumber);
     }
  
