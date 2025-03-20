@@ -451,37 +451,13 @@ class CashAllocationDomainTest {
 
  
 
-    @Test
-    void testTransferFile_FileNotFoundException() throws Exception {
-        LocalDate date = LocalDate.of(2025, 3, 20);
-        CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
-        cashAllocationModel.setCounterPartyId("CP123");
-        cashAllocationModel.setCreatedDate(new Date());
-        cashAllocationModel.setValueDate(LocalDate.of(2025, 3, 20));
-        List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
+  @Test
+    void testReadFile_IOException() throws IOException {
+        // Create a File object that points to a non-existent file
+        File nonExistentFile = new File("nonexistent.txt");
 
-        // Create a read-only temporary directory
-        File tempDir = Files.createTempDirectory("read-only-dir").toFile();
-        tempDir.setReadOnly();
+        List<String> lines = fileProcessing.readFile(nonExistentFile);
 
-        // Create a file within the read-only directory
-        File tempFile = new File(tempDir, "test.csv");
-        String filename = tempFile.getName();
-
-        // Use reflection to set the filename in the transferFile method
-        Field filenameField = AbDomain.class.getDeclaredField("abFtrKey");
-        filenameField.setAccessible(true);
-        filenameField.set(spyAbDomain, "TEST");
-
-        // Use reflection to get the transferFile method
-        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        transferFileMethod.setAccessible(true);
-
-        // Invoke the transferFile method
-        transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
-
-        // Clean up: Make the directory writable again and delete it
-        tempDir.setWritable(true);
-        Files.delete(tempDir.toPath());
+        assertEquals(0, lines.size());
+        verify(logger).error(anyString(), any(IOException.class)); // Verify logger.error is called
     }
