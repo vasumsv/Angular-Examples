@@ -450,10 +450,11 @@ class CashAllocationDomainTest {
 
 
 
-      @Test
+@Test
     void testGetAbPaymentFileContent_BusinessDay_WithData() throws Exception {
         LocalDate endDate = LocalDate.of(2023, 3, 6);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
+        cashAllocationModel.setInvoiceMatched("INV123"); // Set invoiceMatched to a non-null value
         List<CashAllocationModel> cashAllocationModels = Collections.singletonList(cashAllocationModel);
 
         when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(String.valueOf(endDate.getYear()), "FRA")).thenReturn(Collections.emptyList());
