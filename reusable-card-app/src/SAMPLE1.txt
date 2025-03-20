@@ -450,37 +450,68 @@ class CashAllocationDomainTest {
 
 
 
- @Test
-    void testFindByInvoiceMatched_WithRSF1() throws Exception {
-        List<String> invoiceReferenceList = Arrays.asList("RSF-12345");
-        String invoiceMatched = "RSF-12345";
+  @Test
+    void testGetAbPaymentFileContent_BusinessDay_WithData() {
+        LocalDate endDate = LocalDate.of(2023, 3, 6);
+        CashAllocationModel cashAllocationModel = new CashAllocationModel();
+        List<CashAllocationModel> cashAllocationModels = Collections.singletonList(cashAllocationModel);
 
-        when(cashAllocationRepositoryApi.findByInvoiceMatched(invoiceMatched)).thenReturn(Collections.singletonList(cashAllocationModel));
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(String.valueOf(endDate.getYear()), "FRA")).thenReturn(new ArrayList<>());
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1))).thenReturn(cashAllocationModels);
+        when(abDomain.transferFile(endDate, cashAllocationModels)).thenReturn("testFile.txt");
 
-        Method method = CashAllocationDomain.class.getDeclaredMethod("findByInvoiceMatched", List.class);
-        method.setAccessible(true);
+        abDomain.getAbPaymentFileContent(endDate);
 
-        List<CashAllocationModel> result = (List<CashAllocationModel>) method.invoke(cashAllocationDomain, invoiceReferenceList);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(cashAllocationRepositoryApi, times(1)).findByInvoiceMatched(invoiceMatched); // Corrected verify
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
+        verify(abDomain, times(1)).transferFile(endDate, cashAllocationModels);
+        verify(logger, never()).info(anyString(), eq(AbDomain.class));
     }
 
     @Test
-    void testFindByInvoiceMatched_WithoutRSF() throws Exception {
-        List<String> invoiceReferenceList = Arrays.asList("INV12345");
-        String invoiceMatched = "INV12345";
+    void testGetAbPaymentFileContent_BusinessDay_NoData() {
+        LocalDate endDate = LocalDate.of(2023, 3, 6);
 
-        when(cashAllocationRepositoryApi.findByInvoiceMatched(invoiceMatched)).thenReturn(Collections.singletonList(cashAllocationModel));
-        when(cashAllocationModel.getInvoiceMatched()).thenReturn(invoiceMatched);
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(String.valueOf(endDate.getYear()), "FRA")).thenReturn(new ArrayList<>());
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1))).thenReturn(Collections.emptyList());
 
-        Method method = CashAllocationDomain.class.getDeclaredMethod("findByInvoiceMatched", List.class);
-        method.setAccessible(true);
+        abDomain.getAbPaymentFileContent(endDate);
 
-        List<CashAllocationModel> result = (List<CashAllocationModel>) method.invoke(cashAllocationDomain, invoiceReferenceList);
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
+        verify(logger, times(1)).info(eq("No data available"), eq(AbDomain.class));
+    }
 
-        assertNotNull(result);
-        // Assuming you want to verify the repository call here as well
-        verify(cashAllocationRepositoryApi, times(1)).findByInvoiceMatched(invoiceMatched); // Corrected verify
+    @Test
+    void testGetAbPaymentFileContent_NotBusinessDay() {
+        LocalDate endDate = LocalDate.of(2023, 3, 6);
+        List<LocalDate> holidays = Collections.singletonList(endDate);
+
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(String.valueOf(endDate.getYear()), "FRA")).thenReturn(holidays);
+
+        abDomain.getAbPaymentFileContent(endDate);
+
+        verify(cashAllocationRepositoryApi, never()).findPaymentDetailsForABA(any());
+        verify(logger, times(1)).info(eq("Not a business day for paymentFile creation"), eq(AbDomain.class));
+    }
+
+    @Test
+    void testGetBusinessDays_IsBusinessDay() {
+        LocalDate endDate = LocalDate.of(2023, 3, 6);
+
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(String.valueOf(endDate.getYear()), "FRA")).thenReturn(new ArrayList<>());
+
+        boolean isBusinessDay = abDomain.getBusinessDays(endDate);
+
+        assertTrue(isBusinessDay);
+    }
+
+    @Test
+    void testGetBusinessDays_IsNotBusinessDay() {
+        LocalDate endDate = LocalDate.of(2023, 3, 6);
+        List<LocalDate> holidays = Collections.singletonList(endDate);
+
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(String.valueOf(endDate.getYear()), "FRA")).thenReturn(holidays);
+
+        boolean isBusinessDay = abDomain.getBusinessDays(endDate);
+
+        assertFalse(isBusinessDay);
     }
