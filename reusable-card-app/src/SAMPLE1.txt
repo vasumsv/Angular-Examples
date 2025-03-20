@@ -449,7 +449,7 @@ class CashAllocationDomainTest {
 
 
 
-   @Test
+     @Test
     void testTransferFile_FileNotFoundException() throws Exception {
         LocalDate date = LocalDate.of(2025, 3, 20);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
@@ -458,6 +458,17 @@ class CashAllocationDomainTest {
         cashAllocationModel.setCreatedDate(new Date());
         cashAllocationModel.setValueDate(LocalDate.of(2025, 3, 20));
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
+
+        // Mock invoiceServiceApi.getAbInvoice() to return a non-null InvoicesAbList
+        InvoicesAbList invoicesAbList = new InvoicesAbList();
+        List<InvoiceAb> invoiceAbs = new ArrayList<>();
+        InvoiceAb invoiceAb = new InvoiceAb();
+        invoiceAb.setInvoiceReferenceAb("REF123");
+        invoiceAb.setCptyBdrId("CPY456");
+        invoiceAbs.add(invoiceAb);
+        invoicesAbList.setInvoicesAb(invoiceAbs);
+
+        when(invoiceServiceApi.getAbInvoice(anyString())).thenReturn(invoicesAbList);
 
         // Create a temporary file to use in the test
         File tempFile = File.createTempFile("test", ".csv");
