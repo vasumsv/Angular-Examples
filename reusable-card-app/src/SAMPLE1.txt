@@ -453,7 +453,6 @@ class CashAllocationDomainTest {
         cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
         cashAllocationModel.setCounterPartyId("CP123");
         cashAllocationModel.setCreatedDate(new Date());
-        cashAllocationModel.setInvoicesAbList(new InvoicesAbList()); // Initialize invoicesAbList
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
         doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
