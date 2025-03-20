@@ -450,11 +450,22 @@ class CashAllocationDomainTest {
 
 
  
-@Test
+@Mock
+    private Logger logger;
+
+    @InjectMocks
+    private FileProcessing fileProcessing;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
     void testReadFile_Success() throws IOException {
         // Create a temporary file with some content
         Path tempFilePath = Files.createTempFile("test", ".txt");
-        Files.write(tempFilePath, "line1\nline2\n".getBytes());
+        Files.write(tempFilePath, "line1\nline2\n".getBytes(StandardCharsets.ISO_8859_1));
         File tempFile = tempFilePath.toFile();
 
         List<String> lines = fileProcessing.readFile(tempFile);
