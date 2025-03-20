@@ -445,30 +445,28 @@ class CashAllocationDomainTest {
 
 
 
-  @Test
-    void testTransferFile_Success_MockBuildLine() throws Exception {
-        LocalDate date = LocalDate.of(2023, 10, 26);
+ @Test
+    void testTransferFile_SuccessBuilding() throws Exception {
+        LocalDate date = LocalDate.of(2025, 3, 20); // Using current date for filename
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
         cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
         cashAllocationModel.setCounterPartyId("CP123");
         cashAllocationModel.setCreatedDate(new Date());
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
-        // Prevent actual file writing and buildLine execution for focused testing
-        doReturn("mockedLine").when(spyAbDomain).buildLine(any(), anyString());
+        String expectedFilename = abFtrKey + "_ABA_PAID_INVOICES_20250320.csv";
 
-        // Allow uploadPaymentAbFileViaReferential to be called
-        doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
+        // Mock buildLine to return a non-null string
+        doReturn("some line\n").when(spyAbDomain).buildLine(any(), anyString());
 
-        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        transferFileMethod.setAccessible(true);
-        String filename = (String) transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
+        // Prevent actual file system interaction during the test
+        try (var mockFos = mockConstruction(FileOutputStream.class)) {
+            Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
+            transferFileMethod.setAccessible(true);
+            String actualFilename = (String) transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
 
-        String expectedFilename = abFtrKey + "_ABA_PAID_INVOICES_20231026.csv";
-        assertEquals(expectedFilename, filename);
-
-        verify(spyAbDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
-        verify(logger, never()).error(anyString());
-
-        // No need to check for file existence here as we are mocking buildLine
+            assertEquals(expectedFilename, actualFilename);
+            verify(spyAbDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
+            verify(logger, never()).error(anyString());
+        }
     }
