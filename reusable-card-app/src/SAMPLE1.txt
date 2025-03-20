@@ -449,17 +449,24 @@ class CashAllocationDomainTest {
 
 
  
-   @Test
-    void saveFile_validFile_callsRepositorySaveFile() {
-        File file = new File("test.txt");
+ @Test
+    void savePaymentDetails_validFile_callsRepositorySave() {
+        String filePath = "testFile.txt";
+        File mockFile = new File(filePath);
         List<String> fileLines = new ArrayList<>();
-        fileLines.add("line12345678901234567890"); // Add longer strings
-        fileLines.add("line22345678901234567890");
-        when(fileProcessingService.readFile(file)).thenReturn(fileLines);
-        when(cashAllocationDomain.cashAllocationModels(fileLines, file.getName())).thenReturn(new ArrayList<>());
+        fileLines.add("line1");
+        fileLines.add("line2");
+        List<CashAllocationModel> mockCashAllocationModels = new ArrayList<>();
+        mockCashAllocationModels.add(new CashAllocationModel()); // Add sample model
 
-        cashAllocationDomain.saveFile(file);
+        when(fileProcessingService.getFile(filePath)).thenReturn(mockFile);
+        when(fileProcessingService.readFile(mockFile)).thenReturn(fileLines);
+        when(cashAllocationDomain.cashAllocationModelList(fileLines, filePath)).thenReturn(mockCashAllocationModels);
 
-        verify(cashAllocationRepositoryApi).saveFile(anyList());
-        verify(logger, times(2)).info(anyString()); // Verify logger calls
+        cashAllocationDomain.savePaymentDetails(filePath);
+
+        verify(fileProcessingService).getFile(filePath);
+        verify(fileProcessingService).readFile(mockFile);
+        verify(cashAllocationRepositoryApi).savePaymentDetails(mockCashAllocationModels);
+        verify(logger, times(2)).info(anyString());
     }
