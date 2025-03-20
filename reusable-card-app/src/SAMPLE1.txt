@@ -447,35 +447,43 @@ class CashAllocationDomainTest {
 
 
  @Test
-    void testGetAbPaymentFileContent_BusinessDayWithPaymentDetails() {
+    void testGetAbPaymentFileContent_BusinessDay_WithData() {
         LocalDate endDate = LocalDate.of(2023, 3, 6);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy");
-        String currentYear = endDate.format(formatter);
-
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("INV123");
         List<CashAllocationModel> cashAllocationModels = Collections.singletonList(cashAllocationModel);
 
-        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(currentYear, "FRA")).thenReturn(Collections.emptyList());
-        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate)).thenReturn(cashAllocationModels);
+        when(abDomain.getBusinessDays(endDate)).thenReturn(true);
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1))).thenReturn(cashAllocationModels);
+        when(abDomain.transferFile(endDate, cashAllocationModels)).thenReturn("testFile.txt");
 
         abDomain.getAbPaymentFileContent(endDate);
 
-        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate);
-        verify(any(org.slf4j.Logger.class), never()).info(eq("No data available"), eq(AbDomain.class));
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
+        verify(abDomain, times(1)).transferFile(endDate, cashAllocationModels);
+        verify(logger, never()).info(anyString(), eq(AbDomain.class));
     }
 
     @Test
-    void testGetAbPaymentFileContent_BusinessDayWithoutPaymentDetails() {
+    void testGetAbPaymentFileContent_BusinessDay_NoData() {
         LocalDate endDate = LocalDate.of(2023, 3, 6);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy");
-        String currentYear = endDate.format(formatter);
 
-        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(currentYear, "FRA")).thenReturn(Collections.emptyList());
-        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate)).thenReturn(Collections.emptyList());
+        when(abDomain.getBusinessDays(endDate)).thenReturn(true);
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1))).thenReturn(Collections.emptyList());
 
         abDomain.getAbPaymentFileContent(endDate);
 
-        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate);
-        verify(any(org.slf4j.Logger.class), times(1)).info(eq("No data available"), eq(AbDomain.class));
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
+        verify(logger, times(1)).info(eq("No data available"), eq(AbDomain.class));
+    }
+
+    @Test
+    void testGetAbPaymentFileContent_NotBusinessDay() {
+        LocalDate endDate = LocalDate.of(2023, 3, 6);
+
+        when(abDomain.getBusinessDays(endDate)).thenReturn(false);
+
+        abDomain.getAbPaymentFileContent(endDate);
+
+        verify(cashAllocationRepositoryApi, never()).findPaymentDetailsForABA(any());
+        verify(logger, times(1)).info(eq("Not a business day for paymentFile creation"), eq(AbDomain.class));
     }
