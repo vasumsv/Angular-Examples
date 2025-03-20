@@ -446,13 +446,17 @@ class CashAllocationDomainTest {
 
 
  
- @Test
+  @Test
     void testTransferFile_Success() throws Exception {
         LocalDate date = LocalDate.of(2023, 10, 26);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
         cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
         cashAllocationModel.setCounterPartyId("CP123");
         cashAllocationModel.setCreatedDate(new Date());
+
+        // **Crucially, instantiate InvoicesAbList and set it**
+        cashAllocationModel.setInvoicesAbList(new InvoicesAbList());
+
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
         doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
