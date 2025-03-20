@@ -447,16 +447,15 @@ class CashAllocationDomainTest {
 
  
 
+@Spy
+    @InjectMocks
+    private AbDomain spyAbDomain;
 
+    private String abFtrKey = "TEST";
 
- try {
-            // Set abFtrKey using reflection
-            Method setAbFtrKeyMethod = AbDomain.class.getDeclaredMethod("setAbFtrKey", String.class);
-            setAbFtrKeyMethod.setAccessible(true);
-            setAbFtrKeyMethod.invoke(abDomain, abFtrKey);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
@@ -467,19 +466,19 @@ class CashAllocationDomainTest {
         cashAllocationModel.setCounterPartyId("CP123");
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
-        doNothing().when(abDomain).uploadPaymentAbFileViaReferential(anyString());
+        doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
 
         Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
         transferFileMethod.setAccessible(true);
-        String filename = (String) transferFileMethod.invoke(abDomain, date, cashAllocationModelList);
+        String filename = (String) transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
 
         String expectedFilename = abFtrKey + "_ABA_PAID_INVOICES_20231026.csv";
         assertEquals(expectedFilename, filename);
 
         Path filePath = Path.of(filename);
         assertTrue(Files.exists(filePath));
-        Files.delete(filePath); // Cleanup
+        Files.delete(filePath);
 
-        verify(abDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
+        verify(spyAbDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
         verify(logger, never()).error(anyString());
     }
