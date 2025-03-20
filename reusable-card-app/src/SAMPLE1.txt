@@ -449,60 +449,102 @@ class CashAllocationDomainTest {
 
 
  
-    @Test
-    void testReadFile_Success() throws IOException {
-        // Create a temporary file with some content
-        Path tempFilePath = Files.createTempFile("test", ".txt");
-        Files.write(tempFilePath, "line1\nline2\n".getBytes(StandardCharsets.ISO_8859_1));
-        File tempFile = tempFilePath.toFile();
+ @Test
+    void testFetchAckDetails_Success() {
+        // Mock Payment Entities
+        List<PaymentEntity> paymentEntities = new ArrayList<>();
+        PaymentEntity paymentEntity = new PaymentEntity();
+        paymentEntity.setReference("REF123");
+        paymentEntity.setPaymentAmount(BigDecimal.TEN);
+        paymentEntity.setDebitCredit("C");
+        paymentEntity.setPayCreationUser("TEST");
+        paymentEntity.setSendingDate(LocalDate.now());
+        paymentEntity.setValueDate(LocalDate.now());
+        paymentEntity.setPaymentMode("MODE");
+        paymentEntity.setProviderAccountNumber("ACC123");
+        paymentEntity.setProviderBankName("BANK");
+        paymentEntity.setProviderBankSwift("SWIFT");
+        paymentEntity.setNumCptCor("NUM");
+        paymentEntity.setInvoiceReference("INV123");
+        paymentEntities.add(paymentEntity);
 
-        List<String> lines = fileProcessing.readFile(tempFile);
+        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenReturn(paymentEntities);
 
-        assertEquals(2, lines.size());
-        assertEquals("line1", lines.get(0));
-        assertEquals("line2", lines.get(1));
+        // Mock SRG Response
+        SrgAckSentResponse srgAckSentResponse = new SrgAckSentResponse();
+        srgAckSentResponse.setData("{\"flowStatus\":\"ACCEPTED\",\"flowStatusDesc\":\"ACCEPTED\",\"identification\":\"ID123\",\"errorMessage\":\"\"}");
+        ResponseEntity<SrgAckSentResponse> responseEntity = ResponseEntity.ok(srgAckSentResponse);
+        when(srgAckApiClient.sendHttpRequest(any(SrgRequest.class))).thenReturn(responseEntity);
 
-        Files.delete(tempFilePath); // Clean up
+        // Mock Invoice Service API
+        doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
+
+        srgAckApiClient.fetchAckDetails();
+
+        verify(paymentRepository).updateCommentsAndFlowstatus(eq("ACCEPTED"), eq(""), eq("REF123"));
+        verify(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
+        verify(logger, never()).error(anyString());
     }
 
     @Test
-    void testReadFile_IOException() throws IOException {
-        // Create a File object that points to a non-existent file
-        File nonExistentFile = new File("nonexistent.txt");
+    void testFetchAckDetails_SrgResponseNull() {
+        // Mock Payment Entities
+        List<PaymentEntity> paymentEntities = new ArrayList<>();
+        PaymentEntity paymentEntity = new PaymentEntity();
+        paymentEntity.setReference("REF123");
+        paymentEntities.add(paymentEntity);
 
-        List<String> lines = fileProcessing.readFile(nonExistentFile);
+        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenReturn(paymentEntities);
 
-        assertEquals(0, lines.size());
-        verify(logger).error(anyString(), any(IOException.class)); // Verify logger.error is called
+        // Mock SRG Response to return null
+        when(srgAckApiClient.sendHttpRequest(any(SrgRequest.class))).thenReturn(null);
+
+        srgAckApiClient.fetchAckDetails();
+
+        verify(logger).info(contains("No response found from SRG"));
     }
 
     @Test
-    void testReadFile_EmptyFile() throws IOException {
-        // Create an empty temporary file
-        Path tempFilePath = Files.createTempFile("empty", ".txt");
-        File tempFile = tempFilePath.toFile();
+    void testFetchAckDetails_InvoiceServiceException() {
+        // Mock Payment Entities
+        List<PaymentEntity> paymentEntities = new ArrayList<>();
+        PaymentEntity paymentEntity = new PaymentEntity();
+        paymentEntity.setReference("REF123");
+        paymentEntities.add(paymentEntity);
 
-        List<String> lines = fileProcessing.readFile(tempFile);
+        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenReturn(paymentEntities);
 
-        assertEquals(0, lines.size());
+        // Mock SRG Response
+        SrgAckSentResponse srgAckSentResponse = new SrgAckSentResponse();
+        srgAckSentResponse.setData("{\"flowStatus\":\"ACCEPTED\",\"flowStatusDesc\":\"ACCEPTED\",\"identification\":\"ID123\",\"errorMessage\":\"\"}");
+        ResponseEntity<SrgAckSentResponse> responseEntity = ResponseEntity.ok(srgAckSentResponse);
+        when(srgAckApiClient.sendHttpRequest(any(SrgRequest.class))).thenReturn(responseEntity);
 
-        Files.delete(tempFilePath); // Clean up
+        // Mock Invoice Service API to throw an exception
+        doThrow(new RuntimeException("Invoice Service Error")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
+
+        srgAckApiClient.fetchAckDetails();
+
+        verify(logger).error(contains("Error occurred while saving the updated payment details in invoice-service"));
     }
 
     @Test
-    void testReadFile_FilterBranches() throws IOException {
-        // Create a temporary file with empty and non-empty lines
-        Path tempFilePath = Files.createTempFile("filter", ".txt");
-        Files.write(tempFilePath, "line1\n\nline2\n  \nline3".getBytes(StandardCharsets.ISO_8859_1));
-        File tempFile = tempFilePath.toFile();
+    void testFetchAckDetails_EmptyPaymentEntities() {
+        // Mock Payment Entities to return empty list
+        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenReturn(new ArrayList<>());
 
-        List<String> lines = fileProcessing.readFile(tempFile);
+        srgAckApiClient.fetchAckDetails();
 
-        assertEquals(3, lines.size());
-        assertEquals("line1", lines.get(0));
-        assertEquals("line2", lines.get(1));
-        assertEquals("line3", lines.get(2));
+        verify(logger).info(contains("No payments available to send for the moment"));
+    }
 
-        Files.delete(tempFilePath); // Clean up
+    @Test
+    void testFetchAckDetails_GeneralException() {
+        // Mock Payment Repository to throw exception
+        when(paymentRepository.getPaymentsForTodaysAck(any(LocalDate.class))).thenThrow(new RuntimeException("Payment Repository Error"));
+
+        srgAckApiClient.fetchAckDetails();
+
+        verify(logger).info(contains("Error occurred in fetchAckDetails"));
     }
  
