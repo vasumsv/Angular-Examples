@@ -445,28 +445,45 @@ class CashAllocationDomainTest {
 
 
 
- @Test
-    void testTransferFile_SuccessBuilding() throws Exception {
-        LocalDate date = LocalDate.of(2025, 3, 20); // Using current date for filename
+
+
+
+
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        try {
+            Field abFtrKeyField = AbDomain.class.getDeclaredField("abFtrKey");
+            abFtrKeyField.setAccessible(true);
+            abFtrKeyField.set(spyAbDomain, abFtrKey);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void testTransferFile_Success() throws Exception {
+        LocalDate date = LocalDate.of(2025, 03, 20); // Corrected date
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
         cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
         cashAllocationModel.setCounterPartyId("CP123");
         cashAllocationModel.setCreatedDate(new Date());
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
+        doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
+
+        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
+        transferFileMethod.setAccessible(true);
+        String filename = (String) transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
+
         String expectedFilename = abFtrKey + "_ABA_PAID_INVOICES_20250320.csv";
+        assertEquals(expectedFilename, filename);
 
-        // Mock buildLine to return a non-null string
-        doReturn("some line\n").when(spyAbDomain).buildLine(any(), anyString());
+        Path filePath = Path.of(filename);
+        assertTrue(Files.exists(filePath));
+        Files.delete(filePath);
 
-        // Prevent actual file system interaction during the test
-        try (var mockFos = mockConstruction(FileOutputStream.class)) {
-            Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-            transferFileMethod.setAccessible(true);
-            String actualFilename = (String) transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
-
-            assertEquals(expectedFilename, actualFilename);
-            verify(spyAbDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
-            verify(logger, never()).error(anyString());
-        }
+        verify(spyAbDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
+        verify(logger, never()).error(anyString());
     }
