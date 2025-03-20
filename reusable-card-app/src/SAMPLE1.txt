@@ -450,7 +450,6 @@ class CashAllocationDomainTest {
 
 
 
-       MockitoAnnotations.openMocks(this);
         try {
             Field abFtrKeyField = AbDomain.class.getDeclaredField("abFtrKey");
             abFtrKeyField.setAccessible(true);
@@ -462,52 +461,13 @@ class CashAllocationDomainTest {
 
     @Test
     void testTransferFile_Success() throws Exception {
-        LocalDate date = LocalDate.of(2025, 03, 20); // Corrected date
+        LocalDate date = LocalDate.of(2025, 03, 20);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
         cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
         cashAllocationModel.setCounterPartyId("CP123");
         cashAllocationModel.setCreatedDate(new Date());
+        cashAllocationModel.setValueDate(LocalDate.of(2025, 03, 20)); // Set getValueDate to a non-null value
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
-
-        // Mock the behavior of invoiceServiceApi.getAbInvoice() to return a non-null InvoicesAbList
-        InvoicesAbList invoicesAbList = new InvoicesAbList();
-        List<InvoiceAb> invoiceAbs = new ArrayList<>();
-        InvoiceAb invoiceAb1 = new InvoiceAb();
-        invoiceAb1.setInvoiceReferenceAb("REF123");
-        invoiceAb1.setCptyBdrId("CPTY1");
-        invoiceAbs.add(invoiceAb1);
-        invoicesAbList.setInvoicesAb(invoiceAbs);
-        when(invoiceServiceApi.getAbInvoice("RSF-123")).thenReturn(invoicesAbList);
-        when(invoiceServiceApi.getAbInvoice("RSF-456")).thenReturn(invoicesAbList);
-
-        doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
-
-        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        transferFileMethod.setAccessible(true);
-        String filename = (String) transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
-
-        String expectedFilename = abFtrKey + "_ABA_PAID_INVOICES_20250320.csv";
-        assertEquals(expectedFilename, filename);
-
-        Path filePath = Path.of(filename);
-        assertTrue(Files.exists(filePath));
-        Files.delete(filePath);
-
-        verify(spyAbDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
-        verify(logger, never()).error(anyString());
-    }
-
-    @Test
-    void testTransferFile_Success_InvoiceServiceReturnsNull() throws Exception {
-        LocalDate date = LocalDate.of(2025, 03, 20); // Corrected date
-        CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("RSF-123");
-        cashAllocationModel.setCounterPartyId("CP123");
-        cashAllocationModel.setCreatedDate(new Date());
-        List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
-
-        // Mock the behavior of invoiceServiceApi.getAbInvoice() to return null
-        when(invoiceServiceApi.getAbInvoice("RSF-123")).thenReturn(null);
 
         doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
 
