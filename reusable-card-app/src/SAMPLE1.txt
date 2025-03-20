@@ -449,27 +449,28 @@ class CashAllocationDomainTest {
 
 
 
-
-        try {
-            Field abFtrKeyField = AbDomain.class.getDeclaredField("abFtrKey");
-            abFtrKeyField.setAccessible(true);
-            abFtrKeyField.set(spyAbDomain, abFtrKey);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
+ @Test
     void testTransferFile_Success() throws Exception {
-        LocalDate date = LocalDate.of(2025, 03, 20);
+        LocalDate date = LocalDate.of(2025, 3, 20);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
         cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
         cashAllocationModel.setCounterPartyId("CP123");
         cashAllocationModel.setCreatedDate(new Date());
-        cashAllocationModel.setValueDate(LocalDate.of(2025, 03, 20)); // Set getValueDate to a non-null value
+        cashAllocationModel.setValueDate(LocalDate.of(2025, 3, 20));
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
         doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
+
+        // Mock invoiceServiceApi.getAbInvoice() to return a non-null InvoicesAbList
+        InvoicesAbList invoicesAbList = new InvoicesAbList();
+        List<InvoiceAb> invoiceAbs = new ArrayList<>();
+        InvoiceAb invoiceAb = new InvoiceAb();
+        invoiceAb.setInvoiceReferenceAb("REF123");
+        invoiceAb.setCptyBdrId("CPY456");
+        invoiceAbs.add(invoiceAb);
+        invoicesAbList.setInvoicesAb(invoiceAbs);
+
+        when(invoiceServiceApi.getAbInvoice(anyString())).thenReturn(invoicesAbList);
 
         Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
         transferFileMethod.setAccessible(true);
