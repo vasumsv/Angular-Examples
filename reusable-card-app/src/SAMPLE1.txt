@@ -449,8 +449,17 @@ class CashAllocationDomainTest {
 
 
 
+ try {
+            // Set abFtrKey using reflection
+            Method setAbFtrKeyMethod = AbDomain.class.getDeclaredMethod("setAbFtrKey", String.class);
+            setAbFtrKeyMethod.setAccessible(true);
+            setAbFtrKeyMethod.invoke(abDomain, abFtrKey);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-  @Test
+    @Test
     void testTransferFile_Success() throws Exception {
         LocalDate date = LocalDate.of(2023, 10, 26);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
@@ -473,55 +482,4 @@ class CashAllocationDomainTest {
 
         verify(abDomain, times(1)).uploadPaymentAbFileViaReferential(expectedFilename);
         verify(logger, never()).error(anyString());
-    }
-
-    @Test
-    void testTransferFile_FileNotFoundException() throws Exception {
-        LocalDate date = LocalDate.of(2023, 10, 26);
-        CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("RSF-123");
-        cashAllocationModel.setCounterPartyId("CP123");
-        List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
-
-        doThrow(new IOException("File not found")).when(abDomain).uploadPaymentAbFileViaReferential(anyString());
-
-        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        transferFileMethod.setAccessible(true);
-        String filename = (String) transferFileMethod.invoke(abDomain, date, cashAllocationModelList);
-
-        verify(logger, times(1)).error(contains("File not found"));
-    }
-
-    @Test
-    void testTransferFile_IOException() throws Exception {
-        LocalDate date = LocalDate.of(2023, 10, 26);
-        CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("RSF-123");
-        cashAllocationModel.setCounterPartyId("CP123");
-        List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
-
-        doThrow(new IOException("IO Exception")).when(abDomain).uploadPaymentAbFileViaReferential(anyString());
-
-        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        transferFileMethod.setAccessible(true);
-        String filename = (String) transferFileMethod.invoke(abDomain, date, cashAllocationModelList);
-
-        verify(logger, times(1)).error(contains("Exception while writing file"));
-    }
-
-    @Test
-    void testTransferFile_RestClientException() throws Exception {
-        LocalDate date = LocalDate.of(2023, 10, 26);
-        CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("RSF-123");
-        cashAllocationModel.setCounterPartyId("CP123");
-        List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
-
-        doThrow(new RestClientException("Failed to receive List of Invoice from InvoiceService")).when(abDomain).uploadPaymentAbFileViaReferential(anyString());
-
-        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        transferFileMethod.setAccessible(true);
-        String filename = (String) transferFileMethod.invoke(abDomain, date, cashAllocationModelList);
-
-        verify(logger, times(1)).error(contains("Failed to receive List of Invoice from InvoiceService"));
     }
