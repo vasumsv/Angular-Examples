@@ -445,45 +445,104 @@ class CashAllocationDomainTest {
 
 
 
+ 
 
- @Test
-    void testGetAbPaymentFileContent_BusinessDay_WithData() {
+
+
+
+
+     @Test
+    void testSendPaymentDetailsToInvoiceService() {
+        List<PaymentDetailsForInvoice> paymentDetailsForInvoiceList = Collections.singletonList(new PaymentDetailsForInvoice());
+        Status expectedStatus = new Status();
+        expectedStatus.setValue("Successful");
+
+        when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(paymentDetailsForInvoiceList)).thenReturn(expectedStatus);
+
+        Status actualStatus = cashAllocationDomain.sendPaymentDetailsToInvoiceService(paymentDetailsForInvoiceList);
+
+        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(paymentDetailsForInvoiceList);
+        assertEquals(expectedStatus.getValue(), actualStatus.getValue());
+    }
+
+    @Test
+    void testFindByInvoiceMatched_WithRSF1() throws Exception {
+        List<String> invoiceReferenceList = Arrays.asList("RSF-12345");
+        String invoiceMatched = "RSF-12345";
+
+        when(cashAllocationRepositoryApi.findByInvoiceMatched(invoiceMatched)).thenReturn(Collections.singletonList(cashAllocationModel));
+
+        Method method = CashAllocationDomain.class.getDeclaredMethod("findByInvoiceMatched", List.class);
+        method.setAccessible(true);
+
+        List<CashAllocationModel> result = (List<CashAllocationModel>) method.invoke(cashAllocationDomain, invoiceReferenceList);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(cashAllocationRepositoryApi, times(1)).findByInvoiceMatched(invoiceMatched);
+    }
+
+    @Test
+    void testFindByInvoiceMatched_WithoutRSF() throws Exception {
+        List<String> invoiceReferenceList = Arrays.asList("INV12345");
+        String invoiceMatched = "INV12345";
+
+        when(cashAllocationRepositoryApi.findByInvoiceMatched(invoiceMatched)).thenReturn(Collections.singletonList(cashAllocationModel));
+        when(cashAllocationModel.getInvoiceMatched()).thenReturn(invoiceMatched);
+
+        Method method = CashAllocationDomain.class.getDeclaredMethod("findByInvoiceMatched", List.class);
+        method.setAccessible(true);
+
+        List<CashAllocationModel> result = (List<CashAllocationModel>) method.invoke(cashAllocationDomain, invoiceReferenceList);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetAbPaymentFileContent_BusinessDay_WithData() throws Exception {
         LocalDate endDate = LocalDate.of(2023, 3, 6);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
         List<CashAllocationModel> cashAllocationModels = Collections.singletonList(cashAllocationModel);
 
-        when(abDomain.getBusinessDays(endDate)).thenReturn(true);
+        when(cashAllocationDomain.getBusinessDays(endDate)).thenReturn(true);
         when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1))).thenReturn(cashAllocationModels);
-        when(abDomain.transferFile(endDate, cashAllocationModels)).thenReturn("testFile.txt");
+        when(cashAllocationDomain.transferFile(endDate, cashAllocationModels)).thenReturn("testFile.txt");
 
-        abDomain.getAbPaymentFileContent(endDate);
+        cashAllocationDomain.getAbPaymentFileContent(endDate);
 
         verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
-        verify(abDomain, times(1)).transferFile(endDate, cashAllocationModels);
-        verify(logger, never()).info(anyString(), eq(AbDomain.class));
+        verify(cashAllocationDomain, times(1)).transferFile(endDate, cashAllocationModels);
+        verify(any(org.slf4j.Logger.class), never()).info(anyString(), eq(CashAllocationDomain.class));
     }
 
     @Test
     void testGetAbPaymentFileContent_BusinessDay_NoData() {
         LocalDate endDate = LocalDate.of(2023, 3, 6);
 
-        when(abDomain.getBusinessDays(endDate)).thenReturn(true);
+        when(cashAllocationDomain.getBusinessDays(endDate)).thenReturn(true);
         when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1))).thenReturn(Collections.emptyList());
 
-        abDomain.getAbPaymentFileContent(endDate);
+        cashAllocationDomain.getAbPaymentFileContent(endDate);
 
         verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
-        verify(logger, times(1)).info(eq("No data available"), eq(AbDomain.class));
+        verify(any(org.slf4j.Logger.class), times(1)).info(eq("No data available"), eq(CashAllocationDomain.class));
     }
 
     @Test
     void testGetAbPaymentFileContent_NotBusinessDay() {
         LocalDate endDate = LocalDate.of(2023, 3, 6);
 
-        when(abDomain.getBusinessDays(endDate)).thenReturn(false);
+        when(cashAllocationDomain.getBusinessDays(endDate)).thenReturn(false);
 
-        abDomain.getAbPaymentFileContent(endDate);
+        cashAllocationDomain.getAbPaymentFileContent(endDate);
 
         verify(cashAllocationRepositoryApi, never()).findPaymentDetailsForABA(any());
-        verify(logger, times(1)).info(eq("Not a business day for paymentFile creation"), eq(AbDomain.class));
+        verify(any(org.slf4j.Logger.class), times(1)).info(eq("Not a business day for paymentFile creation"), eq(CashAllocationDomain.class));
+    }
+
+    @Test
+    void testGetBusinessDays() {
+        LocalDate endDate = LocalDate.of(2023, 3, 6);
+        boolean isBusinessDay = cashAllocationDomain.getBusinessDays(endDate);
+        assertTrue(isBusinessDay);
     }
