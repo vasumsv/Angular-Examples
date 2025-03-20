@@ -446,65 +446,117 @@ class CashAllocationDomainTest {
 
 
 
+class CashAllocationDomainTest {
 
-  @BeforeEach
+    @Mock
+    private ReferentialServiceApi referentialServiceApi;
+
+    @InjectMocks
+    private CashAllocationDomain cashAllocationDomain;
+
+    private List<InvoicePayableModelForPayment> paymentList;
+    private String user;
+
+    @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        invoiceRefReceived = "SG-SHA-123";
-        paymentListForCashRequest = new ArrayList<>();
-        paymentAmount = BigDecimal.ZERO;
-        //Initialize variables inside of CashAllocationDomain, that are used in the method.
-        cashAllocationDomain.paymentListForCashRequest = paymentListForCashRequest;
-        cashAllocationDomain.paymentAmount = paymentAmount;
+        paymentList = new ArrayList<>();
+        InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
+        InvoicePayable invoicePayable = new InvoicePayable();
+        invoicePayable.setFeeBdrId(123L);
+        payment.setInvoicePayable(invoicePayable);
+        payment.setEntity("ENTITY1");
+        payment.setCurrency("USD");
+        payment.setProviderId("PROVIDER1");
+        payment.setProviderMemo("MEMO1");
+        payment.setFeeCategory("CATEGORY1");
+        paymentList.add(payment);
+
+        user = "testUser";
     }
 
     @Test
-    void autoPaymentMatching_notAllocatedModels_updatesPaymentListAndAmount() {
-        List<CashAllocationModel> models = new ArrayList<>();
-        CashAllocationModel model1 = new CashAllocationModel();
-        model1.setId(1L);
-        model1.setAmount(BigDecimal.TEN);
-        model1.setStatus("NOT_ALLOCATED");
-        models.add(model1);
+    void getNettedRows_validInput_returnsPaymentLines() {
+        // Mock referentialServiceApi calls
+        when(referentialServiceApi.getPortfolioDetails(anyString(), anyString(), anyString())).thenReturn(new PortfolioDetailsResponse());
+        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString())).thenReturn(new PaymentDatesResponse());
+        when(referentialServiceApi.getSettlementLocation(any(BigDecimal.class), anyString(), anyString(), anyString())).thenReturn(new SettlementLocationResponse());
+        when(referentialServiceApi.getSettlement(anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(new SettlementResponse());
+        when(referentialServiceApi.checkPaymentHabilitation(anyString(), anyString(), anyLong(), anyString(), anyDouble(), anyString())).thenReturn(new PayHabResponse());
+        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(new PaymentChecksResponse());
 
-        CashAllocationModel model2 = new CashAllocationModel();
-        model2.setId(2L);
-        model2.setAmount(BigDecimal.ONE);
-        model2.setStatus("ALLOCATED");
-        models.add(model2);
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
 
-        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(models);
-
-        cashAllocationDomain.autoPaymentMatching();
-
-        assertEquals(1, paymentListForCashRequest.size());
-        assertEquals("1", paymentListForCashRequest.get(0));
-        assertEquals(BigDecimal.TEN, cashAllocationDomain.paymentAmount);
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        PaymentLinesModel model = result.get(0);
+        assertEquals("ENTITY1", model.getSgEntity());
+        assertEquals("USD", model.getCurrency());
+        verify(referentialServiceApi, times(1)).checkPaymentHabilitation(anyString(), anyString(), anyLong(), anyString(), anyDouble(), anyString());
+        verify(referentialServiceApi, times(1)).doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
-    void autoPaymentMatching_noNotAllocatedModels_noUpdates() {
-        List<CashAllocationModel> models = new ArrayList<>();
-        CashAllocationModel model1 = new CashAllocationModel();
-        model1.setId(1L);
-        model1.setAmount(BigDecimal.TEN);
-        model1.setStatus("ALLOCATED");
-        models.add(model1);
+    void getNettedRows_exceptionInServiceCalls_returnsPaymentLinesWithComment() {
+        // Mock referentialServiceApi calls to throw exceptions
+        when(referentialServiceApi.getPortfolioDetails(anyString(), anyString(), anyString())).thenThrow(new RuntimeException("Portfolio Exception"));
+        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString())).thenThrow(new RuntimeException("Payment Dates Exception"));
+        when(referentialServiceApi.getSettlementLocation(any(BigDecimal.class), anyString(), anyString(), anyString())).thenThrow(new RuntimeException("Settlement Location Exception"));
+        when(referentialServiceApi.getSettlement(anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenThrow(new RuntimeException("Settlement Exception"));
 
-        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(models);
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
 
-        cashAllocationDomain.autoPaymentMatching();
-
-        assertEquals(0, paymentListForCashRequest.size());
-        assertEquals(BigDecimal.ZERO, cashAllocationDomain.paymentAmount);
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        PaymentLinesModel model = result.get(0);
+        assertNotNull(model.getComment());
+        assertTrue(model.getComment().contains("Portfolio Exception"));
+        assertTrue(model.getComment().contains("Payment Dates Exception"));
+        assertTrue(model.getComment().contains("Settlement Location Exception"));
+        assertTrue(model.getComment().contains("Settlement Exception"));
     }
 
     @Test
-    void autoPaymentMatching_emptyModelList_noUpdates() {
-        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(new ArrayList<>());
+    void getNettedRows_payHabResponseCodErr_updatesComment() {
+        PayHabResponse payHabResponse = new PayHabResponse();
+        payHabResponse.setCodErr("HAB_ERROR");
+        when(referentialServiceApi.checkPaymentHabilitation(anyString(), anyString(), anyLong(), anyString(), anyDouble(), anyString())).thenReturn(payHabResponse);
+        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(new PaymentChecksResponse());
 
-        cashAllocationDomain.autoPaymentMatching();
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
 
-        assertEquals(0, paymentListForCashRequest.size());
-        assertEquals(BigDecimal.ZERO, cashAllocationDomain.paymentAmount);
+        PaymentLinesModel model = result.get(0);
+        assertEquals("HAB_ERROR", model.getComment());
     }
+
+    @Test
+    void getNettedRows_paymentChecksResponsePMsgErr_updatesComment() {
+        PayHabResponse payHabResponse = new PayHabResponse();
+        when(referentialServiceApi.checkPaymentHabilitation(anyString(), anyString(), anyLong(), anyString(), anyDouble(), anyString())).thenReturn(payHabResponse);
+        PaymentChecksResponse paymentChecksResponse = new PaymentChecksResponse();
+        paymentChecksResponse.setPMsgErr("CHECK_ERROR");
+        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(paymentChecksResponse);
+
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
+
+        PaymentLinesModel model = result.get(0);
+        assertEquals("CHECK_ERROR", model.getComment());
+    }
+
+    @Test
+    void getNettedRows_payHabAndPaymentChecks_updatesComment() {
+        PayHabResponse payHabResponse = new PayHabResponse();
+        payHabResponse.setCodErr("HAB_ERROR");
+        when(referentialServiceApi.checkPaymentHabilitation(anyString(), anyString(), anyLong(), anyString(), anyDouble(), anyString())).thenReturn(payHabResponse);
+        PaymentChecksResponse paymentChecksResponse = new PaymentChecksResponse();
+        paymentChecksResponse.setPMsgErr("CHECK_ERROR");
+        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(paymentChecksResponse);
+
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
+
+        PaymentLinesModel model = result.get(0);
+        assertEquals("HAB_ERROR , CHECK_ERROR", model.getComment());
+    }
+
+    // Add more test cases to cover other branches and scenarios
+}
