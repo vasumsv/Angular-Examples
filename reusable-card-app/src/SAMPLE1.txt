@@ -450,18 +450,7 @@ class CashAllocationDomainTest {
 
 
  
-@Mock
-    private Logger logger;
-
-    @InjectMocks
-    private FileProcessing fileProcessing;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
+     @Test
     void testReadFile_Success() throws IOException {
         // Create a temporary file with some content
         Path tempFilePath = Files.createTempFile("test", ".txt");
@@ -487,3 +476,17 @@ class CashAllocationDomainTest {
         assertEquals(0, lines.size());
         verify(logger).error(anyString(), any(IOException.class)); // Verify logger.error is called
     }
+
+    @Test
+    void testReadFile_EmptyFile() throws IOException {
+        // Create an empty temporary file
+        Path tempFilePath = Files.createTempFile("empty", ".txt");
+        File tempFile = tempFilePath.toFile();
+
+        List<String> lines = fileProcessing.readFile(tempFile);
+
+        assertEquals(0, lines.size());
+
+        Files.delete(tempFilePath); // Clean up
+    }
+ 
