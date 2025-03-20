@@ -458,12 +458,13 @@ class CashAllocationDomainTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    @Test
+   @Test
     void testTransferFile_Success() throws Exception {
         LocalDate date = LocalDate.of(2023, 10, 26);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
         cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
         cashAllocationModel.setCounterPartyId("CP123");
+        cashAllocationModel.setCreatedDate(new Date()); // Set createdDate to a non-null value
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
         doNothing().when(spyAbDomain).uploadPaymentAbFileViaReferential(anyString());
