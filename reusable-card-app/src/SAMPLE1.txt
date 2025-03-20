@@ -449,7 +449,7 @@ class CashAllocationDomainTest {
 
 
 
-@Test
+   @Test
     void testTransferFile_FileNotFoundException() throws Exception {
         LocalDate date = LocalDate.of(2025, 3, 20);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
@@ -458,14 +458,6 @@ class CashAllocationDomainTest {
         cashAllocationModel.setCreatedDate(new Date());
         cashAllocationModel.setValueDate(LocalDate.of(2025, 3, 20));
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
-
-        // Mock FileOutputStream to throw FileNotFoundException
-        FileOutputStream mockFos = mock(FileOutputStream.class);
-        doThrow(new FileNotFoundException("File not found")).when(mockFos).write(any(byte[].class));
-
-        // Use reflection to set the mock FileOutputStream in the transferFile method
-        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        transferFileMethod.setAccessible(true);
 
         // Create a temporary file to use in the test
         File tempFile = File.createTempFile("test", ".csv");
@@ -476,11 +468,15 @@ class CashAllocationDomainTest {
         filenameField.setAccessible(true);
         filenameField.set(spyAbDomain, "TEST");
 
-        // Use reflection to set the mock FileOutputStream in the transferFile method
-        Field fileField = AbDomain.class.getDeclaredField("file");
-        fileField.setAccessible(true);
-        fileField.set(spyAbDomain, tempFile);
+        // Use reflection to get the transferFile method
+        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
+        transferFileMethod.setAccessible(true);
 
+        // Mock FileOutputStream to throw FileNotFoundException
+        FileOutputStream mockFos = mock(FileOutputStream.class);
+        doThrow(new FileNotFoundException("File not found")).when(mockFos).write(any(byte[].class));
+
+        // Invoke the transferFile method, passing the temporary file
         transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
 
         // Verify logger.error is called
