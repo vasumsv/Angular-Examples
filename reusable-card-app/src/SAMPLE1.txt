@@ -441,3 +441,35 @@ class CashAllocationDomainTest {
         assertEquals(0, paymentLinesModel.getNumberOfSSI());
         assertEquals(new ArrayList<>(), paymentLinesModel.getSsiAccountCode());
     }
+
+
+
+
+  @Test
+    void testGetAbPaymentFileContent_BusinessDayWithPaymentDetails() {
+        LocalDate endDate = LocalDate.of(2023, 3, 6);
+        CashAllocationModel cashAllocationModel = new CashAllocationModel();
+        cashAllocationModel.setInvoiceMatched("INV123"); // Set invoiceMatched to a non-null value
+        List<CashAllocationModel> cashAllocationModels = Collections.singletonList(cashAllocationModel);
+
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(any(), any())).thenReturn(Collections.emptyList());
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(any())).thenReturn(cashAllocationModels);
+
+        abDomain.getAbPaymentFileContent(endDate);
+
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(any());
+        verify(any(org.slf4j.Logger.class), never()).info(eq("No data available"), eq(AbDomain.class));
+    }
+
+    @Test
+    void testGetAbPaymentFileContent_BusinessDayWithoutPaymentDetails() {
+        LocalDate endDate = LocalDate.of(2023, 3, 6);
+
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(any(), any())).thenReturn(Collections.emptyList());
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(any())).thenReturn(Collections.emptyList());
+
+        abDomain.getAbPaymentFileContent(endDate);
+
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(any());
+        verify(any(org.slf4j.Logger.class), times(1)).info(eq("No data available"), eq(AbDomain.class));
+    }
