@@ -450,12 +450,67 @@ class CashAllocationDomainTest {
 
  
 
-// Initialize invoicesAbList here
-        InvoicesAbList invoicesAbList = new InvoicesAbList();
-        processCashRequest.setInvoicesAbList(invoicesAbList);
+  //Initialize invoicesAbList here
+        invoicesAbList = new InvoicesAbList();
+        List<Invoice> invoiceList = new ArrayList<>();
+        Invoice invoice = new Invoice();
+        invoiceList.add(invoice);
+        invoicesAbList.setInvoicesAb(invoiceList);
 
-        cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456");
-        cashAllocationModel.setMsgType("MSG_TYPE_1");
-        cashDetails = new CashDetails();
-        cashAllocationModel.setCashDetails(cashDetails);
+        when(invoiceServiceApi.getInvoice(anyList())).thenReturn(invoicesAbList); //Mock the InvoiceServiceApi
+    }
+
+    @Test
+    void updateCashAllocationStatus_unmatched_rsfPrefix_updatesModels() {
+        when(cashAllocationRepositoryApi.findByInvoiceMatched(processCashRequest.getInvoiceRefs()))
+                .thenReturn(Arrays.asList(cashAllocationModel));
+
+        cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "user");
+
+        verify(cashAllocationRepositoryApi).save(cashAllocationModel);
+        assertEquals("UNMATCHED", cashAllocationModel.getStatus());
+        assertNull(cashAllocationModel.getInvoiceMatched());
+        assertEquals("UNMATCHED", cashDetails.getStatus());
+        assertNull(cashDetails.getInvoiceMatched());
+        assertEquals("MSS_TYPE", cashAllocationModel.getMsgType());
+        assertEquals(Arrays.asList("RSF-123", "RSF-456"), processCashRequest.getInvoiceRefs());
+    }
+
+    @Test
+    void updateCashAllocationStatus_unmatched_noRsfPrefix_updatesModels() {
+        cashAllocationModel.setInvoiceMatched("INV-123,INV-456");
+        when(cashAllocationRepositoryApi.findByInvoiceMatched(processCashRequest.getInvoiceRefs()))
+                .thenReturn(Arrays.asList(cashAllocationModel));
+
+        cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "user");
+
+        verify(cashAllocationRepositoryApi).save(cashAllocationModel);
+        assertEquals("UNMATCHED", cashAllocationModel.getStatus());
+        assertNull(cashAllocationModel.getInvoiceMatched());
+        assertEquals("UNMATCHED", cashDetails.getStatus());
+        assertNull(cashDetails.getInvoiceMatched());
+        assertEquals("MSS_TYPE", cashAllocationModel.getMsgType());
+        assertEquals(Arrays.asList("INV1", "INV2"), processCashRequest.getInvoiceRefs());
+    }
+
+    @Test
+    void updateCashAllocationStatus_unmatched_emptyModelList_noUpdates() {
+        when(cashAllocationRepositoryApi.findByInvoiceMatched(processCashRequest.getInvoiceRefs()))
+                .thenReturn(new ArrayList<>());
+
+        cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "user");
+
+        verify(cashAllocationRepositoryApi, never()).save(any());
+    }
+
+    @Test
+    void updateCashAllocationStatus_unmatched_msgTypeMs6_noMsgTypeChange() {
+        cashAllocationModel.setMsgType("MSG_TYPE_6");
+        when(cashAllocationRepositoryApi.findByInvoiceMatched(processCashRequest.getInvoiceRefs()))
+                .thenReturn(Arrays.asList(cashAllocationModel));
+
+        cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "user");
+
+        verify(cashAllocationRepositoryApi).save(cashAllocationModel);
+        assertEquals("MSG_TYPE_6", cashAllocationModel.getMsgType());
+    }
