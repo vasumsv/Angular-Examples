@@ -450,7 +450,8 @@ class CashAllocationDomainTest {
 
 
  
- @Test
+
+    @Test
     void testTransferFile_FileNotFoundException() throws Exception {
         LocalDate date = LocalDate.of(2025, 3, 20);
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
@@ -460,8 +461,12 @@ class CashAllocationDomainTest {
         cashAllocationModel.setValueDate(LocalDate.of(2025, 3, 20));
         List<CashAllocationModel> cashAllocationModelList = Collections.singletonList(cashAllocationModel);
 
-        // Create a temporary file to use in the test
-        File tempFile = File.createTempFile("test", ".csv");
+        // Create a read-only temporary directory
+        File tempDir = Files.createTempDirectory("read-only-dir").toFile();
+        tempDir.setReadOnly();
+
+        // Create a file within the read-only directory
+        File tempFile = new File(tempDir, "test.csv");
         String filename = tempFile.getName();
 
         // Use reflection to set the filename in the transferFile method
@@ -473,11 +478,10 @@ class CashAllocationDomainTest {
         Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
         transferFileMethod.setAccessible(true);
 
-        // Mock FileOutputStream constructor to throw FileNotFoundException
-        whenNew(FileOutputStream.class).withAnyArguments().thenThrow(new FileNotFoundException("File not found"));
-
-        // Invoke the transferFile method, passing the temporary file
+        // Invoke the transferFile method
         transferFileMethod.invoke(spyAbDomain, date, cashAllocationModelList);
 
-        tempFile.delete(); // Clean up the temporary file
+        // Clean up: Make the directory writable again and delete it
+        tempDir.setWritable(true);
+        Files.delete(tempDir.toPath());
     }
