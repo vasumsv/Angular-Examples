@@ -446,18 +446,17 @@ class CashAllocationDomainTest {
 
 
 
-    @Test
+ @Test
     void testGetAbPaymentFileContent_BusinessDayWithPaymentDetails() {
         LocalDate endDate = LocalDate.of(2023, 3, 6);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy");
         String currentYear = endDate.format(formatter);
-        String endYear = endDate.plusYears(2).format(formatter);
 
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
         cashAllocationModel.setInvoiceMatched("INV123");
         List<CashAllocationModel> cashAllocationModels = Collections.singletonList(cashAllocationModel);
 
-        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(currentYear, endYear)).thenReturn(Collections.emptyList());
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(currentYear, "FRA")).thenReturn(Collections.emptyList());
         when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate)).thenReturn(cashAllocationModels);
 
         abDomain.getAbPaymentFileContent(endDate);
@@ -471,9 +470,8 @@ class CashAllocationDomainTest {
         LocalDate endDate = LocalDate.of(2023, 3, 6);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy");
         String currentYear = endDate.format(formatter);
-        String endYear = endDate.plusYears(2).format(formatter);
 
-        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(currentYear, endYear)).thenReturn(Collections.emptyList());
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(currentYear, "FRA")).thenReturn(Collections.emptyList());
         when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate)).thenReturn(Collections.emptyList());
 
         abDomain.getAbPaymentFileContent(endDate);
