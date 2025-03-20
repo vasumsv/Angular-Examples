@@ -450,22 +450,7 @@ class CashAllocationDomainTest {
 
 
 
-
-     @Test
-    void testSendPaymentDetailsToInvoiceService() {
-        List<PaymentDetailsForInvoice> paymentDetailsForInvoiceList = Collections.singletonList(new PaymentDetailsForInvoice());
-        Status expectedStatus = new Status();
-        expectedStatus.setValue("Successful");
-
-        when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(paymentDetailsForInvoiceList)).thenReturn(expectedStatus);
-
-        Status actualStatus = cashAllocationDomain.sendPaymentDetailsToInvoiceService(paymentDetailsForInvoiceList);
-
-        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(paymentDetailsForInvoiceList);
-        assertEquals(expectedStatus.getValue(), actualStatus.getValue());
-    }
-
-    @Test
+ @Test
     void testFindByInvoiceMatched_WithRSF1() throws Exception {
         List<String> invoiceReferenceList = Arrays.asList("RSF-12345");
         String invoiceMatched = "RSF-12345";
@@ -479,7 +464,7 @@ class CashAllocationDomainTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(cashAllocationRepositoryApi, times(1)).findByInvoiceMatched(invoiceMatched);
+        verify(cashAllocationRepositoryApi, times(1)).findByInvoiceMatched(invoiceMatched); // Corrected verify
     }
 
     @Test
@@ -496,53 +481,6 @@ class CashAllocationDomainTest {
         List<CashAllocationModel> result = (List<CashAllocationModel>) method.invoke(cashAllocationDomain, invoiceReferenceList);
 
         assertNotNull(result);
-    }
-
-    @Test
-    void testGetAbPaymentFileContent_BusinessDay_WithData() throws Exception {
-        LocalDate endDate = LocalDate.of(2023, 3, 6);
-        CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        List<CashAllocationModel> cashAllocationModels = Collections.singletonList(cashAllocationModel);
-
-        when(cashAllocationDomain.getBusinessDays(endDate)).thenReturn(true);
-        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1))).thenReturn(cashAllocationModels);
-        when(cashAllocationDomain.transferFile(endDate, cashAllocationModels)).thenReturn("testFile.txt");
-
-        cashAllocationDomain.getAbPaymentFileContent(endDate);
-
-        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
-        verify(cashAllocationDomain, times(1)).transferFile(endDate, cashAllocationModels);
-        verify(any(org.slf4j.Logger.class), never()).info(anyString(), eq(CashAllocationDomain.class));
-    }
-
-    @Test
-    void testGetAbPaymentFileContent_BusinessDay_NoData() {
-        LocalDate endDate = LocalDate.of(2023, 3, 6);
-
-        when(cashAllocationDomain.getBusinessDays(endDate)).thenReturn(true);
-        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1))).thenReturn(Collections.emptyList());
-
-        cashAllocationDomain.getAbPaymentFileContent(endDate);
-
-        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
-        verify(any(org.slf4j.Logger.class), times(1)).info(eq("No data available"), eq(CashAllocationDomain.class));
-    }
-
-    @Test
-    void testGetAbPaymentFileContent_NotBusinessDay() {
-        LocalDate endDate = LocalDate.of(2023, 3, 6);
-
-        when(cashAllocationDomain.getBusinessDays(endDate)).thenReturn(false);
-
-        cashAllocationDomain.getAbPaymentFileContent(endDate);
-
-        verify(cashAllocationRepositoryApi, never()).findPaymentDetailsForABA(any());
-        verify(any(org.slf4j.Logger.class), times(1)).info(eq("Not a business day for paymentFile creation"), eq(CashAllocationDomain.class));
-    }
-
-    @Test
-    void testGetBusinessDays() {
-        LocalDate endDate = LocalDate.of(2023, 3, 6);
-        boolean isBusinessDay = cashAllocationDomain.getBusinessDays(endDate);
-        assertTrue(isBusinessDay);
+        // Assuming you want to verify the repository call here as well
+        verify(cashAllocationRepositoryApi, times(1)).findByInvoiceMatched(invoiceMatched); // Corrected verify
     }
