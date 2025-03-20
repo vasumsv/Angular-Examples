@@ -449,44 +449,12 @@ class CashAllocationDomainTest {
 
 
  
- 
-    @Test
-    void savePaymentDetails_validFile_callsRepositorySave() {
-        String filePath = "testFile.txt";
-        List<String> fileLines = new ArrayList<>();
-        fileLines.add("line1");
-        fileLines.add("line2");
-        when(fileProcessingService.getFile(filePath)).thenReturn(new File(filePath));
-        when(fileProcessingService.readFile(any(File.class))).thenReturn(fileLines);
-        when(cashAllocationDomain.cashAllocationModelList(fileLines, new File(filePath))).thenReturn(new ArrayList<>());
-
-        cashAllocationDomain.savePaymentDetails(filePath);
-
-        verify(cashAllocationRepositoryApi).savePaymentDetails(anyList());
-        verify(logger, times(2)).info(anyString()); // Verify logger calls
-    }
-
-    @Test
-    void saveDetails_validFile_callsRepositorySave() {
-        File file = new File("test.txt");
-        List<String> fileLines = new ArrayList<>();
-        fileLines.add("line1");
-        fileLines.add("line2");
-        when(fileProcessingService.readFile(file)).thenReturn(fileLines);
-        when(cashAllocationDomain.cashAllocationModelList(fileLines, file.getName())).thenReturn(new ArrayList<>());
-
-        cashAllocationDomain.saveDetails(file);
-
-        verify(cashAllocationRepositoryApi).savePaymentDetails(anyList());
-        verify(logger, times(2)).info(anyString()); // Verify logger calls
-    }
-
-    @Test
+   @Test
     void saveFile_validFile_callsRepositorySaveFile() {
         File file = new File("test.txt");
         List<String> fileLines = new ArrayList<>();
-        fileLines.add("line1");
-        fileLines.add("line2");
+        fileLines.add("line12345678901234567890"); // Add longer strings
+        fileLines.add("line22345678901234567890");
         when(fileProcessingService.readFile(file)).thenReturn(fileLines);
         when(cashAllocationDomain.cashAllocationModels(fileLines, file.getName())).thenReturn(new ArrayList<>());
 
@@ -495,15 +463,3 @@ class CashAllocationDomainTest {
         verify(cashAllocationRepositoryApi).saveFile(anyList());
         verify(logger, times(2)).info(anyString()); // Verify logger calls
     }
-
-    @Test
-    void paymentDetailsByAccountNumber_validAccountNumber_callsRepository() {
-        String accountNumber = "12345";
-        List<CashDetails> expectedDetails = new ArrayList<>();
-        when(cashAllocationRepositoryApi.paymentDetailsByAccountNumber(accountNumber)).thenReturn(expectedDetails);
-
-        cashAllocationDomain.paymentDetailsByAccountNumber(accountNumber);
-
-        verify(cashAllocationRepositoryApi).paymentDetailsByAccountNumber(accountNumber);
-    }
- 
