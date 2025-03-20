@@ -450,8 +450,23 @@ class CashAllocationDomainTest {
 
 
  
+@Test
+    void testReadFile_Success() throws IOException {
+        // Create a temporary file with some content
+        Path tempFilePath = Files.createTempFile("test", ".txt");
+        Files.write(tempFilePath, "line1\nline2\n".getBytes());
+        File tempFile = tempFilePath.toFile();
 
-  @Test
+        List<String> lines = fileProcessing.readFile(tempFile);
+
+        assertEquals(2, lines.size());
+        assertEquals("line1", lines.get(0));
+        assertEquals("line2", lines.get(1));
+
+        Files.delete(tempFilePath); // Clean up
+    }
+
+    @Test
     void testReadFile_IOException() throws IOException {
         // Create a File object that points to a non-existent file
         File nonExistentFile = new File("nonexistent.txt");
