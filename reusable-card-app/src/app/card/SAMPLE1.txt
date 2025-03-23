@@ -1,76 +1,149 @@
- @Test
-    void testTransferFile_DirectoryCreation() {
-        // Prepare data
-        LocalDate date = LocalDate.now();
-        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
-        CashAllocationModel model = new CashAllocationModel();
-        model.setInvoiceMatched("RSF-123");
-        model.setCounterPartyId("CP123");
-        cashAllocationModels.add(model);
-
-        // Call the method
-        abDomain.transferFile(date, cashAllocationModels);
-
-        // Verify that the directory was created
-        File dir = new File(".");
-        assertTrue(dir.exists());
+   // Replace the actual logger with the mock
+        try {
+            java.lang.reflect.Field loggerField = AbDomain.class.getDeclaredField("logger");
+            loggerField.setAccessible(true);
+            loggerField.set(abDomain, logger);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
-    void testTransferFile_FalseInvoiceContainment() {
+    void testGetAbPaymentFileContent_BusinessDay_WithData() throws Exception {
         // Prepare data
-        LocalDate date = LocalDate.now();
-        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+        LocalDate endDate = LocalDate.of(2023, 3, 6); // Monday
         CashAllocationModel model = new CashAllocationModel();
-        model.setInvoiceMatched("INV-456"); // Different invoice
-        model.setCounterPartyId("CP123");
-        cashAllocationModels.add(model);
+        model.setInvoiceMatched("INV123");
+        List<CashAllocationModel> cashAllocationModels = Collections.singletonList(model);
 
-        // Call the method
-        abDomain.transferFile(date, cashAllocationModels);
+        // Mock dependencies
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(anyString(), eq("FRA")))
+                .thenReturn(Collections.emptyList());
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1)))
+                .thenReturn(cashAllocationModels);
 
-        // Verify that uploadPaymentAbFileViaReferential() was called (no exception)
-        verify(referentialServiceApi).uploadPaymentAbFileViaReferential(anyString());
+        // Invoke method
+        String filename = abDomain.getAbPaymentFileContent(endDate);
+
+        // Assertions
+        assertNotNull(filename);
+        assertNotEquals("testFile.txt", filename);
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
+        verify(logger, never()).info(anyString(), eq(AbDomain.class));
     }
 
     @Test
-    void testTransferFile_NullLineHandling() throws IOException {
+    void testGetAbPaymentFileContent_BusinessDay_NoData() {
         // Prepare data
-        LocalDate date = LocalDate.now();
-        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
-        CashAllocationModel model = new CashAllocationModel();
-        model.setInvoiceMatched("RSF-123");
-        model.setCounterPartyId("CP123");
-        cashAllocationModels.add(model);
+        LocalDate endDate = LocalDate.of(2023, 3, 6); // Monday
 
-        // Mock buildLine() to return null
+        // Mock dependencies
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(anyString(), eq("FRA")))
+                .thenReturn(Collections.emptyList());
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1)))
+                .thenReturn(Collections.emptyList());
+
+        // Invoke method
+        String filename = abDomain.getAbPaymentFileContent(endDate);
+
+        // Assertions
+        assertEquals("No data available for AB payment file creation for: 2023-03-07", filename);
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
+        verify(logger, times(1)).info(eq("No data available for AB payment file creation for: {}"), eq(LocalDate.of(2023, 3, 7)));
+    }
+
+    @Test
+    void testGetAbPaymentFileContent_NonBusinessDay_Saturday() {
+        // Prepare data
+        LocalDate endDate = LocalDate.of(2023, 3, 4); // Saturday
+
+        // Invoke method
+        String filename = abDomain.getAbPaymentFileContent(endDate);
+
+        // Assertions
+        assertEquals("Not a business day for AB payment file creation: 2023-03-04", filename);
+        verify(cashAllocationRepositoryApi, never()).findPaymentDetailsForABA(any());
+        verify(logger, times(1)).info(eq("Not a business day for AB payment file creation: {}"), eq(LocalDate.of(2023, 3, 4)));
+    }
+
+    @Test
+    void testGetAbPaymentFileContent_NonBusinessDay_Sunday() {
+        // Prepare data
+        LocalDate endDate = LocalDate.of(2023, 3, 5); // Sunday
+
+        // Invoke method
+        String filename = abDomain.getAbPaymentFileContent(endDate);
+
+        // Assertions
+        assertEquals("Not a business day for AB payment file creation: 2023-03-05", filename);
+        verify(cashAllocationRepositoryApi, never()).findPaymentDetailsForABA(any());
+        verify(logger, times(1)).info(eq("Not a business day for AB payment file creation: {}"), eq(LocalDate.of(2023, 3, 5)));
+    }
+
+    @Test
+    void testGetAbPaymentFileContent_Holiday() {
+        // Prepare data
+        LocalDate endDate = LocalDate.of(2023, 3, 6); // Monday
+        List<String> holidays = Collections.singletonList("2023-03-07"); // Next day is a holiday
+
+        // Mock dependencies
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(anyString(), eq("FRA")))
+                .thenReturn(holidays);
+
+        // Invoke method
+        String filename = abDomain.getAbPaymentFileContent(endDate);
+
+        // Assertions
+        assertEquals("Not a business day for AB payment file creation: 2023-03-07", filename);
+        verify(cashAllocationRepositoryApi, never()).findPaymentDetailsForABA(any());
+        verify(logger, times(1)).info(eq("Not a business day for AB payment file creation: {}"), eq(LocalDate.of(2023, 3, 7)));
+    }
+
+    @Test
+    void testGetAbPaymentFileContent_FindPaymentDetailsForABA_Exception() {
+        // Prepare data
+        LocalDate endDate = LocalDate.of(2023, 3, 6); // Monday
+
+        // Mock dependencies
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(anyString(), eq("FRA")))
+                .thenReturn(Collections.emptyList());
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1)))
+                .thenThrow(new RuntimeException("Repository error"));
+
+        // Invoke method
+        String filename = abDomain.getAbPaymentFileContent(endDate);
+
+        // Assertions
+        assertEquals("Error occurred while fetching payment details for AB file creation.", filename);
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
+        verify(logger, times(1)).error(eq("Exception while fetching payment details for AB file creation: {}"), any(RuntimeException.class));
+    }
+
+    @Test
+    void testGetAbPaymentFileContent_TransferFile_Exception() throws Exception {
+        // Prepare data
+        LocalDate endDate = LocalDate.of(2023, 3, 6); // Monday
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("INV123");
+        List<CashAllocationModel> cashAllocationModels = Collections.singletonList(model);
+
+        // Mock dependencies
+        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(anyString(), eq("FRA")))
+                .thenReturn(Collections.emptyList());
+        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1)))
+                .thenReturn(cashAllocationModels);
+
+        // Mock the private transferFile method to throw an exception
         AbDomain abDomainSpy = spy(abDomain);
-        doReturn(null).when(abDomainSpy).buildLine(any(CashAllocationModel.class), anyString());
+        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
+        transferFileMethod.setAccessible(true);
+        doThrow(new IOException("File transfer error")).when(transferFileMethod).invoke(eq(abDomainSpy), eq(endDate), eq(cashAllocationModels));
 
-        // Call the method
-        abDomainSpy.transferFile(date, cashAllocationModels);
+        // Invoke method on the spy
+        String filename = abDomainSpy.getAbPaymentFileContent(endDate);
 
-        // Verify that uploadPaymentAbFileViaReferential() was called (no exception)
-        verify(referentialServiceApi).uploadPaymentAbFileViaReferential(anyString());
-    }
-
-    @Test
-    void testTransferFile_LineBuildingException() throws IOException {
-        // Prepare data
-        LocalDate date = LocalDate.now();
-        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
-        CashAllocationModel model = new CashAllocationModel();
-        model.setInvoiceMatched("RSF-123");
-        model.setCounterPartyId("CP123");
-        cashAllocationModels.add(model);
-
-        // Mock buildLine() to throw an exception
-        AbDomain abDomainSpy = spy(abDomain);
-        doThrow(new RuntimeException("Line building exception")).when(abDomainSpy).buildLine(any(CashAllocationModel.class), anyString());
-
-        // Call the method
-        abDomainSpy.transferFile(date, cashAllocationModels);
-
-        // Verify that uploadPaymentAbFileViaReferential() was called (no exception)
-        verify(referentialServiceApi).uploadPaymentAbFileViaReferential(anyString());
+        // Assertions
+        assertEquals("Error occurred during AB payment file creation.", filename);
+        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
+        verify(logger, times(1)).error(eq("Exception during AB payment file creation: {}"), any(IOException.class));
     }
