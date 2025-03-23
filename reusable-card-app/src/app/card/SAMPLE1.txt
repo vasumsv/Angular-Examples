@@ -1,5 +1,5 @@
  @Test
-    void testAutoPaymentMatching_Sunday() {
+    void testAutoPaymentMatching_Sunday3() {
         // Explicitly set the time zone
         ZoneId zoneId = ZoneId.systemDefault(); // Or specify your time zone (e.g., ZoneId.of("America/New_York"))
 
@@ -10,9 +10,9 @@
         int daysToSubtract = 1; // Subtract one day from Monday to get Sunday
         LocalDate sunday = monday.minusDays(daysToSubtract);
 
-        // Mock LocalDate.now() to return the Monday
+        // Mock LocalDate.now(zoneId) to return the Monday
         try (var mockedStatic = mockStatic(LocalDate.class)) {
-            mockedStatic.when(() -> LocalDate.now(zoneId)).thenReturn(monday);
+            mockedStatic.when(() -> LocalDate.now(any(ZoneId.class))).thenReturn(monday);
 
             // Call the method
             cashAllocationDomain.autoPaymentMatching();
@@ -23,7 +23,7 @@
     }
 
     @Test
-    void testAutoPaymentMatching_Exception() {
+    void testAutoPaymentMatching_Exception3() {
         // Mock LocalDate.now() to throw an exception
         try (var mockedStatic = mockStatic(LocalDate.class)) {
             mockedStatic.when(LocalDate::now).thenThrow(new RuntimeException());
