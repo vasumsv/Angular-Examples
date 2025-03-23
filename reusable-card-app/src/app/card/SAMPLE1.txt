@@ -1,9 +1,18 @@
-  @Test
+    @Test
     void testUpdateCashAllocationStatus_UNMATCHED_Flow() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
         processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456")); // Invoice refs start with "RSF-*"
         processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString()));
+
+        // Mock invoiceServiceApi.getInvoiceAb
+        InvoicesAbList invoicesAbList = new InvoicesAbList();
+        List<InvoiceAb> invoiceAbList = new ArrayList<>();
+        InvoiceAb invoiceAb = new InvoiceAb(); // Populate with data if needed
+        invoiceAbList.add(invoiceAb);
+        invoicesAbList.setInvoicesAb(invoiceAbList);
+
+        when(invoiceServiceApi.getInvoiceAb(anyString())).thenReturn(invoicesAbList);
 
         // Mock cashAllocationDomain.findByInvoiceMatched using reflection
         List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
