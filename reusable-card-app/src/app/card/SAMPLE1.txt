@@ -1,4 +1,4 @@
-  @Test
+ @Test
     void testUpdateCashAllocationStatus_RS_Flow() {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
@@ -7,6 +7,11 @@
 
         // Mock invoiceServiceApi.getInvoice
         InvoicesList invoicesList = new InvoicesList();
+        List<Invoice> invoices = new ArrayList<>();
+        Invoice invoice1 = new Invoice(); // Populate with data if needed
+        invoices.add(invoice1);
+        invoicesList.setInvoices(invoices); // Set the invoices list
+
         when(invoiceServiceApi.getInvoice("RS123,RS456")).thenReturn(invoicesList);
 
         // Execute the method
