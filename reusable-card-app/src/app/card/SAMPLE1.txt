@@ -1,11 +1,10 @@
-  @Test
+    @Test
     void testUploadPaymentAbFileViaReferential_FileDeleted() throws IOException {
-        // Create a temporary file with some content
+        // Create a temporary file
         File tempFile = File.createTempFile("test", ".txt");
-        Files.write(tempFile.toPath(), "test content".getBytes());
 
         // Mock the uploadFileToGaiaServer method
-        when(referentialServiceApi.uploadFileToGaiaServer(any(ByteArrayResource.class), anyString(), anyString())).thenReturn(null);
+        when(referentialServiceApi.uploadFileToGaiaServer(any(ByteArrayResource.class), anyString(), anyString())).thenReturn(null); // Use any()
 
         // Call the method
         abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
