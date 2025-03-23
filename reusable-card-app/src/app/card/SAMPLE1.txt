@@ -1,60 +1,76 @@
-@Test
-void updatePaymentLines_Success() {
-    String user = "testUser";
-    List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
 
-    // Create a sample UpdatePaymentLines object and add it to the list
-    UpdatePaymentLines updatePaymentLines = new UpdatePaymentLines();
-    // Set necessary properties of updatePaymentLines (e.g., paymentRef, etc.)
-    finalDataForInsertion.add(updatePaymentLines);
+    @Test
+    void insertPaymentLines_ProviderDetailsException() throws Exception {
+        when(referentialServiceApi.getProviderDetails(any(), any())).thenThrow(new Exception("Provider details error"));
 
-    // Mock the repository save method (if needed)
-    when(cashAllocationRepositoryApi.save(any())).thenReturn(null);
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(createPaymentLinesFeoModelList(), "testUser");
 
-    // Mock the InvoiceServiceApi to return a non-null value for getListOfInvoices
-    when(invoiceServiceApi.getListOfInvoices(any())).thenReturn(createInvoicePayableModelList());
+        assertEquals("MESSAGE", response.getStatus());
+        assertEquals("Error occurred while getting provider details. Detailed message Provider details error", response.getErrorMessage());
+    }
 
-    // Mock the SrgMapper to return a non-null list of PaymentLinesFeoModel
-    when(srgMapper.mapNew(any())).thenReturn(createPopulatedPaymentLinesFeoModelList());
+    @Test
+    void insertPaymentLines_UserInitialsException() throws Exception {
+        when(referentialServiceApi.getProviderDetails(any(), any())).thenReturn(new ProviderDetails());
+        when(referentialServiceApi.getUserInitials("testUser")).thenThrow(new Exception("User initials error"));
 
-    String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(createPaymentLinesFeoModelList(), "testUser");
 
-    assertEquals("SUCCESSFUL", result);
-    verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(any());
-}
+        assertEquals("MESSAGE", response.getStatus());
+        assertEquals("Error occurred while getting user initial details. Detailed message User initials error", response.getErrorMessage());
+    }
 
-// Helper method to create a sample InvoicePayableModel list
-private List<InvoicePayableModel> createInvoicePayableModelList() {
-    List<InvoicePayableModel> invoicePayableModels = new ArrayList<>();
-    // Populate the list with sample InvoicePayableModel objects
-    return invoicePayableModels;
-}
+    @Test
+    void insertPaymentLines_EntityListException() throws Exception {
+        when(referentialServiceApi.getProviderDetails(any(), any())).thenReturn(new ProviderDetails());
+        when(referentialServiceApi.getUserInitials("testUser")).thenReturn(new UserDetailsModel());
+        when(referentialServiceApi.getEntireListOfEntities()).thenThrow(new Exception("Entity list error"));
 
-// Helper method to create a populated PaymentLinesFeoModel list
-private List<PaymentLinesFeoModel> createPopulatedPaymentLinesFeoModelList() {
-    List<PaymentLinesFeoModel> paymentLinesFeoModels = new ArrayList<>();
-    // Add at least one PaymentLinesFeoModel object with necessary data
-    PaymentLinesFeoModel paymentLinesFeoModel = new PaymentLinesFeoModel();
-    // Set necessary properties of paymentLinesFeoModel to prevent NullPointerException
-    paymentLinesFeoModel.setId(UUID.randomUUID());
-    paymentLinesFeoModel.setProviderMnemonic("PROVIDER");
-    paymentLinesFeoModel.setProviderId("PROVIDER_ID");
-    paymentLinesFeoModel.setInvoiceReference("INVOICE_REF");
-    paymentLinesFeoModel.setEntityBdrId("ENTITY_BDR_ID");
-    paymentLinesFeoModel.setFeeType("FEE_TYPE");
-    paymentLinesFeoModel.setFeeBdrId("FEE_BDR_ID");
-    paymentLinesFeoModel.setValueDate(LocalDate.now());
-    paymentLinesFeoModel.setSendingDate(LocalDate.now());
-    paymentLinesFeoModel.setSsi("SSI");
-    paymentLinesFeoModel.setAmount(100.0);
-    paymentLinesFeoModel.setCurrency("USD");
-    paymentLinesFeoModel.setInvoiceType("INVOICE_TYPE");
-    paymentLinesFeoModel.setPaymentMode("PAYMENT_MODE");
-    paymentLinesFeoModel.setPaymentStatus("PAYMENT_STATUS");
-    paymentLinesFeoModel.setPaymentType("PAYMENT_TYPE");
-    paymentLinesFeoModel.setRc("RC");
-    paymentLinesFeoModel.setRefCptyId("REF_CPTY_ID");
-    paymentLinesFeoModel.setComment("COMMENT");
-    paymentLinesFeoModels.add(paymentLinesFeoModel);
-    return paymentLinesFeoModels;
-}
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(createPaymentLinesFeoModelList(), "testUser");
+
+        assertEquals("MESSAGE", response.getStatus());
+        assertEquals("Error occurred ahile getting entity details. Detailed message Entity list error", response.getErrorMessage());
+    }
+
+    @Test
+    void insertPaymentLines_BackOfficeDetailsException() throws Exception {
+        when(referentialServiceApi.getProviderDetails(any(), any())).thenReturn(new ProviderDetails());
+        when(referentialServiceApi.getUserInitials("testUser")).thenReturn(new UserDetailsModel());
+        when(referentialServiceApi.getEntireListOfEntities()).thenReturn(createEntityList());
+        when(referentialServiceApi.getBackOfficeDetails(any(), any())).thenThrow(new Exception("Back office details error"));
+
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(createPaymentLinesFeoModelList(), "testUser");
+
+        assertEquals("MESSAGE", response.getStatus());
+        assertEquals("Error occurred while getting back office code. Detailed message Back office details error", response.getErrorMessage());
+    }
+
+    @Test
+    void insertPaymentLines_Success() throws Exception {
+        when(referentialServiceApi.getProviderDetails(any(), any())).thenReturn(new ProviderDetails());
+        when(referentialServiceApi.getUserInitials("testUser")).thenReturn(new UserDetailsModel());
+        when(referentialServiceApi.getEntireListOfEntities()).thenReturn(createEntityList());
+        when(referentialServiceApi.getBackOfficeDetails(any(), any())).thenReturn(new BackOfficeDetails());
+
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(createPaymentLinesFeoModelList(), "testUser");
+
+        assertNotNull(response);
+    }
+
+    // Helper methods (replace with actual data creation)
+    private List<PaymentLinesFeoModel> createPaymentLinesFeoModelList() {
+        List<PaymentLinesFeoModel> list = new ArrayList<>();
+        PaymentLinesFeoModel model = new PaymentLinesFeoModel();
+        model.setEntityBdrId("123"); // Replace with actual entityBdrId
+        list.add(model);
+        return list;
+    }
+
+    private List<Entity> createEntityList() {
+        List<Entity> list = new ArrayList<>();
+        Entity entity = new Entity();
+        entity.setBdrId(new BigInteger("123")); // Replace with actual BigInteger
+        entity.setEntityCode("CODE"); // Replace with actual entity code
+        list.add(entity);
+        return list;
+    }
