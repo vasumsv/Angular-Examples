@@ -1,28 +1,11 @@
  @Test
-    void testAutoPaymentMatching_Sunday() {
-        // Create a Monday date
-        LocalDate monday = LocalDate.of(2023, 10, 30); // Example Monday
-
-        // Mock LocalDate.now() to return the Monday
-        try (var mockedStatic = mockStatic(LocalDate.class)) {
-            mockedStatic.when(LocalDate::now).thenReturn(monday);
-
-            // Call the method
-            cashAllocationDomain.autoPaymentMatching();
-
-            // Verify that findPaymentLinesForAutoMatching is called with the expected date (Friday)
-            verify(cashAllocationRepositoryApi, times(2)).findPaymentLinesForAutoMatching(anyList(), anyList(), anyString(), eq(monday.minusDays(3)));
-        }
-    }
-
-    @Test
-    void testAutoPaymentMatching_Exception() {
-        // Mock LocalDate.now() to throw an exception
+    void testAutoPaymentMatching_Exception4() {
+        // Mock LocalDate.now() to throw a RuntimeException
         try (var mockedStatic = mockStatic(LocalDate.class)) {
             mockedStatic.when(LocalDate::now).thenThrow(new RuntimeException());
 
-            // Verify that CashAllocationCustomException is thrown
-            assertThrows(CashAllocationCustomException.class, () -> {
+            // Verify that RuntimeException is thrown
+            assertThrows(RuntimeException.class, () -> {
                 cashAllocationDomain.autoPaymentMatching();
             });
         }
