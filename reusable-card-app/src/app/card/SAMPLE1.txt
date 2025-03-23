@@ -1,10 +1,42 @@
-
-    @Test
+ @Test
     void testCashAllocationModels_LineFiltering() {
         List<String> lines = Arrays.asList(
-                "200201472755     20230101     1234567890123456     00000000000000000000     D     ", // Should be filtered out
-                "A00201472755     20230101     1234567890123456     00000000000000000000     C     "  // Should be processed
+                "200201472755     20230101     1234567890123456     00000000000000000000     D     " +
+                "                                                                                                                                                                                                                                                            ", // Should be filtered out (padded)
+                "A00201472755     20230101     1234567890123456     00000000000000000000     C     " +
+                "                                                                                                                                                                                                                                                            "  // Should be processed (padded)
         );
         List<CashAllocationModel> models = cashAllocationDomain.cashAllocationModels(lines, "GAIA_NXG_FILE");
         assertEquals(1, models.size());
+    }
+
+    @Test
+    void testCashAllocationModels_DateParsing() {
+        List<String> lines = Arrays.asList("A00201472755     20230101     1234567890123456     00000000000000000000     C     " +
+                "                                                                                                                                                                                                                                                            ");
+        List<CashAllocationModel> models = cashAllocationDomain.cashAllocationModels(lines, "GAIA_NXG_FILE");
+        assertEquals(2023, models.get(0).getCreatedDate().getYear());
+        assertEquals(1, models.get(0).getCreatedDate().getMonthValue());
+        assertEquals(1, models.get(0).getCreatedDate().getDayOfMonth());
+    }
+
+    @Test
+    void testCashAllocationModels_AmountCalculation() {
+        List<String> lines = Arrays.asList(
+                "A00201472755     20230101     1234567890123456     00000000000000001000     C     " +
+                "                                                                                                                                                                                                                                                            ", // Credit
+                "A00201472755     20230101     1234567890123456     00000000000000001000     D     " +
+                "                                                                                                                                                                                                                                                            "  // Debit
+        );
+        List<CashAllocationModel> models = cashAllocationDomain.cashAllocationModels(lines, "GAIA_NXG_FILE");
+        assertEquals(0.1, models.get(0).getAmount().doubleValue());
+        assertEquals(-0.1, models.get(1).getAmount().doubleValue());
+    }
+
+    @Test
+    void testCashAllocationModels_ModelCreation() {
+        List<String> lines = Arrays.asList("A00201472755     20230101     1234567890123456     00000000000000001000     C     " +
+                "                                                                                                                                                                                                                                                            ");
+        List<CashAllocationModel> models = cashAllocationDomain.cashAllocationModels(lines, "GAIA_NXG_FILE");
+        assertEquals("1234567890123456", models.get(0).getRef().trim());
     }
