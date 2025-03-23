@@ -2,9 +2,14 @@
 void updatePaymentLines_Success() {
     String user = "testUser";
     List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
-    // Populate finalDataForInsertion with test data
 
-    when(cashAllocationRepositoryApi.save(any())).thenReturn(null); // Assuming save doesn't return anything relevant
+    // Create a sample UpdatePaymentLines object and add it to the list
+    UpdatePaymentLines updatePaymentLines = new UpdatePaymentLines();
+    // Set necessary properties of updatePaymentLines (e.g., paymentRef, etc.)
+    finalDataForInsertion.add(updatePaymentLines);
+
+    // Mock the repository save method (if needed)
+    when(cashAllocationRepositoryApi.save(any())).thenReturn(null);
 
     String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
