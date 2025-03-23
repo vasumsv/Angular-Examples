@@ -1,23 +1,27 @@
-    @Test
-    void testInsertPaymentLines_UserException() {
+  @Test
+    void testInsertPaymentLines_AmountMismatch_FinalAmt() {
         // Create a list of PaymentLinesFeoModel objects
         List<PaymentLinesFeoModel> paymentLines = new ArrayList<>();
         PaymentLinesFeoModel paymentLine1 = new PaymentLinesFeoModel();
         paymentLine1.setInvoiceReference("INV123");
+        paymentLine1.setAmount(BigDecimal.TEN);
         paymentLines.add(paymentLine1);
 
         // Mock InvoiceServiceApi.getListOfInvoices()
         List<InvoicePayableModel> invoices = new ArrayList<>();
         InvoicePayableModel invoice1 = new InvoicePayableModel();
         invoice1.setInvoiceReference("INV123");
-        invoice1.setAmount(BigDecimal.TEN);
+        invoice1.setAmount(BigDecimal.valueOf(15)); // Mismatched amount
         invoice1.setInvoiceType("CREDIT");
         invoices.add(invoice1);
 
         when(invoiceServiceApi.getListOfInvoices(List.of("INV123"))).thenReturn(invoices);
 
-        // Mock ReferentialServiceApi.getUserInitials() to throw an exception
-        when(referentialServiceApi.getUserInitials("testUser")).thenThrow(new RuntimeException("User exception"));
+        // Mock ReferentialServiceApi.getProviderDetails()
+        when(referentialServiceApi.getProviderDetails(anyString(), anyString())).thenReturn(new ProviderDetails());
+
+        // Mock ReferentialServiceApi.getUserInitials()
+        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(new UserDetailsModel());
 
         // Call the method and verify the error
         InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(paymentLines, "testUser");
