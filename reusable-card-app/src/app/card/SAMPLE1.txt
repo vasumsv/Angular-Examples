@@ -1,4 +1,4 @@
- @Test
+  @Test
     void testTransferFile_DirectoryCreation() throws Exception {
         // Prepare data
         LocalDate date = LocalDate.now();
@@ -6,6 +6,7 @@
         CashAllocationModel model = new CashAllocationModel();
         model.setInvoiceMatched("RSF-123");
         model.setCounterPartyId("CP123");
+        model.setCreatedDate(new Date()); // Set createdDate
         cashAllocationModels.add(model);
 
         // Access the private transferFile method using reflection
