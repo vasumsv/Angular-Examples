@@ -1,33 +1,37 @@
-  @Test
-    void testPaymentDetails_WithValueDateStart() {
-        // Create test data
-        String valueDateStart = "2023-10-26";
-        LocalDate endDate = LocalDate.parse(valueDateStart);
+ @BeforeEach
+    void setUp() throws NoSuchMethodException {
+        MockitoAnnotations.openMocks(this);
+        sendingPmtRequestMethod = YourClass.class.getDeclaredMethod("sendingPmtRequest", SrgAckSentRequest.class); // Replace YourClass with the actual class name
+        sendingPmtRequestMethod.setAccessible(true);
+    }
 
-        CashAllocationModel cashAllocationModel1 = new CashAllocationModel();
-        CashDetails cashDetails1 = new CashDetails();
-        cashDetails1.setId(1L);
-        cashAllocationModel1.setCashDetails(cashDetails1);
-        cashAllocationModel1.setId(1L);
+    @Test
+    void sendingPmtRequest_success() throws Exception {
+        SrgAckSentRequest inputJson = new SrgAckSentRequest();
+        SrgAckSentResponse expectedResponse = new SrgAckSentResponse();
 
-        CashAllocationModel cashAllocationModel2 = new CashAllocationModel();
-        CashDetails cashDetails2 = new CashDetails();
-        cashDetails2.setId(2L);
-        cashAllocationModel2.setCashDetails(cashDetails2);
-        cashAllocationModel2.setId(2L);
+        when(srgAckApiClient.sendSrgAckRequest(inputJson)).thenReturn(expectedResponse);
 
-        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
-        cashAllocationModels.add(cashAllocationModel1);
-        cashAllocationModels.add(cashAllocationModel2);
+        ResponseEntity<SrgAckSentResponse> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+        when(srgAckApiClient.getResponse()).thenReturn(responseEntity);
 
-        // Mock dependencies
-        when(cashAllocationRepositoryApi.findByValueDateLesserThanEqual(endDate)).thenReturn(Stream.of(cashAllocationModel1, cashAllocationModel2));
+        SrgAckSentResponse actualResponse = (SrgAckSentResponse) sendingPmtRequestMethod.invoke(yourClass, inputJson);
 
-        // Call the method
-        List<CashDetails> result = cashAllocationDomain.paymentDetails(valueDateStart);
+        assertEquals(expectedResponse, actualResponse);
+        verify(srgAckApiClient, times(1)).sendSrgAckRequest(inputJson);
+    }
 
-        // Verify interactions
-        assertEquals(2, result.size());
-        assertEquals(1L, result.get(0).getId());
-        assertEquals(2L, result.get(1).getId());
+    @Test
+    void sendingPmtRequest_exception() throws Exception {
+        SrgAckSentRequest inputJson = new SrgAckSentRequest();
+
+        when(srgAckApiClient.sendSrgAckRequest(inputJson)).thenThrow(new RestClientException("Test Exception"));
+
+        ResponseEntity<SrgAckSentResponse> responseEntity = new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        when(srgAckApiClient.getResponse()).thenReturn(responseEntity);
+
+        SrgAckSentResponse actualResponse = (SrgAckSentResponse) sendingPmtRequestMethod.invoke(yourClass, inputJson);
+
+        assertEquals(responseEntity.getBody(), actualResponse);
+        verify(srgAckApiClient, times(1)).sendSrgAckRequest(inputJson);
     }
