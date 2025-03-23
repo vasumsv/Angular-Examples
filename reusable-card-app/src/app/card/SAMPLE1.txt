@@ -1,17 +1,19 @@
-@Test
+    @Test
     void testTransferFile_DirectoryCreation() throws Exception {
         // Prepare data
         LocalDate date = LocalDate.now();
         List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
-        CashAllocationModel model = new CashAllocationModel();
-        model.setInvoiceMatched("RSF-123");
-        model.setCounterPartyId("CP123");
-        model.setCreatedDate(new Date());
 
-        // Initialize InvoicesAbList and InvoicesAb
-        InvoicesAbList invoicesAbList = new InvoicesAbList();
-        invoicesAbList.setInvoicesAb(new ArrayList<>());
-        model.setInvoicesAbList(invoicesAbList);
+        // Create a mocked CashAllocationModel
+        CashAllocationModel model = mock(CashAllocationModel.class);
+        when(model.getInvoiceMatched()).thenReturn("RSF-123");
+        when(model.getCounterPartyId()).thenReturn("CP123");
+        when(model.getCreatedDate()).thenReturn(new Date());
+
+        // Create and set InvoicesAbList in the mock
+        InvoicesAbList invoicesAbList = mock(InvoicesAbList.class);
+        when(invoicesAbList.getInvoicesAb()).thenReturn(new ArrayList<>());
+        when(model.getInvoicesAbList()).thenReturn(invoicesAbList);
 
         cashAllocationModels.add(model);
 
