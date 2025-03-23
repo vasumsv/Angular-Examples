@@ -1,19 +1,27 @@
 @Test
-void testUpdatePaymentLines_Success() {
-    // Setup test data
-    String user = "testUser";
-    List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
-    // Populate finalDataForInsertion with test data
+    void testUpdatePaymentLines_Success() {
+        // Setup test data
+        String user = "testUser";
+        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
 
-    // Mock invoiceServiceApi behavior
-    when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(anyList())).thenReturn(null); // Or return a dummy value if needed
+        // Create a sample UpdatePaymentLines object and add it to the list
+        UpdatePaymentLines samplePaymentLine = new UpdatePaymentLines();
+        // Set necessary properties of samplePaymentLine based on your UpdatePaymentLines class
+        // For example:
+        // samplePaymentLine.setSomeProperty("someValue");
+        // samplePaymentLine.setAnotherProperty(123);
 
-    // Execute the method
-    String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+        finalDataForInsertion.add(samplePaymentLine);
 
-    // Verify the result
-    assertEquals("SUCCESSFUL", result);
+        // Mock invoiceServiceApi behavior
+        when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(anyList())).thenReturn(null);
 
-    // Verify interactions
-    verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
-}
+        // Execute the method
+        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+
+        // Verify the result
+        assertEquals("SUCCESSFUL", result);
+
+        // Verify interactions
+        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
+    }
