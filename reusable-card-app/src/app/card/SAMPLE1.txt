@@ -1,11 +1,11 @@
- @Test
-    void testAutoPaymentMatching_Exception5() {
-        // Mock LocalDate.now() to throw a RuntimeException
+@Test
+    void testAutoPaymentMatching_Exception() {
+        // Mock LocalDate.now() to throw an exception
         try (var mockedStatic = mockStatic(LocalDate.class)) {
             mockedStatic.when(LocalDate::now).thenThrow(new RuntimeException());
 
-            // Verify that RuntimeException is thrown
-            assertThrows(RuntimeException.class, () -> {
+            // Verify that CashAllocationCustomException is thrown
+            assertThrows(CashAllocationCustomException.class, () -> {
                 cashAllocationDomain.autoPaymentMatching();
             });
         }
