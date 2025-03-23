@@ -38,8 +38,10 @@ private List<PaymentLinesFeoModel> createPopulatedPaymentLinesFeoModelList() {
     // Set necessary properties of paymentLinesFeoModel to prevent NullPointerException
     paymentLinesFeoModel.setId(UUID.randomUUID());
     paymentLinesFeoModel.setProviderMnemonic("PROVIDER");
-    paymentLinesFeoModel.setProviderId("PROVIDER_ID"); // Add providerId
-    paymentLinesFeoModel.setInvoiceReference("INVOICE_REF"); // Add invoiceReference
+    paymentLinesFeoModel.setProviderId("PROVIDER_ID");
+    paymentLinesFeoModel.setInvoiceReference("INVOICE_REF");
+    paymentLinesFeoModel.setEntityBdrId("ENTITY_BDR_ID");
+    paymentLinesFeoModel.setFeeType("FEE_TYPE");
     // Add other necessary properties based on what updatePaymentLines uses
     paymentLinesFeoModels.add(paymentLinesFeoModel);
     return paymentLinesFeoModels;
