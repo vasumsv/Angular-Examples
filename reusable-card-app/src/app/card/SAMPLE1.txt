@@ -10,6 +10,11 @@
         when(model.getCounterPartyId()).thenReturn("CP123");
         when(model.getCreatedDate()).thenReturn(new Date());
 
+        // Create and set InvoicesAbList in the mock
+        InvoicesAbList invoicesAbList = mock(InvoicesAbList.class);
+        when(invoicesAbList.getInvoicesAb()).thenReturn(new ArrayList<>());
+        when(model.getInvoicesAbList()).thenReturn(invoicesAbList);
+
         cashAllocationModels.add(model);
 
         // Force the directory to not exist
