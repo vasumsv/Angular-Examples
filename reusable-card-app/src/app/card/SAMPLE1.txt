@@ -1,21 +1,26 @@
-    @Test
-    void testTransferFile_DirectoryCreation() throws Exception {
+  @Test
+    void testTransferFile_ProcessCashAllocationModels() throws Exception {
         // Prepare data
         LocalDate date = LocalDate.now();
         List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
 
         // Create a mocked CashAllocationModel
         CashAllocationModel model = mock(CashAllocationModel.class);
-        when(model.getInvoiceMatched()).thenReturn("RSF-123");
+        when(model.getInvoiceMatched()).thenReturn("RSF-123,INV456"); // Starts with RSF- and contains multiple invoices
         when(model.getCounterPartyId()).thenReturn("CP123");
         when(model.getCreatedDate()).thenReturn(new Date());
 
         cashAllocationModels.add(model);
 
-        // Create a unique temporary directory
-        String tempDirName = UUID.randomUUID().toString();
+        // Create a mocked InvoicesAbList
+        InvoicesAbList invoicesAbList = mock(InvoicesAbList.class);
+        when(invoicesAbList.getInvoicesAb()).thenReturn(new ArrayList<>());
+        when(invoiceServiceApi.getAbInvoice("INV456")).thenReturn(invoicesAbList); // Stub invoiceServiceApi
+
+        // Force the directory to not exist
+        String tempDirName = "testDir";
         File dir = new File(tempDirName);
-        dir.delete(); // Delete the directory if it exists
+        dir.delete();
 
         // Access the private transferFile method using reflection
         Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
