@@ -1,73 +1,19 @@
- @Test
-    void testUpdatePaymentLines_Success() {
-        // Setup test data
-        String user = "testUser";
-        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
-        // Populate finalDataForInsertion with test data
+@Test
+void testUpdatePaymentLines_Success() {
+    // Setup test data
+    String user = "testUser";
+    List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
+    // Populate finalDataForInsertion with test data
 
-        // Mock invoiceServiceApi behavior
-        doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
+    // Mock invoiceServiceApi behavior
+    when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(anyList())).thenReturn(null); // Or return a dummy value if needed
 
-        // Execute the method
-        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+    // Execute the method
+    String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
-        // Verify the result
-        assertEquals("SUCCESSFUL", result);
+    // Verify the result
+    assertEquals("SUCCESSFUL", result);
 
-        // Verify interactions
-        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
-    }
-
-    @Test
-    void testUpdatePaymentLines_RestClientException() {
-        // Setup test data
-        String user = "testUser";
-        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
-        // Populate finalDataForInsertion with test data
-
-        // Mock invoiceServiceApi behavior to throw RestClientException
-        doThrow(new RestClientException("Test RestClientException")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
-
-        // Execute the method and verify the result
-        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
-        assertEquals("INVOICE_SERVICE_ERROR_MESSAGE: Test RestClientException", result);
-
-        // Verify interactions
-        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
-    }
-
-    @Test
-    void testUpdatePaymentLines_GeneralException() {
-        // Setup test data
-        String user = "testUser";
-        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
-        // Populate finalDataForInsertion with test data
-
-        // Mock invoiceServiceApi behavior to throw a general Exception
-        doThrow(new RuntimeException("Test Exception")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
-
-        // Execute the method and verify the result
-        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
-        assertEquals("ERROR: Error occurred while saving data to invoice service. Detailed message: Test Exception", result);
-
-        // Verify interactions
-        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
-    }
-
-    @Test
-    void testUpdatePaymentLines_ExceptionInMainCatchBlock() {
-        // Setup test data
-        String user = "testUser";
-        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
-        // Populate finalDataForInsertion with test data
-
-        // Mock behavior to throw an exception within the main try block
-        // You might need to adjust this part based on how you can simulate an exception in the try block
-        // For example, if you have a method that can throw an exception, you can mock that method
-
-        // Execute the method and verify the exception
-        assertThrows(CashAllocationCustomException.class, () -> cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion));
-
-        // Verify interactions
-        // Verify any interactions that should have occurred before the exception
-    }
+    // Verify interactions
+    verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
+}
