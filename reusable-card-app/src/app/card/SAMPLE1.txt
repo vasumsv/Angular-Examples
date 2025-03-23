@@ -1,17 +1,11 @@
-    // Helper methods (replace with actual data creation)
-    private List<PaymentLinesFeoModel> createPaymentLinesFeoModelList() {
-        List<PaymentLinesFeoModel> list = new ArrayList<>();
-        PaymentLinesFeoModel model = new PaymentLinesFeoModel();
-        model.setEntityBdrId("123"); // Replace with actual entityBdrId
-        list.add(model);
-        return list;
-    }
+   @Test
+    void insertPaymentLines_EntityListException() throws Exception {
+        when(referentialServiceApi.getProviderDetails(any(), any())).thenReturn(new ProviderDetails());
+        when(referentialServiceApi.getUserInitials("testUser")).thenReturn(new UserDetailsModel());
+        when(referentialServiceApi.getEntireListOfEntities()).thenThrow(new EntityRetrievalException("Entity list error")); // Corrected line
 
-    private List<Entity> createEntityList() {
-        List<Entity> list = new ArrayList<>();
-        Entity entity = new Entity();
-        entity.setBdrId(new BigInteger("123")); // Replace with actual BigInteger
-        entity.setEntityCode("CODE"); // Replace with actual entity code
-        list.add(entity);
-        return list;
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(createPaymentLinesFeoModelList(), "testUser");
+
+        assertEquals("MESSAGE", response.getStatus());
+        assertEquals("Error occurred ahile getting entity details. Detailed message Entity list error", response.getErrorMessage());
     }
