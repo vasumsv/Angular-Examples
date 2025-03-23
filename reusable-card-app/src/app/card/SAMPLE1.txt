@@ -1,4 +1,4 @@
-  @Test
+    @Test
     void testTransferFile_ProcessCashAllocationModels() throws Exception {
         // Prepare data
         LocalDate date = LocalDate.now();
@@ -16,6 +16,7 @@
         InvoicesAbList invoicesAbList = mock(InvoicesAbList.class);
         when(invoicesAbList.getInvoicesAb()).thenReturn(new ArrayList<>());
         when(invoiceServiceApi.getAbInvoice("INV456")).thenReturn(invoicesAbList); // Stub invoiceServiceApi
+        when(invoiceServiceApi.getAbInvoice("RSF-123")).thenReturn(invoicesAbList); // Stub invoiceServiceApi for RSF-123
 
         // Force the directory to not exist
         String tempDirName = "testDir";
