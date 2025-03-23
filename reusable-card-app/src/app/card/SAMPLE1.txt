@@ -1,4 +1,4 @@
- @Test
+  @Test
     void testGetPaymentLinesFromPaymentReference() {
         // Setup test data
         String[] paymentReferences = {"REF123-1", "REF123-2"};
@@ -33,3 +33,6 @@
 
         // Verify the result
         assertEquals(2, result.size());
+
+        // Verify the first PaymentLinesModel
+        PaymentLinesModel paymentLinesModel1 = result.get(0);
