@@ -1,4 +1,4 @@
- @Test
+  @Test
     void testUpdateCashAllocationStatus_MATCHED_Flow_NonEmptyMatchedCashModels() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
