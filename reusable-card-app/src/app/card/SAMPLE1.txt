@@ -1,31 +1,5 @@
-  @Test
-    void testGetPaymentLinesFromPaymentReference() throws Exception {
-        // Setup test data
-        String[] paymentReferences = {"REF123-1", "REF123-2"};
-
-        // Mock findPaymentLinesFromPaymentReferences using reflection
-        List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
-        SrgPaymentModel srgPaymentModel = new SrgPaymentModel();
-        srgPaymentModel.setId(1L);
-        srgPaymentModel.setProviderNane("Test Broker");
-        srgPaymentModel.setSgEntity("SG123");
-        srgPaymentModel.setInvoiceReference("INV1,INV2");
-        srgPaymentModel.setFeeCategory("Fee1");
-        srgPaymentModel.setProviderBdrId("PROV1");
-        srgPaymentModel.setValueDate(LocalDate.of(2023, 10, 27));
-        srgPaymentModel.setSendingDate(LocalDate.of(2023, 10, 28));
-        srgPaymentModel.setPaymentAmount(100.0);
-        srgPaymentModel.setPaymentCurrency("USD");
-        srgPaymentModel.setPaymentType("Type1");
-        srgPaymentModel.setDebitCredit("Debit");
-        srgPaymentModel.setPaymentMode("Mode1");
-        srgPaymentModel.setPaymentStatus("Status1");
-        srgPaymentModel.setRcCode("RC1");
-        srgPaymentModel.setComment("Test Comment");
-        srgPaymentModels.add(srgPaymentModel);
-
         // Access the private method using reflection
-        Method findPaymentLinesMethod = CashAllocationDomain.class.getDeclaredMethod("findPaymentLinesFromPaymentReferences", String[].class);
+        Method findPaymentLinesMethod = CashAllocationDomain.class.getDeclaredMethod("findPaymentLinesFromPaymentReferences", String[].class); // Corrected method name
         findPaymentLinesMethod.setAccessible(true);
 
         when(findPaymentLinesMethod.invoke(cashAllocationDomain, paymentReferences)).thenReturn(srgPaymentModels); // Corrected invoke
