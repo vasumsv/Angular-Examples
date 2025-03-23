@@ -1,9 +1,9 @@
-   @Test
-    void testGetPaymentLinesFromPaymentReference() {
+    @Test
+    void testGetPaymentLinesFromPaymentReference() throws Exception {
         // Setup test data
         String[] paymentReferences = {"REF123-1", "REF123-2"};
 
-        // Mock findPaymentLinesFromPaymentReferences
+        // Mock findPaymentLinesFromPaymentReferences using reflection
         List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
         SrgPaymentModel srgPaymentModel = new SrgPaymentModel();
         srgPaymentModel.setId(1L);
@@ -24,7 +24,11 @@
         srgPaymentModel.setComment("Test Comment");
         srgPaymentModels.add(srgPaymentModel);
 
-        when(cashAllocationDomain.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
+        // Access the private method using reflection
+        Method findPaymentLinesMethod = CashAllocationDomain.class.getDeclaredMethod("findPaymentLinesFromPaymentReferences", String[].class);
+        findPaymentLinesMethod.setAccessible(true);
+
+        when(findPaymentLinesMethod.invoke(cashAllocationDomain, paymentReferences)).thenReturn(srgPaymentModels);
 
         // Mock getSsiDetails
         List<String> ssiDetails = new ArrayList<>();
