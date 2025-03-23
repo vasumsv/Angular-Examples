@@ -11,12 +11,18 @@ void updatePaymentLines_Success() {
     // Mock the repository save method (if needed)
     when(cashAllocationRepositoryApi.save(any())).thenReturn(null);
 
-    // Mock the invoiceServiceApi to return a non-null value if it's used to populate the array
-    // (Replace with the actual method call and return value)
-    when(invoiceServiceApi.getArray()).thenReturn(new String[] {"element1", "element2"});
+    // Mock the InvoiceServiceApi to return a non-null value for getListOfInvoices
+    when(invoiceServiceApi.getListOfInvoices(any())).thenReturn(createInvoicePayableModelList()); // Replace with your actual method
 
     String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
     assertEquals("SUCCESSFUL", result);
     verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(any());
+}
+
+// Helper method to create a sample InvoicePayableModel list
+private List<InvoicePayableModel> createInvoicePayableModelList() {
+    List<InvoicePayableModel> invoicePayableModels = new ArrayList<>();
+    // Populate the list with sample InvoicePayableModel objects
+    return invoicePayableModels;
 }
