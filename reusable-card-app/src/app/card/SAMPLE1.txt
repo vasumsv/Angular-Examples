@@ -1,4 +1,4 @@
-  @Test
+    @Test
     void testTransferFile_DirectoryCreation() throws Exception {
         // Prepare data
         LocalDate date = LocalDate.now();
@@ -12,8 +12,9 @@
 
         cashAllocationModels.add(model);
 
-        // Force the directory to not exist
-        File dir = new File(".");
+        // Create a unique temporary directory
+        String tempDirName = UUID.randomUUID().toString();
+        File dir = new File(tempDirName);
         dir.delete(); // Delete the directory if it exists
 
         // Access the private transferFile method using reflection
@@ -21,13 +22,11 @@
         transferFileMethod.setAccessible(true);
 
         // Call the private method
-        try {
-            transferFileMethod.invoke(abDomain, date, cashAllocationModels);
-        } catch (Exception e) {
-            // Expecting an exception due to the null InvoicesAbList
-            assertTrue(e.getCause() instanceof NullPointerException);
-        }
+        transferFileMethod.invoke(abDomain, date, cashAllocationModels);
 
         // Verify that the directory was created
         assertTrue(dir.exists());
+
+        // Cleanup: Delete the directory after the test
+        dir.delete();
     }
