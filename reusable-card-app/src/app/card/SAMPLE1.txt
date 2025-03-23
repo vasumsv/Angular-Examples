@@ -1,5 +1,5 @@
 @Test
-    void testUpdateCashAllocationStatus_UNMATCHED_Flow() throws Exception {
+    void testUpdateCashAllocationStatus_UNMATCHED_Flow3() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
         processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456")); // Invoice refs start with "RSF-*"
@@ -14,23 +14,20 @@
 
         when(invoiceServiceApi.getInvoiceAb(anyString())).thenReturn(invoicesAbList);
 
-        // Mock cashAllocationDomain.findByInvoiceMatched using reflection
+        // Mock cashAllocationRepositoryApi.findByInvoiceMatched
         List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("INV123,INV456"); // Set invoiceMatched
+        cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456"); // Set invoiceMatched to match the input
+        cashAllocationModel.setMsgType("DIFFERENT_MSG_TYPE"); // Set a different msgType
         CashDetails cashDetails = new CashDetails();
         cashAllocationModel.setCashDetails(cashDetails);
         cashAllocationModelList.add(cashAllocationModel);
 
-        // Access the private method using reflection
-        Method findByInvoiceMatchedMethod = CashAllocationDomain.class.getDeclaredMethod("findByInvoiceMatched", List.class);
-        findByInvoiceMatchedMethod.setAccessible(true);
-
-        when(findByInvoiceMatchedMethod.invoke(cashAllocationDomain, anyList())).thenReturn(cashAllocationModelList);
+        when(cashAllocationRepositoryApi.findByInvoiceMatched("RSF-123,RSF-456")).thenReturn(cashAllocationModelList); // Pass a single String
 
         // Execute the method
         cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "TEST_USER");
 
-        // Verify that cashAllocationRepositoryApi.save is called
-        verify(cashAllocationRepositoryApi, times(1)).save(any(CashAllocationModel.class));
+        // Verify that cashAllocationRepositoryApi.save is called with the modified CashAllocationModel
+        verify(cashAllocationRepositoryApi, times(1)).save(argThat(model -> model.getMsgType().equals(MSG_TYPE)));
     }
