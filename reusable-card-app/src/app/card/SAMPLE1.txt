@@ -1,4 +1,5 @@
-   @Test
+
+    @Test
     void testUpdatePaymentLines_Success() {
         // Setup test data
         String user = "testUser";
@@ -8,11 +9,11 @@
         UpdatePaymentLines samplePaymentLine = new UpdatePaymentLines();
         // Set necessary properties of samplePaymentLine based on your UpdatePaymentLines class
         // For example:
-        samplePaymentLine.setInvoiceReference("INV123");  // Use the correct method name
-        samplePaymentLine.setPaymentDate("2023-10-27");   // If you have a setter for this (LocalDate)
-        samplePaymentLine.setAmount(100.0);              // If you have a setter for this (BigDecimal)
+        samplePaymentLine.setInvoiceReference("INV123");
+        samplePaymentLine.setSendingDate(LocalDate.of(2023, 10, 27)); // Correct setter
+        samplePaymentLine.setAmount(100.0);
 
-        // Add paymentReferences (if it's the issue)
+        // Add paymentReferences
         String[] paymentReferences = {"REF123-1", "REF123-2"};
         samplePaymentLine.setPaymentReferences(paymentReferences);
 
