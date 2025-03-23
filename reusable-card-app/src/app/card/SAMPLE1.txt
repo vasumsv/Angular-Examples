@@ -1,4 +1,5 @@
- @Test
+
+    @Test
     void testUpdatePaymentLines_Success() {
         // Setup test data
         String user = "testUser";
@@ -6,13 +7,18 @@
 
         // Create a sample UpdatePaymentLines object and add it to the list
         UpdatePaymentLines samplePaymentLine = new UpdatePaymentLines();
-        // Set necessary properties of samplePaymentLine based on your UpdatePaymentLines class
         samplePaymentLine.setInvoiceReference("INV123");
-        samplePaymentLine.setSendingDate(LocalDate.of(2025, 3, 23)); // Using current date for example
+        samplePaymentLine.setSendingDate(LocalDate.of(2023, 10, 27));
         samplePaymentLine.setAmount(100.0);
-        samplePaymentLine.setPaymentReferences(new String[]{"REF123-1"}); // Ensure paymentReferences is not null
+        samplePaymentLine.setPaymentReferences(new String[]{"REF123-1", "REF123-2"}); // Set paymentReferences
 
-        finalDataForInsertion.add(samplePaymentLine); // **CRUCIAL: Add the object to the list**
+        finalDataForInsertion.add(samplePaymentLine);
+
+        // Mock paymentRepository
+        List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
+        // Add sample SrgPaymentModel objects to the list
+        when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-1")).thenReturn(srgPaymentModels); // Mock for at least one payref
+        when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-2")).thenReturn(srgPaymentModels);
 
         // Mock invoiceServiceApi behavior
         when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(any())).thenReturn(null);
