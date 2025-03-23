@@ -1,9 +1,19 @@
-    @Test
+ @Test
     void testUpdateCashAllocationStatus_UNMATCHED_Flow() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
         processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456")); // Invoice refs start with "RSF-*"
         processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString()));
+
+        // Mock cashAllocationRepositoryApi.findByInvoiceMatched
+        List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
+        CashAllocationModel cashAllocationModel = new CashAllocationModel();
+        cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456"); // Set invoiceMatched to match the input
+        CashDetails cashDetails = new CashDetails();
+        cashAllocationModel.setCashDetails(cashDetails);
+        cashAllocationModelList.add(cashAllocationModel);
+
+        when(cashAllocationRepositoryApi.findByInvoiceMatched(Arrays.asList("RSF-123", "RSF-456"))).thenReturn(cashAllocationModelList);
 
         // Mock invoiceServiceApi.getInvoiceAb
         InvoicesAbList invoicesAbList = new InvoicesAbList();
@@ -13,20 +23,6 @@
         invoicesAbList.setInvoicesAb(invoiceAbList);
 
         when(invoiceServiceApi.getInvoiceAb(anyString())).thenReturn(invoicesAbList);
-
-        // Mock cashAllocationDomain.findByInvoiceMatched using reflection
-        List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
-        CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("INV123,INV456"); // Set invoiceMatched
-        CashDetails cashDetails = new CashDetails();
-        cashAllocationModel.setCashDetails(cashDetails);
-        cashAllocationModelList.add(cashAllocationModel);
-
-        // Access the private method using reflection
-        Method findByInvoiceMatchedMethod = CashAllocationDomain.class.getDeclaredMethod("findByInvoiceMatched", List.class);
-        findByInvoiceMatchedMethod.setAccessible(true);
-
-        when(findByInvoiceMatchedMethod.invoke(cashAllocationDomain, anyList())).thenReturn(cashAllocationModelList);
 
         // Execute the method
         cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "TEST_USER");
