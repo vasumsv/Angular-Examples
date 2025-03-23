@@ -1,12 +1,13 @@
 @Test
-    void testCashAllocationModels_LineFiltering() {
-        List<String> lines = Arrays.asList(
-                "200201472755     20230101     1234567890123456     00000000000000000000  D",
-                "A00201472755     20230101     1234567890123456     00000000000000000000  C",
-                "12345678" // This line was causing the NumberFormatException
-        );
+void testCashAllocationModels_LineFiltering() {
+    List<String> lines = Arrays.asList(
+            "200201472755     20230101     1234567890123456     00000000000000000000  D",
+            "A00201472755     20230101     1234567890123456     00000000000000000000  C",
+            "12345678" // This line was causing the NumberFormatException
+    );
 
-        List<CashAllocationModel> models = CashAllocationDomain.cashAllocationModels(lines, "GAIA_NXG_FILE"); 
+    CashAllocationDomain domain = new CashAllocationDomain(); // Create an instance
+    List<CashAllocationModel> models = domain.cashAllocationModels(lines, "GAIA_NXG_FILE"); // Call on the instance
 
-        assertEquals(2, models.size()); // Corrected the expected size to 2
-    }
+    assertEquals(2, models.size());
+}
