@@ -1,28 +1,35 @@
+@Test
+    void testInsertPaymentLines() {
+        // Create a list of PaymentLinesFeoModel objects
+        List<PaymentLinesFeoModel> paymentLines = new ArrayList<>();
+        PaymentLinesFeoModel paymentLine1 = new PaymentLinesFeoModel();
+        paymentLine1.setInvoiceReference("INV123");
+        paymentLines.add(paymentLine1);
 
-    @Test
-    void testAutoPaymentMatching_NotAllocatedModel() {
-        // Mock InvoiceServiceApi.getSd2Invoice()
-        InvoiceSd2Model invoiceSd2Model = new InvoiceSd2Model();
-        invoiceSd2Model.setInvoices(List.of(new Invoice())); // Corrected line
+        // Mock InvoiceServiceApi.getListOfInvoices()
+        List<InvoicePayableModel> invoices = new ArrayList<>();
+        InvoicePayableModel invoice1 = new InvoicePayableModel();
+        invoice1.setInvoiceReference("INV123");
+        invoice1.setAmount(BigDecimal.TEN);
+        invoices.add(invoice1);
 
-        when(invoiceServiceApi.getSd2Invoice(anyString())).thenReturn(invoiceSd2Model);
+        when(invoiceServiceApi.getListOfInvoices(List.of("INV123"))).thenReturn(invoices);
 
-        // Mock CashAllocationRepositoryApi.findByInvoiceReferenceReceived()
-        CashAllocationModel notAllocatedModel = new CashAllocationModel();
-        notAllocatedModel.setStatus("NOT_ALLOCATED");
-        notAllocatedModel.setId(123L);
-        notAllocatedModel.setAmount(BigDecimal.TEN);
-        notAllocatedModel.setValueDate(LocalDate.now());
+        // Mock InvoiceServiceApi.getListOfBapDetailsForMultipleInvoices()
+        List<BapPayableModel> baps = new ArrayList<>();
+        BapPayableModel bap1 = new BapPayableModel();
+        bap1.setInvoiceReference("INV123");
+        bap1.setBapAmount(BigDecimal.FIVE);
+        baps.add(bap1);
 
-        List<CashAllocationModel> cashAllocationModels = List.of(notAllocatedModel);
-        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(anyString())).thenReturn(cashAllocationModels);
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(List.of("INV123"))).thenReturn(baps);
 
         // Call the method
-        cashAllocationDomain.autoPaymentMatching();
+        cashAllocationDomain.insertPaymentLines(paymentLines, "testUser");
 
-        // Verify that findByInvoiceReferenceReceived() was called
-        verify(cashAllocationRepositoryApi).findByInvoiceReferenceReceived(anyString());
+        // Verify that InvoiceServiceApi.getListOfInvoices() was called
+        verify(invoiceServiceApi).getListOfInvoices(List.of("INV123"));
 
-        // Verify that processingCashAllocation() was called
-        verify(cashAllocationDomain).processingCashAllocation(eq("MATCHED"), any(ProcessCashRequest.class), eq("AutoPaymentMatching"));
+        // Verify that InvoiceServiceApi.getListOfBapDetailsForMultipleInvoices() was called
+        verify(invoiceServiceApi).getListOfBapDetailsForMultipleInvoices(List.of("INV123"));
     }
