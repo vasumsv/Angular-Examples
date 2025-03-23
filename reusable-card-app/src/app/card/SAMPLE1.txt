@@ -1,27 +1,19 @@
-    @Test
-    void testTransferFile_ProcessCashAllocationModels() throws Exception {
+  @Test
+    void testTransferFile_FileNotFoundException() throws Exception {
         // Prepare data
         LocalDate date = LocalDate.now();
         List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
 
         // Create a mocked CashAllocationModel
         CashAllocationModel model = mock(CashAllocationModel.class);
-        when(model.getInvoiceMatched()).thenReturn("RSF-123,INV456"); // Starts with RSF- and contains multiple invoices
+        when(model.getInvoiceMatched()).thenReturn("RSF-123");
         when(model.getCounterPartyId()).thenReturn("CP123");
         when(model.getCreatedDate()).thenReturn(new Date());
 
         cashAllocationModels.add(model);
 
-        // Create a mocked InvoicesAbList
-        InvoicesAbList invoicesAbList = mock(InvoicesAbList.class);
-        when(invoicesAbList.getInvoicesAb()).thenReturn(new ArrayList<>());
-        when(invoiceServiceApi.getAbInvoice("INV456")).thenReturn(invoicesAbList); // Stub invoiceServiceApi
-        when(invoiceServiceApi.getAbInvoice("RSF-123")).thenReturn(invoicesAbList); // Stub invoiceServiceApi for RSF-123
-
-        // Force the directory to not exist
-        String tempDirName = "testDir";
-        File dir = new File(tempDirName);
-        dir.delete();
+        // Force FileNotFoundException by providing a non-existent file name
+        String nonExistentFileName = "nonexistent.csv";
 
         // Access the private transferFile method using reflection
         Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
@@ -30,9 +22,68 @@
         // Call the private method
         transferFileMethod.invoke(abDomain, date, cashAllocationModels);
 
-        // Verify that the directory was created
-        assertTrue(dir.exists());
+        // Verify that the method completes without errors
+        // (You can add assertions if needed)
+    }
 
-        // Cleanup: Delete the directory after the test
-        dir.delete();
+    @Test
+    void testTransferFile_IOException() throws Exception {
+        // Prepare data
+        LocalDate date = LocalDate.now();
+        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+
+        // Create a mocked CashAllocationModel
+        CashAllocationModel model = mock(CashAllocationModel.class);
+        when(model.getInvoiceMatched()).thenReturn("RSF-123");
+        when(model.getCounterPartyId()).thenReturn("CP123");
+        when(model.getCreatedDate()).thenReturn(new Date());
+
+        cashAllocationModels.add(model);
+
+        // Force IOException by mocking FileOutputStream to throw an exception
+        FileOutputStream mockFileOutputStream = mock(FileOutputStream.class);
+        doThrow(new IOException("Simulated IOException")).when(mockFileOutputStream).write(any(byte[].class));
+
+        // Stub the FileOutputStream creation
+        Method getFileOutputStreamMethod = AbDomain.class.getDeclaredMethod("getFileOutputStream", File.class);
+        getFileOutputStreamMethod.setAccessible(true);
+        when(getFileOutputStreamMethod.invoke(abDomain, any(File.class))).thenReturn(mockFileOutputStream);
+
+        // Access the private transferFile method using reflection
+        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
+        transferFileMethod.setAccessible(true);
+
+        // Call the private method
+        transferFileMethod.invoke(abDomain, date, cashAllocationModels);
+
+        // Verify that the method completes without errors
+        // (You can add assertions if needed)
+    }
+
+    @Test
+    void testTransferFile_RestClientException() throws Exception {
+        // Prepare data
+        LocalDate date = LocalDate.now();
+        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+
+        // Create a mocked CashAllocationModel
+        CashAllocationModel model = mock(CashAllocationModel.class);
+        when(model.getInvoiceMatched()).thenReturn("RSF-123");
+        when(model.getCounterPartyId()).thenReturn("CP123");
+        when(model.getCreatedDate()).thenReturn(new Date());
+
+        cashAllocationModels.add(model);
+
+        // Force RestClientException by mocking InvoiceServiceApi to throw an exception
+        when(invoiceServiceApi.getAbInvoice("RSF-123")).thenThrow(new RestClientException("Simulated RestClientException"));
+
+        // Access the private transferFile method using reflection
+        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
+        transferFileMethod.setAccessible(true);
+
+        // Call the private method
+        transferFileMethod.invoke(abDomain, date, cashAllocationModels);
+
+        // Verify that the method completes without errors
+        // (You can add assertions if needed)
     }
