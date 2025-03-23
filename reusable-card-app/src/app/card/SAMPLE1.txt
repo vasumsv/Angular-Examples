@@ -1,27 +1,22 @@
- @Test
-    void testUpdateCashAllocationStatus_MATCHED_Flow_NonEmptyMatchedCashModels() throws Exception {
+   @Test
+    void testSavePaymentDetails() {
         // Create test data
-        ProcessCashRequest processCashRequest = new ProcessCashRequest();
-        processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456"));
-        processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString()));
+        String fileName = "testFile.txt";
+        File file = new File(fileName);
+        List<String> fileLines = new ArrayList<>();
+        fileLines.add("line1");
+        fileLines.add("line2");
+        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+        cashAllocationModels.add(new CashAllocationModel());
 
-        // Create InvoicesList and populate if needed
-        InvoicesList invoicesList = new InvoicesList();
+        // Mock dependencies
+        when(fileProcessingService.getFile(fileName)).thenReturn(file);
+        when(fileProcessingService.readFile(file)).thenReturn(fileLines);
+        when(cashAllocationDomain.cashAllocationModelList(fileLines, fileName)).thenReturn(cashAllocationModels);
 
-        // Create InvoicesAbList and populate if needed
-        InvoicesAbList invoicesAbList = new InvoicesAbList();
+        // Call the method
+        cashAllocationDomain.savePaymentDetails(fileName);
 
-        // Create FnsInvoicesList and populate if needed
-        FnsInvoicesList fnsInvoicesList = new FnsInvoicesList();
-
-        // Create InvoiceSd2ModelList and populate if needed
-        InvoiceSd2ModelList invoiceSd2ModelList = new InvoiceSd2ModelList();
-
-        // Mock statusMatched to throw NullPointerException
-        when(cashAllocationDomain.statusMatched(anyString(), eq(processCashRequest), anyString(), eq(invoicesList), eq(fnsInvoicesList), eq(invoicesAbList), eq(invoiceSd2ModelList))).thenThrow(new NullPointerException());
-
-        // Verify that NullPointerException is thrown
-        assertThrows(NullPointerException.class, () -> {
-            cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "TEST_USER");
-        });
+        // Verify interactions
+        verify(cashAllocationRepositoryApi, times(1)).savePaymentDetails(cashAllocationModels);
     }
