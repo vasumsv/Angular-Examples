@@ -1,69 +1,37 @@
+   @Test
+    void updatePaymentLines_Success_PaymentTypeA() {
+        when(srgMapper.mapNew(any())).thenReturn(createPaymentLinesFeoModelList());
+        when(paymentRepository.getPaymentEntitiesByPaymentReference(anyString())).thenReturn(createSrgPaymentModelList());
+        when(referentialServiceApi.getAccountDetailsFromBdrForPayment(any(), any(), any(), any(), any(), any(), any())).thenReturn(new TrglbdrResponse());
+        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(new UserDetailsModel());
+        when(referentialServiceApi.getPaymentModeDetails(anyString())).thenReturn(new PaymentModeModel());
+        when(referentialServiceApi.getSsiDetails(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+
+        String result = cashAllocationDomain.updatePaymentLines("testUser", createUpdatePaymentLinesList("A"));
+
+        assertEquals("SUCCESSFUL", result);
+        verify(srgMapper, times(1)).mapNew(any());
+        verify(paymentRepository, times(1)).getPaymentEntitiesByPaymentReference(anyString());
+        verify(referentialServiceApi, times(1)).getAccountDetailsFromBdrForPayment(any(), any(), any(), any(), any(), any(), any());
+        verify(referentialServiceApi, times(1)).getUserInitials(anyString());
+        verify(referentialServiceApi, times(1)).getPaymentModeDetails(anyString());
+        verify(referentialServiceApi, times(1)).getSsiDetails(any(), any(), any(), any());
+    }
 
     @Test
-    void insertPaymentLines_SetProperties() throws Exception {
-        when(paymentRepository.getNextSrgSequence()).thenReturn(BigInteger.valueOf(12345));
+    void updatePaymentLines_Success_PaymentTypeNotA() {
+        when(srgMapper.mapNew(any())).thenReturn(createPaymentLinesFeoModelList());
+        when(paymentRepository.getPaymentEntitiesByPaymentReference(anyString())).thenReturn(createSrgPaymentModelList());
+        when(referentialServiceApi.getAccountDetailsFromBdrForPayment(any(), any(), any(), any(), any(), any(), any())).thenReturn(new TrglbdrResponse());
+        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(new UserDetailsModel());
 
-        PaymentLinesFeoModel pmt = createPaymentLinesFeoModel();
-        Accounts accounts = createAccounts();
-        PaymentModeModel paymentModeModel = createPaymentModeModel();
-        FeeDetails feeDetails = createFeeDetails();
-        Portfolio portfolio = createPortfolio();
-        UserDetailsModel userDetailsModel = createUserDetailsModel();
-        BackOfficeDetails backOfficeDetails = createBackOfficeDetails();
+        String result = cashAllocationDomain.updatePaymentLines("testUser", createUpdatePaymentLinesList("B"));
 
-        cashAllocationDomain.insertPaymentLines(List.of(pmt), "testUser");
-
-        // Verify paymentRequest properties
-        assertEquals("testSsi", pmt.getSsi());
-        assertEquals("testUptor", accounts.getUptor());
-        assertEquals("testPaymentModeCode", paymentModeModel.getPaymentModeCode());
-        assertEquals("testCpt6", accounts.getCpt6());
-        assertEquals("testPayRef", "testPayRef");
-        assertEquals("testNomVal", backOfficeDetails.getNomVal());
-        assertEquals("testCodTrs", portfolio.get(0).getCodTrs());
-        assertEquals("testTransactionType", feeDetails.getTransactionType());
-        assertEquals("testPaymentMode", pmt.getPaymentMode());
-        assertEquals("0", "0");
-        assertEquals("testProductFam", "testProductFam");
-        assertEquals("testRefCptyId", pmt.getRefCptyId());
-        assertEquals(12345, cashAllocationDomain.srgPaymentModel.getPaymentRequest().getSenderReferenceId());
-    }
-
-    // Helper methods (replace with actual data creation)
-    private PaymentLinesFeoModel createPaymentLinesFeoModel() {
-        PaymentLinesFeoModel model = new PaymentLinesFeoModel();
-        model.setSsi("testSsi");
-        model.setPaymentMode("testPaymentMode");
-        model.setRefCptyId("testRefCptyId");
-        model.setEntityBdrId("1688");
-        return model;
-    }
-
-    private Accounts createAccounts() {
-        Accounts accounts = new Accounts();
-        accounts.setUptor("testUptor");
-        accounts.setCpt6("testCpt6");
-        accounts.setCpt3("testCpt3");
-        accounts.setTypCpt3("testTypCpt3");
-        accounts.setInter3("testInter3");
-        accounts.setInter4("testInter4");
-        accounts.setInter5("testInter5");
-        accounts.setTypCpt5("testTypCpt5");
-        accounts.setCpt5("testCpt5");
-        accounts.setTypCpt6("testTypCpt6");
-        accounts.setCodRgl("testCodRgl");
-        return accounts;
-    }
-
-    private PaymentModeModel createPaymentModeModel() {
-        PaymentModeModel model = new PaymentModeModel();
-        model.setPaymentModeCode("testPaymentModeCode");
-        return model;
-    }
-
-    private FeeDetails createFeeDetails() {
-        FeeDetails details = new FeeDetails();
-        details.setTransactionType("testTransactionType");
-        details.setCodeBatch("testCodeBatch");
-        return details;
+        assertEquals("SUCCESSFUL", result);
+        verify(srgMapper, times(1)).mapNew(any());
+        verify(paymentRepository, times(1)).getPaymentEntitiesByPaymentReference(anyString());
+        verify(referentialServiceApi, times(1)).getAccountDetailsFromBdrForPayment(any(), any(), any(), any(), any(), any(), any());
+        verify(referentialServiceApi, times(1)).getUserInitials(anyString());
+        verify(referentialServiceApi, never()).getPaymentModeDetails(anyString());
+        verify(referentialServiceApi, never()).getSsiDetails(any(), any(), any(), any());
     }
