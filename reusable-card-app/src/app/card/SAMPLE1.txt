@@ -1,4 +1,4 @@
-   @Test
+ @Test
     void testUpdatePaymentLines_Success() {
         // Setup test data
         String user = "testUser";
@@ -15,11 +15,14 @@
 
         // Mock paymentRepository
         List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
-        // Add sample SrgPaymentModel objects to the list (you might need to populate this based on your actual logic)
+        // Add sample SrgPaymentModel objects to the list
         srgPaymentModels.add(new SrgPaymentModel()); // Add at least one mock object
 
-        when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-1")).thenReturn(srgPaymentModels);
-        when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-2")).thenReturn(srgPaymentModels);
+        OngoingStubbing<List<SrgPaymentModel>> when1 = when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-1"));
+        when1.thenReturn(srgPaymentModels);
+
+        OngoingStubbing<List<SrgPaymentModel>> when2 = when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-2"));
+        when2.thenReturn(srgPaymentModels);
 
         // Mock invoiceServiceApi behavior
         when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(any())).thenReturn(null);
