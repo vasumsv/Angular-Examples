@@ -1,5 +1,8 @@
-  @Test
+ @Test
     void testAutoPaymentMatching_Exception() {
+        // Verify CashAllocationCustomException is loaded
+        System.out.println("CashAllocationCustomException class: " + CashAllocationCustomException.class);
+
         // Mock LocalDate.now() to throw an exception
         try (var mockedStatic = mockStatic(LocalDate.class)) {
             mockedStatic.when(LocalDate::now).thenThrow(new RuntimeException());
