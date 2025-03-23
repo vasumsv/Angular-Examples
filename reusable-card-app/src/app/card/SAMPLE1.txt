@@ -4,7 +4,7 @@
         File tempFile = File.createTempFile("test", ".txt");
 
         // Mock the uploadFileToGaiaServer method
-        when(referentialServiceApi.uploadFileToGaiaServer(any(), anyString(), anyString())).thenReturn(null); // Use thenReturn()
+        when(referentialServiceApi.uploadFileToGaiaServer(any(ByteArrayResource.class), anyString(), anyString())).thenReturn(null); // Use any()
 
         // Call the method
         abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
