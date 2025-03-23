@@ -1,4 +1,4 @@
-@Test
+    @Test
     void testUpdatePaymentLines_Success() {
         // Setup test data
         String user = "testUser";
@@ -8,8 +8,10 @@
         UpdatePaymentLines samplePaymentLine = new UpdatePaymentLines();
         // Set necessary properties of samplePaymentLine based on your UpdatePaymentLines class
         // For example:
-        // samplePaymentLine.setSomeProperty("someValue");
-        // samplePaymentLine.setAnotherProperty(123);
+        samplePaymentLine.setPaymentReference("REF123"); // Replace with actual property names
+        samplePaymentLine.setPaymentDate("2023-10-27");
+        samplePaymentLine.setPaymentAmount(100.0);
+        // ... set other required properties
 
         finalDataForInsertion.add(samplePaymentLine);
 
