@@ -1,18 +1,18 @@
-  @Test
+   @Test
     void testUpdateCashAllocationStatus_UNMATCHED_Flow_NonRSF() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
         processCashRequest.setInvoiceRefs(Arrays.asList("NONRSF-123", "NONRSF-456")); // Invoice refs do not start with "RSF-*"
         processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString()));
 
-        // Mock invoiceServiceApi.getInvoiceAb
-        InvoicesAbList invoicesAbList = new InvoicesAbList();
-        List<InvoiceAb> invoiceAbList = new ArrayList<>();
-        InvoiceAb invoiceAb = new InvoiceAb(); // Populate with data if needed
-        invoiceAbList.add(invoiceAb);
-        invoicesAbList.setInvoicesAb(invoiceAbList);
+        // Mock invoiceServiceApi.getFnsInvoice
+        FnsInvoicesList fnsInvoicesList = new FnsInvoicesList();
+        List<Invoice> invoices = new ArrayList<>();
+        Invoice invoice = new Invoice(); // Populate with data if needed
+        invoices.add(invoice);
+        fnsInvoicesList.setInvoices(invoices);
 
-        when(invoiceServiceApi.getInvoiceAb(anyString())).thenReturn(invoicesAbList);
+        when(invoiceServiceApi.getFnsInvoice(anyString())).thenReturn(fnsInvoicesList);
 
         // Mock cashAllocationRepositoryApi.findByInvoiceMatched
         List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
