@@ -8,7 +8,8 @@
         // Create a non-empty matchedCashModels list
         List<CashAllocationModel> matchedCashModels = new ArrayList<>();
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setValueDate(LocalDate.now());
+        LocalDate testDate = LocalDate.now();
+        cashAllocationModel.setValueDate(testDate);
         matchedCashModels.add(cashAllocationModel);
 
         // Create InvoicesList and populate if needed
@@ -23,6 +24,6 @@
         // Execute the method
         cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "TEST_USER");
 
-        // Verify that processCashRequest.setValueDate is called
-        verify(processCashRequest, times(1)).setValueDate(any(LocalDate.class));
+        // Verify that processCashRequest.setValueDate is called with the correct LocalDate
+        verify(processCashRequest, times(1)).setValueDate(eq(testDate));
     }
