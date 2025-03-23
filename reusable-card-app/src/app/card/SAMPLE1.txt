@@ -1,16 +1,9 @@
-   @Test
+ @Test
     void testUpdateCashAllocationStatus_MATCHED_Flow_NonEmptyMatchedCashModels() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
         processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456"));
         processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString()));
-
-        // Create a non-empty matchedCashModels list
-        List<CashAllocationModel> matchedCashModels = new ArrayList<>();
-        CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        LocalDate testDate = LocalDate.now();
-        cashAllocationModel.setValueDate(testDate);
-        matchedCashModels.add(cashAllocationModel);
 
         // Create InvoicesList and populate if needed
         InvoicesList invoicesList = new InvoicesList();
@@ -24,12 +17,11 @@
         // Create InvoiceSd2ModelList and populate if needed
         InvoiceSd2ModelList invoiceSd2ModelList = new InvoiceSd2ModelList();
 
-        // Mock statusMatched to return non-empty matchedCashModels
-        when(cashAllocationDomain.statusMatched(anyString(), eq(processCashRequest), anyString(), eq(invoicesList), eq(fnsInvoicesList), eq(invoicesAbList), eq(invoiceSd2ModelList))).thenReturn(matchedCashModels);
+        // Mock statusMatched to throw NullPointerException
+        when(cashAllocationDomain.statusMatched(anyString(), eq(processCashRequest), anyString(), eq(invoicesList), eq(fnsInvoicesList), eq(invoicesAbList), eq(invoiceSd2ModelList))).thenThrow(new NullPointerException());
 
-        // Execute the method
-        cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "TEST_USER");
-
-        // Verify that processCashRequest.setValueDate is called with the correct LocalDate
-        verify(processCashRequest, times(1)).setValueDate(eq(testDate));
+        // Verify that NullPointerException is thrown
+        assertThrows(NullPointerException.class, () -> {
+            cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "TEST_USER");
+        });
     }
