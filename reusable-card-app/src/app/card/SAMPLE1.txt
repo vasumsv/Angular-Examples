@@ -42,19 +42,19 @@ private List<PaymentLinesFeoModel> createPopulatedPaymentLinesFeoModelList() {
     paymentLinesFeoModel.setInvoiceReference("INVOICE_REF");
     paymentLinesFeoModel.setEntityBdrId("ENTITY_BDR_ID");
     paymentLinesFeoModel.setFeeType("FEE_TYPE");
-    paymentLinesFeoModel.setFeeBdrId("FEE_BDR_ID"); // Add feeBdrId
-    paymentLinesFeoModel.setValueDate(LocalDate.now()); // Add valueDate
-    paymentLinesFeoModel.setSendingDate(LocalDate.now()); // Add sendingDate
-    paymentLinesFeoModel.setSsi("SSI"); // Add ssi
-    paymentLinesFeoModel.setAmount(100.0); // Add amount
-    paymentLinesFeoModel.setCurrency("USD"); // Add currency
-    paymentLinesFeoModel.setInvoiceType("INVOICE_TYPE"); // Add invoiceType
-    paymentLinesFeoModel.setPaymentMode("PAYMENT_MODE"); // Add paymentMode
-    paymentLinesFeoModel.setPaymentStatus("PAYMENT_STATUS"); // Add paymentStatus
-    paymentLinesFeoModel.setPaymentType("PAYMENT_TYPE"); // Add paymentType
-    paymentLinesFeoModel.setRc("RC"); // Add rc
-    paymentLinesFeoModel.setRefCptyId("REF_CPTY_ID"); // Add refCptyId
-    paymentLinesFeoModel.setComment("COMMENT"); // Add comment
+    paymentLinesFeoModel.setFeeBdrId("FEE_BDR_ID");
+    paymentLinesFeoModel.setValueDate(LocalDate.now());
+    paymentLinesFeoModel.setSendingDate(LocalDate.now());
+    paymentLinesFeoModel.setSsi("SSI");
+    paymentLinesFeoModel.setAmount(100.0);
+    paymentLinesFeoModel.setCurrency("USD");
+    paymentLinesFeoModel.setInvoiceType("INVOICE_TYPE");
+    paymentLinesFeoModel.setPaymentMode("PAYMENT_MODE");
+    paymentLinesFeoModel.setPaymentStatus("PAYMENT_STATUS");
+    paymentLinesFeoModel.setPaymentType("PAYMENT_TYPE");
+    paymentLinesFeoModel.setRc("RC");
+    paymentLinesFeoModel.setRefCptyId("REF_CPTY_ID");
+    paymentLinesFeoModel.setComment("COMMENT");
     paymentLinesFeoModels.add(paymentLinesFeoModel);
     return paymentLinesFeoModels;
 }
