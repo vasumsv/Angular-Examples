@@ -1,22 +1,23 @@
 @Test
-    void testUpdateCashAllocationStatus_RS_Flow() {
+    void testUpdateCashAllocationStatus_UNMATCHED_Flow() {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
-        processCashRequest.setInvoiceRefs(Arrays.asList("RS123", "RS456"));
-        processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString())); // Provide a valid UUID
+        processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456")); // Invoice refs start with "RSF-*"
+        processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString()));
 
-        // Mock invoiceServiceApi.getInvoice
-        InvoicesList invoicesList = new InvoicesList();
-        List<Invoice> invoices = new ArrayList<>();
-        Invoice invoice1 = new Invoice(); // Populate with data if needed
-        invoices.add(invoice1);
-        invoicesList.setInvoices(invoices); // Set the invoices list
+        // Mock cashAllocationDomain.findByInvoiceMatched
+        List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
+        CashAllocationModel cashAllocationModel = new CashAllocationModel();
+        cashAllocationModel.setInvoiceMatched("INV123,INV456"); // Set invoiceMatched
+        CashDetails cashDetails = new CashDetails();
+        cashAllocationModel.setCashDetails(cashDetails);
+        cashAllocationModelList.add(cashAllocationModel);
 
-        when(invoiceServiceApi.getInvoice("RS123,RS456")).thenReturn(invoicesList);
+        when(cashAllocationDomain.findByInvoiceMatched(anyList())).thenReturn(cashAllocationModelList);
 
         // Execute the method
-        cashAllocationDomain.updateCashAllocationStatus("matched", processCashRequest, "TEST_USER");
+        cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "TEST_USER");
 
-        // Verify that invoiceServiceApi.getInvoice is called
-        verify(invoiceServiceApi, times(1)).getInvoice("RS123,RS456");
+        // Verify that cashAllocationRepositoryApi.save is called
+        verify(cashAllocationRepositoryApi, times(1)).save(any(CashAllocationModel.class));
     }
