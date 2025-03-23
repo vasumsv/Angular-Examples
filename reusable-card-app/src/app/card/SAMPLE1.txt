@@ -1,33 +1,21 @@
- @Test
-    void testUpdateCashAllocationStatus_UNMATCHED_Flow_NonRSF() throws Exception {
+@Test
+    void testUpdateCashAllocationStatus_MATCHED_Flow_NonEmptyMatchedCashModels() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
-        processCashRequest.setInvoiceRefs(Arrays.asList("NONRSF-123", "NONRSF-456")); // Invoice refs do not start with "RSF-*"
+        processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456")); // Invoice refs start with "RSF-*"
         processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString()));
 
-        // Mock invoiceServiceApi.getFnsInvoice
-        FnsInvoicesList fnsInvoicesList = new FnsInvoicesList();
-        List<FnsInvoice> invoices = new ArrayList<>(); // Create a List<FnsInvoice>
-        FnsInvoice invoice = new FnsInvoice(); // Populate with data if needed
-        invoices.add(invoice);
-        fnsInvoicesList.setInvoices(invoices);
-
-        when(invoiceServiceApi.getFnsInvoice(anyString())).thenReturn(fnsInvoicesList);
-
-        // Mock cashAllocationRepositoryApi.findByInvoiceMatched
-        List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
+        // Mock statusMatched method
+        List<CashAllocationModel> matchedCashModels = new ArrayList<>();
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setInvoiceMatched("NONRSF-123,NONRSF-456"); // Set invoiceMatched to match the input
-        cashAllocationModel.setMsgType(MSG_TYPE);
-        CashDetails cashDetails = new CashDetails();
-        cashAllocationModel.setCashDetails(cashDetails);
-        cashAllocationModelList.add(cashAllocationModel);
+        cashAllocationModel.setValueDate(new Date()); // Set a value date
+        matchedCashModels.add(cashAllocationModel);
 
-        when(cashAllocationRepositoryApi.findByInvoiceMatched("NONRSF-123,NONRSF-456")).thenReturn(cashAllocationModelList); // Pass a single String
+        when(cashAllocationDomain.statusMatched(anyString(), any(ProcessCashRequest.class), anyString(), anyList(), any(), any(), any())).thenReturn(matchedCashModels);
 
         // Execute the method
-        cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "TEST_USER");
+        cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "TEST_USER");
 
-        // Verify that cashAllocationRepositoryApi.save is called with the modified CashAllocationModel
-        verify(cashAllocationRepositoryApi, times(1)).save(any(CashAllocationModel.class));
+        // Verify that processCashRequest.setValueDate is called
+        verify(processCashRequest, times(1)).setValueDate(any(Date.class));
     }
