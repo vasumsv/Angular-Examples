@@ -1,24 +1,56 @@
+  @Test
+    void testGetNettedRows() {
+        // Create test data
+        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
+        InvoicePayableModelForPayment invoice1 = new InvoicePayableModelForPayment();
+        invoice1.setEntity("ENTITY1");
+        invoice1.setCurrency("USD");
+        invoice1.setAmount(new BigDecimal("100"));
+        invoice1.setInvoiceReference("INV1");
+        invoice1.setFeeBdrId("FEE1");
+        invoice1.setProviderId("PROV1");
+        invoice1.setInvoicePayable(new InvoicePayable());
+        invoice1.getInvoicePayable().setPaymentMethod("PM1");
+        invoice1.getInvoicePayable().setRcCode("RC1");
+        invoice1.setSendingDate(LocalDate.of(2023, 10, 27));
+        paymentList.add(invoice1);
 
-    @Test
-    void testGetPaymentLinesFromPaymentReference() {
-        // Setup test data
-        String[] paymentReferences = {"REF123-1", "REF123-2"};
+        String user = "TEST_USER";
 
-        // Mock the intermediate method (adjust the method name as needed)
-        List<PaymentEntity> paymentEntities = new ArrayList<>();
-        PaymentEntity paymentEntity = new PaymentEntity();
-        // Set properties of paymentEntity if needed
-        paymentEntities.add(paymentEntity);
+        // Mock referentialServiceApi calls
+        PaymentModeAndLocation paymentModeAndLocation = new PaymentModeAndLocation();
+        paymentModeAndLocation.setPaymentMode("MODE1");
+        when(referentialServiceApi.paymentModeAndSettlementLocation(any(), any(), any())).thenReturn(paymentModeAndLocation);
 
-        when(cashAllocationDomain.fetchPaymentEntities(anyString())).thenReturn(paymentEntities); // Mock the intermediate method
+        List<LocalDate> dates = new ArrayList<>();
+        dates.add(LocalDate.of(2023, 10, 28));
+        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), any())).thenReturn(dates);
 
-        // Mock getSsiDetails
         List<String> ssiDetails = new ArrayList<>();
-        ssiDetails.add("SSI1-A");
-        ssiDetails.add("SSI1-B");
-        when(paymentRepository.getSsiDetailsByProviderAndCurrencyAndEntityAndFeeCategory(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiDetails);
+        ssiDetails.add("SSI1");
+        when(cashAllocationDomain.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiDetails);
+
+        PayHabResponse payHabResponse = new PayHabResponse();
+        when(referentialServiceApi.checkPaymentHabilitation(anyString(), anyString(), anyString(), anyString(), anyDouble(), anyString())).thenReturn(payHabResponse);
+
+        PaymentChecksResponse paymentChecksResponse = new PaymentChecksResponse();
+        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(paymentChecksResponse);
 
         // Execute the method
-        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
 
         // Verify the result
+        assertEquals(1, result.size());
+        PaymentLinesModel nettedRow = result.get(0);
+        assertEquals("ENTITY1", nettedRow.getSgEntity());
+        assertEquals("PROV1", nettedRow.getProviderId());
+        assertEquals("MODE1", nettedRow.getPaymentMode());
+        // Add more assertions as needed
+
+        // Verify interactions
+        verify(referentialServiceApi, times(1)).paymentModeAndSettlementLocation(any(), any(), any());
+        verify(referentialServiceApi, times(1)).getPaymentDates(anyString(), anyString(), anyString(), any());
+        verify(cashAllocationDomain, times(1)).getSsiDetails(anyString(), anyString(), anyString(), anyString());
+        verify(referentialServiceApi, times(1)).checkPaymentHabilitation(anyString(), anyString(), anyString(), anyString(), anyDouble(), anyString());
+        verify(referentialServiceApi, times(1)).doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
+    }
