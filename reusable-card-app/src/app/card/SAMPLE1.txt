@@ -12,7 +12,10 @@ void updatePaymentLines_Success() {
     when(cashAllocationRepositoryApi.save(any())).thenReturn(null);
 
     // Mock the InvoiceServiceApi to return a non-null value for getListOfInvoices
-    when(invoiceServiceApi.getListOfInvoices(any())).thenReturn(createInvoicePayableModelList()); // Replace with your actual method
+    when(invoiceServiceApi.getListOfInvoices(any())).thenReturn(createInvoicePayableModelList());
+
+    // Mock the srgMapper to return a non-null value
+    when(srgMapper.mapPaymentDetails(any())).thenReturn(createPaymentDetailsList()); // Replace with your actual method
 
     String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
@@ -25,4 +28,11 @@ private List<InvoicePayableModel> createInvoicePayableModelList() {
     List<InvoicePayableModel> invoicePayableModels = new ArrayList<>();
     // Populate the list with sample InvoicePayableModel objects
     return invoicePayableModels;
+}
+
+// Helper method to create a sample PaymentDetails list
+private List<PaymentDetails> createPaymentDetailsList() {
+    List<PaymentDetails> paymentDetailsList = new ArrayList<>();
+    // Populate the list with sample PaymentDetails objects
+    return paymentDetailsList;
 }
