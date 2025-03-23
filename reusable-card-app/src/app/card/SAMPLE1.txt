@@ -1,9 +1,9 @@
- @Test
+@Test
     void testUpdateCashAllocationStatus_RS_Flow() {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
         processCashRequest.setInvoiceRefs(Arrays.asList("RS123", "RS456"));
-        processCashRequest.setPaymentIds(Collections.singletonList("PAY123"));
+        processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString())); // Provide a valid UUID
 
         // Mock invoiceServiceApi.getInvoice
         InvoicesList invoicesList = new InvoicesList();
