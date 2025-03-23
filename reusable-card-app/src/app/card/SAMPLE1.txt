@@ -1,17 +1,28 @@
-@Test
+ @Test
     void testTransferFile_DirectoryCreation() throws Exception {
-        // Prepare data with an empty list of CashAllocationModel
+        // Prepare data
         LocalDate date = LocalDate.now();
         List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+
+        // Create a mocked CashAllocationModel
+        CashAllocationModel model = mock(CashAllocationModel.class);
+        when(model.getInvoiceMatched()).thenReturn("RSF-123");
+        when(model.getCounterPartyId()).thenReturn("CP123");
+        when(model.getCreatedDate()).thenReturn(new Date());
+
+        cashAllocationModels.add(model);
+
+        // Force the directory to not exist
+        File dir = new File(".");
+        dir.delete(); // Delete the directory if it exists
 
         // Access the private transferFile method using reflection
         Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
         transferFileMethod.setAccessible(true);
 
-        // Call the private method with an empty list
+        // Call the private method
         transferFileMethod.invoke(abDomain, date, cashAllocationModels);
 
         // Verify that the directory was created
-        File dir = new File(".");
         assertTrue(dir.exists());
     }
