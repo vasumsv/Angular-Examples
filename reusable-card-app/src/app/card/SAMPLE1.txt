@@ -15,7 +15,7 @@ void updatePaymentLines_Success() {
     when(invoiceServiceApi.getListOfInvoices(any())).thenReturn(createInvoicePayableModelList());
 
     // Mock the SrgMapper to return a non-null list of PaymentLinesFeoModel
-    when(srgMapper.mapNew(any())).thenReturn(createPaymentLinesFeoModelList());
+    when(srgMapper.mapNew(any())).thenReturn(createPopulatedPaymentLinesFeoModelList()); // Changed to populated list
 
     String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
@@ -30,9 +30,12 @@ private List<InvoicePayableModel> createInvoicePayableModelList() {
     return invoicePayableModels;
 }
 
-// Helper method to create a sample PaymentLinesFeoModel list
-private List<PaymentLinesFeoModel> createPaymentLinesFeoModelList() {
+// Helper method to create a populated PaymentLinesFeoModel list
+private List<PaymentLinesFeoModel> createPopulatedPaymentLinesFeoModelList() {
     List<PaymentLinesFeoModel> paymentLinesFeoModels = new ArrayList<>();
-    // Populate the list with sample PaymentLinesFeoModel objects
+    // Add at least one PaymentLinesFeoModel object with necessary data
+    PaymentLinesFeoModel paymentLinesFeoModel = new PaymentLinesFeoModel();
+    // Set necessary properties of paymentLinesFeoModel to prevent NullPointerException
+    paymentLinesFeoModels.add(paymentLinesFeoModel);
     return paymentLinesFeoModels;
 }
