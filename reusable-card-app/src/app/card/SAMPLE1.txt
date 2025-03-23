@@ -1,557 +1,73 @@
- @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        initialPaymentAmount = new BigDecimal("0.00");
-        initialPaymentListForCashRequest = new ArrayList<>();
-        invoiceAmount = BigDecimal.ZERO;
-        invoicesListForCashRequest = new ArrayList<>();
-        cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setValueDate(LocalDate.now());
-
-        cashAllocationDomain.paymentAmount = initialPaymentAmount;
-        cashAllocationDomain.paymentListForCashRequest = initialPaymentListForCashRequest;
-        cashAllocationDomain.invoiceAmount = invoiceAmount;
-        cashAllocationDomain.invoicesListForCashRequest = invoicesListForCashRequest;
-    }
-
-    @Test
-    void testAutoPaymentMatching_findByInvoiceReferenceReceived_Empty() {
-        // Arrange
-        String invoiceRefReceived = "SD123";
-
-        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(new ArrayList<>());
-
-        // Act
-        cashAllocationDomain.autoPaymentMatching();
-
-        // Assert
-        assertEquals(initialPaymentAmount, cashAllocationDomain.paymentAmount);
-        assertEquals(initialPaymentListForCashRequest, cashAllocationDomain.paymentListForCashRequest);
-        verify(cashAllocationRepositoryApi, never()).saveAll(any());
-        // Assuming processingCashAllocation is called conditionally based on the amount
-        // verify(cashAllocationDomain, never()).processingCashAllocation(anyString(), any(), anyString());
-    }
-
-    @Test
-    void testAutoPaymentMatching_status_NOT_ALLOCATED() {
-        // Arrange
-        String invoiceRefReceived = "SD123";
-        CashAllocationModel cashAllocationModel2 = new CashAllocationModel();
-        cashAllocationModel2.setStatus("NOT_ALLOCATED");
-        cashAllocationModel2.setId(123L);
-        cashAllocationModel2.setAmount(new BigDecimal("50.00"));
-
-        List<CashAllocationModel> cashAllocationModels = List.of(cashAllocationModel2);
-        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(cashAllocationModels);
-
-        // Act
-        cashAllocationDomain.autoPaymentMatching();
-
-        // Assert
-        assertEquals(initialPaymentAmount.add(new BigDecimal("50.00")), cashAllocationDomain.paymentAmount);
-        assertEquals(List.of("123"), cashAllocationDomain.paymentListForCashRequest);
-    }
-
-    @Test
-    void testAutoPaymentMatching_status_Other() {
-        // Arrange
-        String invoiceRefReceived = "SD123";
-        CashAllocationModel cashAllocationModel2 = new CashAllocationModel();
-        cashAllocationModel2.setStatus("ALLOCATED"); // Not "NOT_ALLOCATED"
-        cashAllocationModel2.setId(456L);
-        cashAllocationModel2.setAmount(new BigDecimal("75.00"));
-
-        List<CashAllocationModel> cashAllocationModels = List.of(cashAllocationModel2);
-        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(cashAllocationModels);
-
-        // Act
-        cashAllocationDomain.autoPaymentMatching();
-
-        // Assert
-        assertEquals(initialPaymentAmount, cashAllocationDomain.paymentAmount);
-        assertEquals(initialPaymentListForCashRequest, cashAllocationDomain.paymentListForCashRequest);
-    }
-
-    @Test
-    void testAutoPaymentMatching_amounts_Equal() {
-        // Arrange
-        String invoiceRefReceived = "SD123";
-        CashAllocationModel cashAllocationModel2 = new CashAllocationModel();
-        cashAllocationModel2.setStatus("NOT_ALLOCATED");
-        cashAllocationModel2.setId(789L);
-        cashAllocationModel2.setAmount(new BigDecimal("100.00"));
-
-        List<CashAllocationModel> cashAllocationModels = List.of(cashAllocationModel2);
-        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(cashAllocationModels);
-
-        cashAllocationDomain.invoiceAmount = new BigDecimal("100.00"); // Set invoiceAmount to match
-
-        // Act
-        cashAllocationDomain.autoPaymentMatching();
-
-        // Assert
-        assertEquals(new BigDecimal("100.00"), cashAllocationDomain.paymentAmount);
-        assertEquals(List.of("789"), cashAllocationDomain.paymentListForCashRequest);
-
-        ArgumentCaptor<ProcessCashRequest> processCashRequestCaptor = ArgumentCaptor.forClass(ProcessCashRequest.class);
-        verify(cashAllocationDomain).processingCashAllocation(eq("MATCHED"), processCashRequestCaptor.capture(), anyString());
-
-        ProcessCashRequest capturedRequest = processCashRequestCaptor.getValue();
-        assertEquals(cashAllocationDomain.invoicesListForCashRequest, capturedRequest.getInvoiceRefs());
-        assertEquals(List.of("789"), capturedRequest.getPaymentIds());
-        assertEquals(cashAllocationModel.getValueDate(), capturedRequest.getValueDate());
-    }
-
-    @Test
-    void testAutoPaymentMatching_amounts_NotEqual() {
-        // Arrange
-        String invoiceRefReceived = "SD123";
-        CashAllocationModel cashAllocationModel2 = new CashAllocationModel();
-        cashAllocationModel2.setStatus("NOT_ALLOCATED");
-        cashAllocationModel2.setId(1011L);
-        cashAllocationModel2.setAmount(new BigDecimal("150.00"));
-
-        List<CashAllocationModel> cashAllocationModels = List.of(cashAllocationModel2);
-        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(invoiceRefReceived)).thenReturn(cashAllocationModels);
-
-        cashAllocationDomain.invoiceAmount = new BigDecimal("120.00"); // Set invoiceAmount to not match
-
-        // Act
-        cashAllocationDomain.autoPaymentMatching();
-
-        // Assert
-        assertEquals(new BigDecimal("150.00"), cashAllocationDomain.paymentAmount);
-        assertEquals(List.of("1011"), cashAllocationDomain.paymentListForCashRequest);
-
-        verify(cashAllocationDomain, never()).processingCashAllocation(anyString(), any(), anyString());
-    }
-
-
-
-
-
-
-
--- LINE 0- 884
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-class YourClassNameTest { // Replace YourClassNameTest with your actual test class name
-
-    @Mock
-    private InvoiceServiceApi invoiceServiceApi;
-
-    @Mock
-    private ReferentialServiceApi referentialServiceApi;
-
-    @InjectMocks
-    private YourClassName yourClassName; // Replace YourClassName with the actual class name
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testGetNettedPaymentRowsForManualPayment_EmptyPaymentList() {
-        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
-        String user = "testUser";
-
-        List<PaymentLinesModel> result = yourClassName.getNettedPaymentRowsForManualPayment(paymentList, user);
-
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testGetNettedPaymentRowsForManualPayment_SingleEntry() {
-        List<InvoicePayableModelForPayment> paymentList = List.of(createInvoicePayableModel());
-        String user = "testUser";
-
-        // Mock fetchNettedRows
-        Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
-        aggregateAmount.put(new GroupingKey("entity1", "USD"), new BigDecimal("100.00"));
-        Map<GroupingKey, Integer> aggregateInvoiceCount = new HashMap<>();
-        aggregateInvoiceCount.put(new GroupingKey("entity1", "USD"), 1);
-        Map<GroupingKey, String> aggregateInvoiceReferences = new HashMap<>();
-        aggregateInvoiceReferences.put(new GroupingKey("entity1", "USD"), "inv1");
-        yourClassName.fetchNettedRows(paymentList, aggregateAmount, aggregateInvoiceCount, aggregateInvoiceReferences);
-
-        // Mock referentialServiceApi
-        PaymentDates paymentDates = new PaymentDates();
-        paymentDates.setValueDate(LocalDate.now());
-        paymentDates.setSendingDate(LocalDate.now());
-        when(referentialServiceApi.getPaymentDates("entity1", "USD", "SWIFT")).thenReturn(paymentDates);
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(anyList())).thenReturn(List.of(createBapPayableModel()));
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(anyString())).thenReturn(createPortfolioAdvanceDetailResponse());
-        when(referentialServiceApi.getSettlementAccounts("USD", "entity1", "bdr1")).thenReturn(List.of(createSettlementsAccounts()));
-
-        List<PaymentLinesModel> result = yourClassName.getNettedPaymentRowsForManualPayment(paymentList, user);
-
-        assertEquals(1, result.size());
-        PaymentLinesModel paymentLinesModel = result.get(0);
-        assertEquals("entity1", paymentLinesModel.getSgEntity());
-        assertEquals("provider1", paymentLinesModel.getProviderId());
-        assertEquals("broker1", paymentLinesModel.getBrokerName());
-        assertEquals(LocalDate.now(), paymentLinesModel.getValueDate());
-        assertEquals(LocalDate.now(), paymentLinesModel.getSendingDate());
-        assertEquals(1, paymentLinesModel.getNumberOfSSI());
-        assertEquals("USD", paymentLinesModel.getCurrency());
-        assertEquals(List.of("account1"), paymentLinesModel.getSsiAccountCode());
-        assertEquals("D", paymentLinesModel.getPaymentDirection());
-        assertEquals(new BigDecimal("100.00"), paymentLinesModel.getAmount());
-        assertEquals("MANUAL", paymentLinesModel.getPaymentType());
-        assertEquals("fee", paymentLinesModel.getFeeType());
-        assertEquals("rc1", paymentLinesModel.getRc());
-        assertEquals(1, paymentLinesModel.getNumberOfInvoices());
-        assertEquals("inv1", paymentLinesModel.getInvoiceReference());
-    }
-
-
-
-LINE -----934
-
-
-class CashAllocationDomainTest {
-
-    @Mock
-    private InvoiceServiceApi invoiceServiceApi;
-
-    @Mock
-    private ReferentialServiceApi referentialServiceApi;
-
-    @InjectMocks
-    private CashAllocationDomain cashAllocationDomain;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testGetNettedRows_EmptyPaymentList() {
-        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
-        String user = "testUser";
-
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
-
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testGetNettedRows_SingleEntry_Debit_NoErrors() {
-        List<InvoicePayableModelForPayment> paymentList = List.of(createInvoicePayableModel("provider1", createInvoicePayable("broker1", "fee1", "rc1", "SWIFT")));
-        String user = "testUser";
-
-        // Mock fetchNettedRows
-        Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
-        aggregateAmount.put(new GroupingKey("entity1", "USD"), new BigDecimal("100.00"));
-        Map<GroupingKey, Integer> aggregateInvoiceCount = new HashMap<>();
-        aggregateInvoiceCount.put(new GroupingKey("entity1", "USD"), 1);
-        Map<GroupingKey, String> aggregateInvoiceReferences = new HashMap<>();
-        aggregateInvoiceReferences.put(new GroupingKey("entity1", "USD"), "inv1,");
-        cashAllocationDomain.fetchNettedRows(paymentList, aggregateAmount, aggregateInvoiceCount, aggregateInvoiceReferences);
-
-        // Mock referentialServiceApi
-        PaymentDates paymentDates = new PaymentDates();
-        paymentDates.setValueDate(LocalDate.now());
-        paymentDates.setSendingDate(LocalDate.now());
-        when(referentialServiceApi.getPaymentDates("entity1", "USD", "SWIFT")).thenReturn(paymentDates);
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(List.of("inv1"))).thenReturn(List.of(createBapPayableModel("portfolio1")));
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic("portfolio1")).thenReturn(createPortfolioAdvanceDetailResponse("bdr1"));
-        when(referentialServiceApi.getSettlementAccounts("USD", "entity1", "bdr1")).thenReturn(List.of(createSettlementsAccounts("account1")));
-        when(referentialServiceApi.checkPaymentHabilitation("entity1", "testUser", "bdr_fee1", "SWIFT", 100.00, "USD")).thenReturn(createPayHabResponse(null));
-        when(referentialServiceApi.doPaymentChecks("testUser", "bdr_fee1", "USD", "entity1", "", LocalDate.now().toString(), "provider1")).thenReturn(createPaymentChecksResponse(null));
-
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
-
-        assertEquals(1, result.size());
-        PaymentLinesModel paymentLinesModel = result.get(0);
-        assertEquals("entity1", paymentLinesModel.getSgEntity());
-        assertEquals("provider1", paymentLinesModel.getProviderId());
-        assertEquals("broker1", paymentLinesModel.getBrokerName());
-        assertEquals(LocalDate.now(), paymentLinesModel.getValueDate());
-        assertEquals(LocalDate.now(), paymentLinesModel.getSendingDate());
-        assertEquals(1, paymentLinesModel.getNumberOfSSI());
-        assertEquals("USD", paymentLinesModel.getCurrency());
-        assertEquals(List.of("account1"), paymentLinesModel.getSsiAccountCode());
-        assertEquals("D", paymentLinesModel.getPaymentDirection());
-        assertEquals(new BigDecimal("100.00"), paymentLinesModel.getAmount());
-        assertEquals("MANUAL", paymentLinesModel.getPaymentType());
-        assertEquals("fee1", paymentLinesModel.getFeeType());
-        assertEquals("rc1", paymentLinesModel.getRc());
-        assertEquals(1, paymentLinesModel.getNumberOfInvoices());
-        assertEquals("inv1", paymentLinesModel.getInvoiceReference());
-        assertNull(paymentLinesModel.getComment());
-    }
-
-    @Test
-    void testGetNettedRows_SingleEntry_Credit_NoErrors() {
-        List<InvoicePayableModelForPayment> paymentList = List.of(createInvoicePayableModel("provider1", createInvoicePayable("broker1", "fee1", "rc1", "SWIFT")));
-        String user = "testUser";
-
-        // Mock fetchNettedRows
-        Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
-        aggregateAmount.put(new GroupingKey("entity1", "USD"), new BigDecimal("-100.00"));
-        Map<GroupingKey, Integer> aggregateInvoiceCount = new HashMap<>();
-        aggregateInvoiceCount.put(new GroupingKey("entity1", "USD"), 1);
-        Map<GroupingKey, String> aggregateInvoiceReferences = new HashMap<>();
-        aggregateInvoiceReferences.put(new GroupingKey("entity1", "USD"), "inv1,");
-        cashAllocationDomain.fetchNettedRows(paymentList, aggregateAmount, aggregateInvoiceCount, aggregateInvoiceReferences);
-
-        // Mock referentialServiceApi
-        PaymentDates paymentDates = new PaymentDates();
-        paymentDates.setValueDate(LocalDate.now());
-        paymentDates.setSendingDate(LocalDate.now());
-        when(referentialServiceApi.getPaymentDates("entity1", "USD", "SWIFT")).thenReturn(paymentDates);
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(List.of("inv1"))).thenReturn(List.of(createBapPayableModel("portfolio1")));
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic("portfolio1")).thenReturn(createPortfolioAdvanceDetailResponse("bdr1"));
-        when(referentialServiceApi.getSettlementAccounts("USD", "entity1", "bdr1")).thenReturn(List.of(createSettlementsAccounts("account1")));
-        when(referentialServiceApi.checkPaymentHabilitation("entity1", "testUser", "bdr_fee1", "SWIFT", -100.00, "USD")).thenReturn(createPayHabResponse(null));
-        when(referentialServiceApi.doPaymentChecks("testUser", "bdr_fee1", "USD", "entity1", "S", LocalDate.now().toString(), "provider1")).thenReturn(createPaymentChecksResponse(null));
-
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
-
-        assertEquals(1, result.size());
-        PaymentLinesModel paymentLinesModel = result.get(0);
-        assertEquals("C", paymentLinesModel.getPaymentDirection());
-        assertEquals(new BigDecimal("100.00"), paymentLinesModel.getAmount());
-    }
-
-    @Test
-    void testGetNettedRows_MultipleEntries() {
-        List<InvoicePayableModelForPayment> paymentList = Arrays.asList(
-                createInvoicePayableModel("provider1", createInvoicePayable("broker1", "fee1", "rc1", "SWIFT")),
-                createInvoicePayableModel("provider2", createInvoicePayable("broker2", "fee2", "rc2", "SWIFT"))
-        );
-        String user = "testUser";
-
-        // Mock fetchNettedRows
-        Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
-        aggregateAmount.put(new GroupingKey("entity1", "USD"), new BigDecimal("100.00"));
-        aggregateAmount.put(new GroupingKey("entity2", "EUR"), new BigDecimal("200.00"));
-        Map<GroupingKey, Integer> aggregateInvoiceCount = new HashMap<>();
-        aggregateInvoiceCount.put(new GroupingKey("entity1", "USD"), 1);
-        aggregateInvoiceCount.put(new GroupingKey("entity2", "EUR"), 1);
-        Map<GroupingKey, String> aggregateInvoiceReferences = new HashMap<>();
-        aggregateInvoiceReferences.put(new GroupingKey("entity1", "USD"), "inv1,");
-        aggregateInvoiceReferences.put(new GroupingKey("entity2", "EUR"), "inv2,");
-        cashAllocationDomain.fetchNettedRows(paymentList, aggregateAmount, aggregateInvoiceCount, aggregateInvoiceReferences);
-
-        // Mock referentialServiceApi calls for both entities
-        PaymentDates paymentDatesUSD = new PaymentDates();
-        paymentDatesUSD.setValueDate(LocalDate.now());
-        paymentDatesUSD.setSendingDate(LocalDate.now());
-        when(referentialServiceApi.getPaymentDates("entity1", "USD", "SWIFT")).thenReturn(paymentDatesUSD);
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(List.of("inv1"))).thenReturn(List.of(createBapPayableModel("portfolio1")));
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic("portfolio1")).thenReturn(createPortfolioAdvanceDetailResponse("bdr1"));
-        when(referentialServiceApi.getSettlementAccounts("USD", "entity1", "bdr1")).thenReturn(List.of(createSettlementsAccounts("account1")));
-        when(referentialServiceApi.checkPaymentHabilitation("entity1", "testUser", "bdr_fee1", "SWIFT", 100.00, "USD")).thenReturn(createPayHabResponse(null));
-        when(referentialServiceApi.doPaymentChecks("testUser", "bdr_fee1", "USD", "entity1", "", LocalDate.now().toString(), "provider1")).thenReturn(createPaymentChecksResponse(null));
-
-        PaymentDates paymentDatesEUR = new PaymentDates();
-        paymentDatesEUR.setValueDate(LocalDate.now().plusDays(1));
-        paymentDatesEUR.setSendingDate(LocalDate.now().plusDays(1));
-        when(referentialServiceApi.getPaymentDates("entity2", "EUR", "SWIFT")).thenReturn(paymentDatesEUR);
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(List.of("inv2"))).thenReturn(List.of(createBapPayableModel("portfolio2")));
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic("portfolio2")).thenReturn(createPortfolioAdvanceDetailResponse("bdr2"));
-        when(referentialServiceApi.getSettlementAccounts("EUR", "entity2", "bdr2")).thenReturn(List.of(createSettlementsAccounts("account2")));
-        when(referentialServiceApi.checkPaymentHabilitation("entity2", "testUser", "bdr_fee2", "SWIFT", 200.00, "EUR")).thenReturn(createPayHabResponse(null));
-        when(referentialServiceApi.doPaymentChecks("testUser", "bdr_fee2", "EUR", "entity2", "", LocalDate.now().plusDays(1).toString(), "provider2")).thenReturn(createPaymentChecksResponse(null));
-
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
-
-        assertEquals(2, result.size());
-        // Add more assertions to verify the properties of both PaymentLinesModel objects
-    }
-
-    @Test
-    void testGetNettedRows_PayHabError_And_PaymentChecksError() {
-        List<InvoicePayableModelForPayment> paymentList = List.of(createInvoicePayableModel());
-        String user = "testUser";
-
-        // Mock fetchNettedRows
-        Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
-        aggregateAmount.put(new GroupingKey("entity1", "USD"), new BigDecimal("100.00"));
-        Map<GroupingKey, Integer> aggregateInvoiceCount = new HashMap<>();
-        aggregateInvoiceCount.put(new GroupingKey("entity1", "USD"), 1);
-        Map<GroupingKey, String> aggregateInvoiceReferences = new HashMap<>();
-        aggregateInvoiceReferences.put(new GroupingKey("entity1", "USD"), "inv1,");
-        cashAllocationDomain.fetchNettedRows(paymentList, aggregateAmount, aggregateInvoiceCount, aggregateInvoiceReferences);
-
-        // Mock referentialServiceApi with errors
-        PaymentDates paymentDates = new PaymentDates();
-        paymentDates.setValueDate(LocalDate.now());
-        paymentDates.setSendingDate(LocalDate.now());
-        when(referentialServiceApi.getPaymentDates("entity1", "USD", "SWIFT")).thenReturn(paymentDates);
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(List.of("inv1"))).thenReturn(List.of(createBapPayableModel("portfolio1")));
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic("portfolio1")).thenReturn(createPortfolioAdvanceDetailResponse("bdr1"));
-        when(referentialServiceApi.getSettlementAccounts("USD", "entity1", "bdr1")).thenReturn(List.of(createSettlementsAccounts("account1")));
-        when(referentialServiceApi.checkPaymentHabilitation("entity1", "testUser", "bdr_fee1", "SWIFT", 100.00, "USD")).thenReturn(createPayHabResponse("payHabError"));
-        when(referentialServiceApi.doPaymentChecks("testUser", "bdr_fee1", "USD", "entity1", "", LocalDate.now().toString(), "provider1")).thenReturn(createPaymentChecksResponse("paymentChecksError"));
-
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
-
-        assertEquals(1, result.size());
-        PaymentLinesModel paymentLinesModel = result.get(0);
-        assertTrue(paymentLinesModel.getComment().contains("payHabError"));
-        assertTrue(paymentLinesModel.getComment().contains("paymentChecksError"));
-    }
-
-    @Test
-    void testGetNettedRows_EmptyListOfBaps() {
-        List<InvoicePayableModelForPayment> paymentList = List.of(createInvoicePayableModel());
-        String user = "testUser";
-
-        // Mock fetchNettedRows
-        Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
-        aggregateAmount.put(new GroupingKey("entity1", "USD"), new BigDecimal("100.00"));
-        Map<GroupingKey, Integer> aggregateInvoiceCount = new HashMap<>();
-        aggregateInvoiceCount.put(new GroupingKey("entity1", "USD"), 1);
-        Map<GroupingKey, String> aggregateInvoiceReferences = new HashMap<>();
-        aggregateInvoiceReferences.put(new GroupingKey("entity1", "USD"), "inv1,");
-        cashAllocationDomain.fetchNettedRows(paymentList, aggregateAmount, aggregateInvoiceCount, aggregateInvoiceReferences);
-
-        // Mock referentialServiceApi
-        PaymentDates paymentDates = new PaymentDates();
-        paymentDates.setValueDate(LocalDate.now());
-        paymentDates.setSendingDate(LocalDate.now());
-        when(referentialServiceApi.getPaymentDates("entity1", "USD", "SWIFT")).thenReturn(paymentDates);
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(List.of("inv1"))).thenReturn(new ArrayList<>());
-
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, user);
-
-        assertEquals(1, result.size());
-        PaymentLinesModel paymentLinesModel = result.get(0);
-        assertEquals(0, paymentLinesModel.getNumberOfSSI());
-        assertEquals(new ArrayList<>(), paymentLinesModel.getSsiAccountCode());
-    }
-
-
-
-
-
  @Test
-    void getPaymentLinesFromPaymentReference_validReferences_returnsPaymentLines() {
-        String[] paymentReferences = {"REF1", "REF2"};
+    void testUpdatePaymentLines_Success() {
+        // Setup test data
+        String user = "testUser";
+        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
+        // Populate finalDataForInsertion with test data
 
-        List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
-        SrgPaymentModel model1 = new SrgPaymentModel();
-        model1.setId(1L);
-        model1.setProviderBdrId("PROVIDER1");
-        model1.setPaymentCurrency("USD");
-        model1.setSgEntity("ENTITY1");
-        model1.setFeeCategory("CATEGORY1");
-        model1.setInvoiceReference("INV1,INV2");
-        model1.setProviderName("PROVIDER_NAME");
-        model1.setValueDate(LocalDate.now());
-        model1.setSendingDate(LocalDate.now());
-        model1.setPaymentAmount(BigDecimal.TEN);
-        model1.setPaymentType("TYPE1");
-        model1.setDebitCredit("DEBIT");
-        model1.setPaymentMode("MODE1");
-        model1.setPaymentStatus("STATUS1");
-        model1.setRcCode("RC1");
-        model1.setComment("COMMENT1");
-        srgPaymentModels.add(model1);
+        // Mock invoiceServiceApi behavior
+        doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
 
-        List<String> ssiDetails = Arrays.asList("SSI1", "SSI2");
+        // Execute the method
+        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
-        when(cashAllocationDomain.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
-        when(cashAllocationDomain.getSsiDetails("PROVIDER1", "USD", "ENTITY1", "CATEGORY1")).thenReturn(ssiDetails);
+        // Verify the result
+        assertEquals("SUCCESSFUL", result);
 
-        List<PaymentLinesModel> result = cashAllocationDomainActual.getPaymentLinesFromPaymentReference(paymentReferences);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        PaymentLinesModel paymentLinesModel = result.get(0);
-        assertEquals(1L, paymentLinesModel.getId());
-        assertEquals("PROVIDER_NAME", paymentLinesModel.getBrokerName());
-        assertEquals(2, paymentLinesModel.getNumberOfInvoices());
-        assertEquals(ssiDetails, paymentLinesModel.getSsiAccountCode());
-        assertEquals(2, paymentLinesModel.getNumberOfSSI());
-        assertEquals("ENTITY1", paymentLinesModel.getSgEntity());
-        assertEquals("INV1,INV2", paymentLinesModel.getInvoiceReference());
-        assertEquals("CATEGORY1", paymentLinesModel.getFeeCategory());
-        assertEquals("PROVIDER1", paymentLinesModel.getProviderId());
-        assertEquals(LocalDate.now(), paymentLinesModel.getValueDate());
-        assertEquals(LocalDate.now(), paymentLinesModel.getSendingDate());
-        assertEquals(BigDecimal.TEN, paymentLinesModel.getAmount());
-        assertEquals("USD", paymentLinesModel.getCurrency());
-        assertEquals("TYPE1", paymentLinesModel.getInvoiceType());
-        assertEquals("INV", paymentLinesModel.getFeeType());
-        assertEquals("DEBIT", paymentLinesModel.getPaymentDirection());
-        assertEquals("MODE1", paymentLinesModel.getPaymentMode());
-        assertEquals("STATUS1", paymentLinesModel.getPaymentStatus());
-        assertEquals("RC1", paymentLinesModel.getRc());
-        assertEquals("COMMENT1", paymentLinesModel.getComment());
-
-        verify(cashAllocationDomain).findPaymentLinesFromPaymentReferences(paymentReferences);
-        verify(cashAllocationDomain).getSsiDetails("PROVIDER1", "USD", "ENTITY1", "CATEGORY1");
+        // Verify interactions
+        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
     }
 
     @Test
-    void getPaymentLinesFromPaymentReference_emptyReferences_returnsEmptyList() {
-        String[] paymentReferences = {};
+    void testUpdatePaymentLines_RestClientException() {
+        // Setup test data
+        String user = "testUser";
+        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
+        // Populate finalDataForInsertion with test data
 
-        List<PaymentLinesModel> result = cashAllocationDomainActual.getPaymentLinesFromPaymentReference(paymentReferences);
+        // Mock invoiceServiceApi behavior to throw RestClientException
+        doThrow(new RestClientException("Test RestClientException")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
 
-        assertNotNull(result);
-        assertEquals(0, result.size());
-        verify(cashAllocationDomain, never()).findPaymentLinesFromPaymentReferences(any());
+        // Execute the method and verify the result
+        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+        assertEquals("INVOICE_SERVICE_ERROR_MESSAGE: Test RestClientException", result);
+
+        // Verify interactions
+        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
     }
 
     @Test
-    void getPaymentLinesFromPaymentReference_noModelsFound_returnsEmptyList() {
-        String[] paymentReferences = {"REF1"};
+    void testUpdatePaymentLines_GeneralException() {
+        // Setup test data
+        String user = "testUser";
+        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
+        // Populate finalDataForInsertion with test data
 
-        when(cashAllocationDomain.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(new ArrayList<>());
+        // Mock invoiceServiceApi behavior to throw a general Exception
+        doThrow(new RuntimeException("Test Exception")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
 
-        List<PaymentLinesModel> result = cashAllocationDomainActual.getPaymentLinesFromPaymentReference(paymentReferences);
+        // Execute the method and verify the result
+        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+        assertEquals("ERROR: Error occurred while saving data to invoice service. Detailed message: Test Exception", result);
 
-        assertNotNull(result);
-        assertEquals(0, result.size());
-        verify(cashAllocationDomain).findPaymentLinesFromPaymentReferences(paymentReferences);
-        verify(cashAllocationDomain, never()).getSsiDetails(any(), any(), any(), any());
+        // Verify interactions
+        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
     }
 
-@Test
-    void getPaymentLinesFromPaymentReference_validReferences_returnsPaymentLines() throws Exception {
-        String[] paymentReferences = {"REF1", "REF2"};
+    @Test
+    void testUpdatePaymentLines_ExceptionInMainCatchBlock() {
+        // Setup test data
+        String user = "testUser";
+        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
+        // Populate finalDataForInsertion with test data
 
-        List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
-        SrgPaymentModel model1 = new SrgPaymentModel();
-        model1.setId(1L);
-        model1.setProviderBdrId("PROVIDER1");
-        model1.setPaymentCurrency("USD");
-        model1.setSgEntity("ENTITY1");
-        model1.setFeeCategory("CATEGORY1");
-        model1.setInvoiceReference("INV1,INV2");
-        srgPaymentModels.add(model1);
+        // Mock behavior to throw an exception within the main try block
+        // You might need to adjust this part based on how you can simulate an exception in the try block
+        // For example, if you have a method that can throw an exception, you can mock that method
 
-        List<String> ssiDetails = Arrays.asList("SSI1", "SSI2");
+        // Execute the method and verify the exception
+        assertThrows(CashAllocationCustomException.class, () -> cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion));
 
-        // Use Reflection to invoke findPaymentLinesFromPaymentReferences
-        Method method = CashAllocationDomain.class.getDeclaredMethod("findPaymentLinesFromPaymentReferences", String[].class);
-        method.setAccessible(true);
-        List<SrgPaymentModel> retrievedModels = (List<SrgPaymentModel>) method.invoke(cashAllocationDomain, (Object) paymentReferences);
-
-        when(cashAllocationDomain.getSsiDetails("PROVIDER1", "USD", "ENTITY1", "CATEGORY1")).thenReturn(ssiDetails);
-
-        // ... rest of the test logic ...
+        // Verify interactions
+        // Verify any interactions that should have occurred before the exception
     }
