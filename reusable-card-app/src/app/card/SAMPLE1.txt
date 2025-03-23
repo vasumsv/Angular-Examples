@@ -1,14 +1,18 @@
-@Test
+ @Test
     void testAutoPaymentMatching_Sunday() {
-        // Create a Sunday date
-        LocalDate sunday = LocalDate.of(2023, 10, 29); // Example Sunday
+        // Explicitly set the time zone
+        ZoneId zoneId = ZoneId.systemDefault(); // Or specify your time zone (e.g., ZoneId.of("America/New_York"))
 
-        // Set the date to be one day before Sunday, which is Saturday
-        LocalDate saturday = sunday.minusDays(1);
+        // Create a Monday date
+        LocalDate monday = LocalDate.of(2023, 10, 30); // Example Monday
 
-        // Mock LocalDate.now() to return the Saturday
+        // Adjust daysToSubtract to make valueDateEnd a Sunday
+        int daysToSubtract = 1; // Subtract one day from Monday to get Sunday
+        LocalDate sunday = monday.minusDays(daysToSubtract);
+
+        // Mock LocalDate.now() to return the Monday
         try (var mockedStatic = mockStatic(LocalDate.class)) {
-            mockedStatic.when(LocalDate::now).thenReturn(saturday);
+            mockedStatic.when(() -> LocalDate.now(zoneId)).thenReturn(monday);
 
             // Call the method
             cashAllocationDomain.autoPaymentMatching();
