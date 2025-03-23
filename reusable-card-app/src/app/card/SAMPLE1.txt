@@ -1,4 +1,4 @@
- @Test
+   @Test
     void testUpdateCashAllocationStatus_MATCHED_Flow_NonEmptyMatchedCashModels() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
@@ -13,9 +13,9 @@
 
         // Create an InvoicesList object
         InvoicesList invoicesList = new InvoicesList();
-        // Populate invoicesList with data if needed
+        // You might need to populate invoicesList with mock Invoice objects if the statusMatched method uses them
 
-        when(cashAllocationDomain.statusMatched(anyString(), eq(processCashRequest), anyString(), anyList(), eq(invoicesList), any(), any())).thenReturn(matchedCashModels); // Pass invoicesList
+        when(cashAllocationDomain.statusMatched(anyString(), eq(processCashRequest), anyString(), anyList(), eq(invoicesList), any(), any())).thenReturn(matchedCashModels); // Pass the created invoicesList
 
         // Execute the method
         cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "TEST_USER");
