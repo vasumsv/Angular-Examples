@@ -1,22 +1,33 @@
-   @Test
-    void testSavePaymentDetails() {
+  @Test
+    void testPaymentDetails_WithValueDateStart() {
         // Create test data
-        String fileName = "testFile.txt";
-        File file = new File(fileName);
-        List<String> fileLines = new ArrayList<>();
-        fileLines.add("line1");
-        fileLines.add("line2");
+        String valueDateStart = "2023-10-26";
+        LocalDate endDate = LocalDate.parse(valueDateStart);
+
+        CashAllocationModel cashAllocationModel1 = new CashAllocationModel();
+        CashDetails cashDetails1 = new CashDetails();
+        cashDetails1.setId(1L);
+        cashAllocationModel1.setCashDetails(cashDetails1);
+        cashAllocationModel1.setId(1L);
+
+        CashAllocationModel cashAllocationModel2 = new CashAllocationModel();
+        CashDetails cashDetails2 = new CashDetails();
+        cashDetails2.setId(2L);
+        cashAllocationModel2.setCashDetails(cashDetails2);
+        cashAllocationModel2.setId(2L);
+
         List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
-        cashAllocationModels.add(new CashAllocationModel());
+        cashAllocationModels.add(cashAllocationModel1);
+        cashAllocationModels.add(cashAllocationModel2);
 
         // Mock dependencies
-        when(fileProcessingService.getFile(fileName)).thenReturn(file);
-        when(fileProcessingService.readFile(file)).thenReturn(fileLines);
-        when(cashAllocationDomain.cashAllocationModelList(fileLines, fileName)).thenReturn(cashAllocationModels);
+        when(cashAllocationRepositoryApi.findByValueDateLesserThanEqual(endDate)).thenReturn(Stream.of(cashAllocationModel1, cashAllocationModel2));
 
         // Call the method
-        cashAllocationDomain.savePaymentDetails(fileName);
+        List<CashDetails> result = cashAllocationDomain.paymentDetails(valueDateStart);
 
         // Verify interactions
-        verify(cashAllocationRepositoryApi, times(1)).savePaymentDetails(cashAllocationModels);
+        assertEquals(2, result.size());
+        assertEquals(1L, result.get(0).getId());
+        assertEquals(2L, result.get(1).getId());
     }
