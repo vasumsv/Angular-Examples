@@ -1,5 +1,5 @@
-@Test
-    void testUpdateCashAllocationStatus_UNMATCHED_Flow3() throws Exception {
+ @Test
+    void testUpdateCashAllocationStatus_UNMATCHED_Flow_MSG_TYPE_Same() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
         processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456")); // Invoice refs start with "RSF-*"
@@ -18,7 +18,7 @@
         List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
         cashAllocationModel.setInvoiceMatched("RSF-123,RSF-456"); // Set invoiceMatched to match the input
-        cashAllocationModel.setMsgType("DIFFERENT_MSG_TYPE"); // Set a different msgType
+        cashAllocationModel.setMsgType(MSG_TYPE); // Set msgType to MSG_TYPE
         CashDetails cashDetails = new CashDetails();
         cashAllocationModel.setCashDetails(cashDetails);
         cashAllocationModelList.add(cashAllocationModel);
@@ -28,6 +28,6 @@
         // Execute the method
         cashAllocationDomain.updateCashAllocationStatus("UNMATCHED", processCashRequest, "TEST_USER");
 
-        // Verify that cashAllocationRepositoryApi.save is called with the modified CashAllocationModel
+        // Verify that cashAllocationRepositoryApi.save is called with the unmodified CashAllocationModel
         verify(cashAllocationRepositoryApi, times(1)).save(argThat(model -> model.getMsgType().equals(MSG_TYPE)));
     }
