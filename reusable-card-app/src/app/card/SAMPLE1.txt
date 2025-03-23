@@ -1,23 +1,49 @@
- @Test
-    void testCashAllocationModels_SpecificLines() throws ParseException {
-        // Create a test line that triggers the logic in lines 746-775
-        String line = "0123456789012320231027123456789000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
-        List<String> lines = new ArrayList<>();
-        lines.add(validLine);
+    @Test
+    void testAutoPaymentMatching_Saturday() {
+        // Set valueDateEnd to a Saturday
+        LocalDate saturday = LocalDate.of(2023, 10, 28); // Example Saturday
+        LocalDate expectedDate = saturday.minusDays(1); // Expected Friday
 
-        // Mock supplementaryDetailsService.getInvoiceRefFromSupplementaryDetails
-        when(supplementaryDetailsService.getInvoiceRefFromSupplementaryDetails(anyString()))
-                .thenReturn("INV-REF-123");
+        // Mock LocalDate.now() to return the Saturday
+        try (var mockedStatic = mockStatic(LocalDate.class)) {
+            mockedStatic.when(LocalDate::now).thenReturn(saturday);
 
-        // Call the method
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "testFile.txt");
+            // Call the method
+            cashAllocationDomain.autoPaymentMatching();
 
-        // Assert the result
-        assertEquals(1, result.size());
-        CashAllocationModel model = result.get(0);
-        assertEquals("INV-REF-123", model.getInvoiceRef());
-        assertEquals(new SimpleDateFormat("yyyyMMdd", Locale.US).parse("20231027"), model.getValueDate());
-        assertEquals(new BigDecimal("10.00"), model.getAmount());
-        assertEquals("0123456789", model.getTransactionNumber());
+            // Verify that findPaymentLinesForAutoMatching is called with the expected date
+            verify(cashAllocationRepositoryApi, times(2)).findPaymentLinesForAutoMatching(anyList(), anyList(), anyString(), eq(expectedDate));
+        }
+    }
+
+    @Test
+    void testAutoPaymentMatching_Sunday() {
+        // Set valueDateEnd to a Sunday
+        LocalDate sunday = LocalDate.of(2023, 10, 29); // Example Sunday
+        LocalDate expectedDate = sunday.minusDays(2); // Expected Friday
+
+        // Mock LocalDate.now() to return the Sunday
+        try (var mockedStatic = mockStatic(LocalDate.class)) {
+            mockedStatic.when(LocalDate::now).thenReturn(sunday);
+
+            // Call the method
+            cashAllocationDomain.autoPaymentMatching();
+
+            // Verify that findPaymentLinesForAutoMatching is called with the expected date
+            verify(cashAllocationRepositoryApi, times(2)).findPaymentLinesForAutoMatching(anyList(), anyList(), anyString(), eq(expectedDate));
+        }
+    }
+
+    @Test
+    void testAutoPaymentMatching_Exception() {
+        // Mock LocalDate.now() to throw an exception
+        try (var mockedStatic = mockStatic(LocalDate.class)) {
+            mockedStatic.when(LocalDate::now).thenThrow(new RuntimeException());
+
+            // Verify that CashAllocationCustomException is thrown
+            assertThrows(CashAllocationCustomException.class, () -> {
+                cashAllocationDomain.autoPaymentMatching();
+            });
+        }
     }
