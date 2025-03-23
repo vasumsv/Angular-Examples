@@ -1,10 +1,9 @@
-
-    @Test
+ @Test
     void testGetNettedRows() {
         // Create test data
         List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
         InvoicePayableModelForPayment invoice1 = new InvoicePayableModelForPayment();
-        invoice1.setSgEntity("ENTITY1"); // Corrected method name
+        invoice1.setSgEntity("ENTITY1");
         invoice1.setCurrency("USD");
         invoice1.setAmount(new BigDecimal("100"));
         invoice1.setInvoiceReference("INV1");
@@ -19,7 +18,7 @@
         String user = "TEST_USER";
 
         // Mock referentialServiceApi calls
-        PaymentModeAndLocation paymentModeAndLocation = new PaymentModeAndLocation();
+        PaymentModeAndLocation paymentModeAndLocation = new PaymentModeAndLocation(); // Corrected import
         paymentModeAndLocation.setPaymentMode("MODE1");
         when(referentialServiceApi.paymentModeAndSettlementLocation(any(), any(), any())).thenReturn(paymentModeAndLocation);
 
@@ -53,5 +52,5 @@
         verify(referentialServiceApi, times(1)).getPaymentDates(anyString(), anyString(), anyString(), any());
         verify(cashAllocationDomain, times(1)).getSsiDetails(anyString(), anyString(), anyString(), anyString());
         verify(referentialServiceApi, times(1)).checkPaymentHabilitation(anyString(), anyString(), anyString(), anyString(), anyDouble(), anyString());
-        verify(referentialServiceApi, times(1)).doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(referentialServiceApi, times(1)).doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
     }
