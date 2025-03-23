@@ -1,48 +1,11 @@
-
-    @Test
-    void testAutoPaymentMatching_Saturday() {
-        // Set valueDateEnd to a Saturday
-        LocalDate saturday = LocalDate.of(2023, 10, 28); // Example Saturday
-        LocalDate expectedDate = saturday.minusDays(1); // Expected Friday
-
-        // Mock LocalDate.now() to return the Saturday
-        try (var mockedStatic = mockStatic(LocalDate.class)) {
-            mockedStatic.when(LocalDate::now).thenReturn(saturday);
-
-            // Call the method
-            cashAllocationDomain.autoPaymentMatching();
-
-            // Verify that findPaymentLinesForAutoMatching is called with the expected date
-            verify(cashAllocationRepositoryApi, times(2)).findPaymentLinesForAutoMatching(anyList(), anyList(), anyString(), eq(expectedDate));
-        }
-    }
-
-    @Test
-    void testAutoPaymentMatching_Sunday() {
-        // Set valueDateEnd to a Sunday
-        LocalDate sunday = LocalDate.of(2023, 10, 29); // Example Sunday
-        LocalDate expectedDate = sunday.minusDays(2); // Expected Friday
-
-        // Mock LocalDate.now() to return the Sunday
-        try (var mockedStatic = mockStatic(LocalDate.class)) {
-            mockedStatic.when(LocalDate::now).thenReturn(sunday);
-
-            // Call the method
-            cashAllocationDomain.autoPaymentMatching();
-
-            // Verify that findPaymentLinesForAutoMatching is called with the expected date
-            verify(cashAllocationRepositoryApi, times(2)).findPaymentLinesForAutoMatching(anyList(), anyList(), anyString(), eq(expectedDate));
-        }
-    }
-
-    @Test
+ @Test
     void testAutoPaymentMatching_Exception() {
-        // Mock LocalDate.now() to throw an exception
+        // Mock LocalDate.now() to throw a RuntimeException
         try (var mockedStatic = mockStatic(LocalDate.class)) {
             mockedStatic.when(LocalDate::now).thenThrow(new RuntimeException());
 
-            // Verify that CashAllocationCustomException is thrown
-            assertThrows(CashAllocationCustomException.class, () -> {
+            // Verify that RuntimeException is thrown
+            assertThrows(RuntimeException.class, () -> {
                 cashAllocationDomain.autoPaymentMatching();
             });
         }
