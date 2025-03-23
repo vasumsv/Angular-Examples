@@ -1,4 +1,4 @@
-  @Test
+ @Test
     void testUpdatePaymentLines_Success() {
         // Setup test data
         String user = "testUser";
@@ -7,19 +7,15 @@
         // Create a sample UpdatePaymentLines object and add it to the list
         UpdatePaymentLines samplePaymentLine = new UpdatePaymentLines();
         // Set necessary properties of samplePaymentLine based on your UpdatePaymentLines class
-        // For example:
         samplePaymentLine.setInvoiceReference("INV123");
-        samplePaymentLine.setSendingDate(LocalDate.of(2023, 10, 27));
+        samplePaymentLine.setSendingDate(LocalDate.of(2025, 3, 23)); // Using current date for example
         samplePaymentLine.setAmount(100.0);
+        samplePaymentLine.setPaymentReferences(new String[]{"REF123-1"}); // Ensure paymentReferences is not null
 
-        // Add paymentReferences (if it's the issue)
-        String[] paymentReferences = {"REF123-1", "REF123-2"};
-        samplePaymentLine.setPaymentReferences(paymentReferences);
-
-        finalDataForInsertion.add(samplePaymentLine);
+        finalDataForInsertion.add(samplePaymentLine); // **CRUCIAL: Add the object to the list**
 
         // Mock invoiceServiceApi behavior
-        when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(any())).thenReturn(null); // Use any() here
+        when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(any())).thenReturn(null);
 
         // Execute the method
         String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
@@ -28,5 +24,5 @@
         assertEquals("SUCCESSFUL", result);
 
         // Verify interactions
-        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(any()); // Use any() here
+        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(any());
     }
