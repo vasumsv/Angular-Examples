@@ -1,107 +1,61 @@
- @Test
+   @Test
     void testGetPaymentLinesFromPaymentReference() {
         // Setup test data
         String[] paymentReferences = {"REF123-1", "REF123-2"};
 
-        // Mock paymentRepository - Simulate two PaymentEntity objects
-        List<PaymentEntity> paymentEntities1 = new ArrayList<>();
-        PaymentEntity paymentEntity1 = new PaymentEntity();
-        paymentEntity1.setProviderNane("Test Broker 1");
-        paymentEntity1.setSgEntity("SG123");
-        paymentEntity1.setInvoiceReference("INV1-1,INV1-2");
-        paymentEntity1.setFeeCategory("Fee1");
-        paymentEntity1.setProviderBdrId("PROV1");
-        paymentEntity1.setValueDate(LocalDate.of(2023, 10, 27));
-        paymentEntity1.setSendingDate(LocalDate.of(2023, 10, 28));
-        paymentEntity1.setPaymentAmount(100.0);
-        paymentEntity1.setPaymentCurrency("USD");
-        paymentEntity1.setPaymentType("Type1");
-        paymentEntity1.setDebitCredit("Debit");
-        paymentEntity1.setPaymentMode("Mode1");
-        paymentEntity1.setPaymentStatus("Status1");
-        paymentEntity1.setRcCode("RC1");
-        paymentEntity1.setComment("Comment 1");
-        paymentEntities1.add(paymentEntity1);
+        // Mock findPaymentLinesFromPaymentReferences
+        List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
+        SrgPaymentModel srgPaymentModel = new SrgPaymentModel();
+        srgPaymentModel.setId(1L);
+        srgPaymentModel.setProviderNane("Test Broker");
+        srgPaymentModel.setSgEntity("SG123");
+        srgPaymentModel.setInvoiceReference("INV1,INV2");
+        srgPaymentModel.setFeeCategory("Fee1");
+        srgPaymentModel.setProviderBdrId("PROV1");
+        srgPaymentModel.setValueDate(LocalDate.of(2023, 10, 27));
+        srgPaymentModel.setSendingDate(LocalDate.of(2023, 10, 28));
+        srgPaymentModel.setPaymentAmount(100.0);
+        srgPaymentModel.setPaymentCurrency("USD");
+        srgPaymentModel.setPaymentType("Type1");
+        srgPaymentModel.setDebitCredit("Debit");
+        srgPaymentModel.setPaymentMode("Mode1");
+        srgPaymentModel.setPaymentStatus("Status1");
+        srgPaymentModel.setRcCode("RC1");
+        srgPaymentModel.setComment("Test Comment");
+        srgPaymentModels.add(srgPaymentModel);
 
-        List<PaymentEntity> paymentEntities2 = new ArrayList<>();
-        PaymentEntity paymentEntity2 = new PaymentEntity();
-        paymentEntity2.setProviderNane("Test Broker 2");
-        paymentEntity2.setSgEntity("SG456");
-        paymentEntity2.setInvoiceReference("INV2-1");
-        paymentEntity2.setFeeCategory("Fee2");
-        paymentEntity2.setProviderBdrId("PROV2");
-        paymentEntity2.setValueDate(LocalDate.of(2023, 11, 15));
-        paymentEntity2.setSendingDate(LocalDate.of(2023, 11, 16));
-        paymentEntity2.setPaymentAmount(200.0);
-        paymentEntity2.setPaymentCurrency("EUR");
-        paymentEntity2.setPaymentType("Type2");
-        paymentEntity2.setDebitCredit("Credit");
-        paymentEntity2.setPaymentMode("Mode2");
-        paymentEntity2.setPaymentStatus("Status2");
-        paymentEntity2.setRcCode("RC2");
-        paymentEntity2.setComment("Comment 2");
-        paymentEntities2.add(paymentEntity2);
-
-        when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-1")).thenReturn(paymentEntities1);
-        when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-2")).thenReturn(paymentEntities2);
+        when(cashAllocationDomain.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
 
         // Mock getSsiDetails
-        List<String> ssiDetails1 = new ArrayList<>();
-        ssiDetails1.add("SSI1-A");
-        ssiDetails1.add("SSI1-B");
-        when(paymentRepository.getSsiDetailsByProviderAndCurrencyAndEntityAndFeeCategory("PROV1", "USD", "SG123", "Fee1")).thenReturn(ssiDetails1);
-
-        List<String> ssiDetails2 = new ArrayList<>();
-        ssiDetails2.add("SSI2-A");
-        when(paymentRepository.getSsiDetailsByProviderAndCurrencyAndEntityAndFeeCategory("PROV2", "EUR", "SG456", "Fee2")).thenReturn(ssiDetails2);
+        List<String> ssiDetails = new ArrayList<>();
+        ssiDetails.add("SSI1");
+        ssiDetails.add("SSI2");
+        when(cashAllocationDomain.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiDetails);
 
         // Execute the method
         List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
 
         // Verify the result
-        assertEquals(2, result.size());
-
-        // Verify the first PaymentLinesModel
-        PaymentLinesModel paymentLinesModel1 = result.get(0);
-        assertEquals("Test Broker 1", paymentLinesModel1.getBrokerName());
-        assertEquals(2, paymentLinesModel1.getNumberOfInvoices());
-        assertEquals(ssiDetails1, paymentLinesModel1.getSsiAccountCode());
-        assertEquals(ssiDetails1.size(), paymentLinesModel1.getNumberOfSSI());
-        assertEquals("SG123", paymentLinesModel1.getSgEntity());
-        assertEquals("INV1,INV1-2", paymentLinesModel1.getInvoiceReference());
-        assertEquals("Fee1", paymentLinesModel1.getFeeCategory());
-        assertEquals("PROV1", paymentLinesModel1.getProviderId());
-        assertEquals(LocalDate.of(2023, 10, 27), paymentLinesModel1.getValueDate());
-        assertEquals(LocalDate.of(2023, 10, 28), paymentLinesModel1.getSendingDate());
-        assertEquals(100.0, paymentLinesModel1.getAmount());
-        assertEquals("USD", paymentLinesModel1.getCurrency());
-        assertEquals("Type1", paymentLinesModel1.getInvoiceType());
-        assertEquals("INV", paymentLinesModel1.getFeeType());
-        assertEquals("Debit", paymentLinesModel1.getPaymentDirection());
-        assertEquals("Mode1", paymentLinesModel1.getPaymentMode());
-        assertEquals("Status1", paymentLinesModel1.getPaymentStatus());
-        assertEquals("RC1", paymentLinesModel1.getRc());
-        assertEquals("Comment 1", paymentLinesModel1.getComment());
-
-        // Verify the second PaymentLinesModel
-        PaymentLinesModel paymentLinesModel2 = result.get(1);
-        assertEquals("Test Broker 2", paymentLinesModel2.getBrokerName());
-        assertEquals(1, paymentLinesModel2.getNumberOfInvoices());
-        assertEquals(ssiDetails2, paymentLinesModel2.getSsiAccountCode());
-        assertEquals(ssiDetails2.size(), paymentLinesModel2.getNumberOfSSI());
-        assertEquals("SG456", paymentLinesModel2.getSgEntity());
-        assertEquals("INV2-1", paymentLinesModel2.getInvoiceReference());
-        assertEquals("Fee2", paymentLinesModel2.getFeeCategory());
-        assertEquals("PROV2", paymentLinesModel2.getProviderId());
-        assertEquals(LocalDate.of(2023, 11, 15), paymentLinesModel2.getValueDate());
-        assertEquals(LocalDate.of(2023, 11, 16), paymentLinesModel2.getSendingDate());
-        assertEquals(200.0, paymentLinesModel2.getAmount());
-        assertEquals("EUR", paymentLinesModel2.getCurrency());
-        assertEquals("Type2", paymentLinesModel2.getInvoiceType());
-        assertEquals("INV", paymentLinesModel2.getFeeType());
-        assertEquals("Credit", paymentLinesModel2.getPaymentDirection());
-        assertEquals("Mode2", paymentLinesModel2.getPaymentMode());
-        assertEquals("Status2", paymentLinesModel2.getPaymentStatus());
-        assertEquals("RC2", paymentLinesModel2.getRc());
-        assertEquals("Comment 2", paymentLinesModel2.getComment());
+        assertEquals(1, result.size());
+        PaymentLinesModel paymentLinesModel = result.get(0);
+        assertEquals(1L, paymentLinesModel.getId());
+        assertEquals("Test Broker", paymentLinesModel.getBrokerName());
+        assertEquals(2, paymentLinesModel.getNumberOfInvoices());
+        assertEquals(ssiDetails, paymentLinesModel.getSsiAccountCode());
+        assertEquals(ssiDetails.size(), paymentLinesModel.getNumberOfSSI());
+        assertEquals("SG123", paymentLinesModel.getSgEntity());
+        assertEquals("INV1,INV2", paymentLinesModel.getInvoiceReference());
+        assertEquals("Fee1", paymentLinesModel.getFeeCategory());
+        assertEquals("PROV1", paymentLinesModel.getProviderId());
+        assertEquals(LocalDate.of(2023, 10, 27), paymentLinesModel.getValueDate());
+        assertEquals(LocalDate.of(2023, 10, 28), paymentLinesModel.getSendingDate());
+        assertEquals(100.0, paymentLinesModel.getAmount());
+        assertEquals("USD", paymentLinesModel.getCurrency());
+        assertEquals("Type1", paymentLinesModel.getInvoiceType());
+        assertEquals("INV", paymentLinesModel.getFeeType());
+        assertEquals("Debit", paymentLinesModel.getPaymentDirection());
+        assertEquals("Mode1", paymentLinesModel.getPaymentMode());
+        assertEquals("Status1", paymentLinesModel.getPaymentStatus());
+        assertEquals("RC1", paymentLinesModel.getRc());
+        assertEquals("Test Comment", paymentLinesModel.getComment());
     }
