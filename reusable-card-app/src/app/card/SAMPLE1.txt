@@ -17,12 +17,6 @@
 
         when(invoiceServiceApi.getListOfInvoices(List.of("INV123"))).thenReturn(invoices);
 
-        // Mock ReferentialServiceApi.getProviderDetails()
-        when(referentialServiceApi.getProviderDetails(anyString(), anyString())).thenReturn(new ProviderDetails());
-
-        // Mock ReferentialServiceApi.getUserInitials()
-        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(new UserDetailsModel());
-
         // Call the method and verify the error
         InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(paymentLines, "testUser");
         assertNotNull(response.getErrorMessage());
