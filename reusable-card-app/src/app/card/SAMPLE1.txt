@@ -1,65 +1,20 @@
-@Test
-    void testTransferFile_FileNotFoundException() throws Exception {
-        // Prepare data
-        LocalDate date = LocalDate.now();
-        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
-
-        // Create a mocked CashAllocationModel
-        CashAllocationModel model = mock(CashAllocationModel.class);
-        when(model.getInvoiceMatched()).thenReturn("RSF-123");
-        when(model.getCounterPartyId()).thenReturn("CP123");
-        when(model.getCreatedDate()).thenReturn(new Date());
-
-        cashAllocationModels.add(model);
-
-        // Force FileNotFoundException by providing a non-existent file name
-        String nonExistentFileName = "nonexistent.csv";
-
-        try {
-            // Access the private transferFile method using reflection
-            Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-            transferFileMethod.setAccessible(true);
-
-            // Call the private method
-            transferFileMethod.invoke(abDomain, date, cashAllocationModels);
-        } catch (Exception e) {
-            System.out.println("FileNotFoundException caught in test case: " + e.getMessage());
-            // Add assertions if needed
-        }
-    }
 
     @Test
-    void testTransferFile_IOException() throws Exception {
-        // Prepare data
-        LocalDate date = LocalDate.now();
-        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+    void testUploadPaymentAbFileViaReferential_FileDeleted() throws IOException {
+        // Create a temporary file
+        File tempFile = File.createTempFile("test", ".txt");
 
-        // Create a mocked CashAllocationModel
-        CashAllocationModel model = mock(CashAllocationModel.class);
-        when(model.getInvoiceMatched()).thenReturn("RSF-123");
-        when(model.getCounterPartyId()).thenReturn("CP123");
-        when(model.getCreatedDate()).thenReturn(new Date());
+        // Mock the uploadFileToGaiaServer method
+        doNothing().when(referentialServiceApi).uploadFileToGaiaServer(any(), anyString(), anyString());
 
-        cashAllocationModels.add(model);
+        // Call the method
+        abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
 
-        // Force IOException by mocking FileOutputStream to throw an exception
-        FileOutputStream mockFileOutputStream = mock(FileOutputStream.class);
-        doThrow(new IOException("Simulated IOException")).when(mockFileOutputStream).write(any(byte[].class));
+        // Verify that the file was deleted
+        assertFalse(tempFile.exists());
 
-        // Stub the FileOutputStream creation
-        Method getFileOutputStreamMethod = AbDomain.class.getDeclaredMethod("getFileOutputStream", File.class);
-        getFileOutputStreamMethod.setAccessible(true);
-        when(getFileOutputStreamMethod.invoke(abDomain, any(File.class))).thenReturn(mockFileOutputStream);
-
-        try {
-            // Access the private transferFile method using reflection
-            Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-            transferFileMethod.setAccessible(true);
-
-            // Call the private method
-            transferFileMethod.invoke(abDomain, date, cashAllocationModels);
-        } catch (Exception e) {
-            System.out.println("IOException caught in test case: " + e.getMessage());
-            // Add assertions if needed
+        // Clean up the temporary file (if the deletion failed)
+        if (tempFile.exists()) {
+            tempFile.delete();
         }
     }
