@@ -1,8 +1,8 @@
- @Test
+   @Test
     void testAutoPaymentMatching_NotAllocatedModel() {
         // Mock InvoiceServiceApi.getSd2Invoice()
         InvoiceSd2Model invoiceSd2Model = new InvoiceSd2Model();
-        invoiceSd2Model.setInvoicesSd2(List.of(new Invoice())); // Using the correct setter
+        invoiceSd2Model.setInvoiceSd2List(List.of(new Invoice())); // Corrected line
 
         when(invoiceServiceApi.getSd2Invoice(anyString())).thenReturn(invoiceSd2Model);
 
@@ -23,5 +23,5 @@
         verify(cashAllocationRepositoryApi).findByInvoiceReferenceReceived(anyString());
 
         // Verify that processingCashAllocation() was called
-        verify(cashAllocationDomain).processingCashAllocation(eq("MATCHED"), any(), eq("AutoPaymentMatching"));
+        verify(cashAllocationDomain).processingCashAllocation(eq("MATCHED"), any(ProcessCashRequest.class), eq("AutoPaymentMatching"));
     }
