@@ -1,4 +1,4 @@
-    @Test
+  @Test
     void testGetPaymentLinesFromPaymentReference() throws Exception {
         // Setup test data
         String[] paymentReferences = {"REF123-1", "REF123-2"};
@@ -28,7 +28,7 @@
         Method findPaymentLinesMethod = CashAllocationDomain.class.getDeclaredMethod("findPaymentLinesFromPaymentReferences", String[].class);
         findPaymentLinesMethod.setAccessible(true);
 
-        when(findPaymentLinesMethod.invoke(cashAllocationDomain, paymentReferences)).thenReturn(srgPaymentModels);
+        when(findPaymentLinesMethod.invoke(cashAllocationDomain, paymentReferences)).thenReturn(srgPaymentModels); // Corrected invoke
 
         // Mock getSsiDetails
         List<String> ssiDetails = new ArrayList<>();
