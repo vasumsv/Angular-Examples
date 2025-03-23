@@ -1,8 +1,9 @@
-   @Test
+
+    @Test
     void testAutoPaymentMatching_NotAllocatedModel() {
         // Mock InvoiceServiceApi.getSd2Invoice()
         InvoiceSd2Model invoiceSd2Model = new InvoiceSd2Model();
-        invoiceSd2Model.setInvoiceSd2List(List.of(new Invoice())); // Corrected line
+        invoiceSd2Model.setInvoices(List.of(new Invoice())); // Corrected line
 
         when(invoiceServiceApi.getSd2Invoice(anyString())).thenReturn(invoiceSd2Model);
 
