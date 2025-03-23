@@ -11,7 +11,7 @@
         cashAllocationModel.setValueDate(LocalDate.now()); // Set a LocalDate object
         matchedCashModels.add(cashAllocationModel);
 
-        when(cashAllocationDomain.statusMatched(anyString(), any(ProcessCashRequest.class), anyString(), anyList(), any(), any(), any())).thenReturn(matchedCashModels);
+        when(cashAllocationDomain.statusMatched(anyString(), eq(processCashRequest), anyString(), anyList(), any(), any(), any())).thenReturn(matchedCashModels); // Pass processCashRequest
 
         // Execute the method
         cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "TEST_USER");
