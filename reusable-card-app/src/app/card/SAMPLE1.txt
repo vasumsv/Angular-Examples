@@ -1,13 +1,13 @@
 @Test
-void testCashAllocationModels_LineFiltering() {
-    List<String> lines = Arrays.asList(
-            "200201472755     20230101     1234567890123456     00000000000000000000  D",
-            "A00201472755     20230101     1234567890123456     00000000000000000000  C",
-            "12345678" // This line was causing the NumberFormatException
-    );
+void updatePaymentLines_Success() {
+    String user = "testUser";
+    List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
+    // Populate finalDataForInsertion with test data
 
-    CashAllocationDomain domain = new CashAllocationDomain(); // Create an instance
-    List<CashAllocationModel> models = domain.cashAllocationModels(lines, "GAIA_NXG_FILE"); // Call on the instance
+    when(cashAllocationRepositoryApi.save(any())).thenReturn(null); // Assuming save doesn't return anything relevant
 
-    assertEquals(2, models.size());
+    String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+
+    assertEquals("SUCCESSFUL", result);
+    verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(any());
 }
