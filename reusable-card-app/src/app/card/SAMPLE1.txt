@@ -1,5 +1,4 @@
-
-    @Test
+  @Test
     void testUpdatePaymentLines_Success() {
         // Setup test data
         String user = "testUser";
@@ -10,17 +9,17 @@
         // Set necessary properties of samplePaymentLine based on your UpdatePaymentLines class
         // For example:
         samplePaymentLine.setInvoiceReference("INV123");
-        samplePaymentLine.setSendingDate(LocalDate.of(2023, 10, 27)); // Correct setter
+        samplePaymentLine.setSendingDate(LocalDate.of(2023, 10, 27));
         samplePaymentLine.setAmount(100.0);
 
-        // Add paymentReferences
+        // Add paymentReferences (if it's the issue)
         String[] paymentReferences = {"REF123-1", "REF123-2"};
         samplePaymentLine.setPaymentReferences(paymentReferences);
 
         finalDataForInsertion.add(samplePaymentLine);
 
         // Mock invoiceServiceApi behavior
-        when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(anyList())).thenReturn(null);
+        when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(any())).thenReturn(null); // Use any() here
 
         // Execute the method
         String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
@@ -29,5 +28,5 @@
         assertEquals("SUCCESSFUL", result);
 
         // Verify interactions
-        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(anyList());
+        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(any()); // Use any() here
     }
