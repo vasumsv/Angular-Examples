@@ -1,5 +1,4 @@
-
-    @Test
+   @Test
     void testUpdatePaymentLines_Success() {
         // Setup test data
         String user = "testUser";
@@ -16,8 +15,10 @@
 
         // Mock paymentRepository
         List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
-        // Add sample SrgPaymentModel objects to the list
-        when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-1")).thenReturn(srgPaymentModels); // Mock for at least one payref
+        // Add sample SrgPaymentModel objects to the list (you might need to populate this based on your actual logic)
+        srgPaymentModels.add(new SrgPaymentModel()); // Add at least one mock object
+
+        when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-1")).thenReturn(srgPaymentModels);
         when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-2")).thenReturn(srgPaymentModels);
 
         // Mock invoiceServiceApi behavior
