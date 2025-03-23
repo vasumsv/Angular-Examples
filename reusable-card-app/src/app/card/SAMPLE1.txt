@@ -1,21 +1,116 @@
-  @Test
-    void testInsertPaymentLines_AmountMismatch_FinalAmt() {
+@Test
+    void testInsertPaymentLines_ProviderDetailsException() {
         // Create a list of PaymentLinesFeoModel objects
         List<PaymentLinesFeoModel> paymentLines = new ArrayList<>();
         PaymentLinesFeoModel paymentLine1 = new PaymentLinesFeoModel();
-        paymentLine1.setInvoiceReference("INV123");
-        paymentLine1.setAmount(BigDecimal.TEN);
+        paymentLine1.setProviderId("PROV1");
+        paymentLine1.setProviderMnemonic("MNEM1");
         paymentLines.add(paymentLine1);
 
         // Mock InvoiceServiceApi.getListOfInvoices()
         List<InvoicePayableModel> invoices = new ArrayList<>();
         InvoicePayableModel invoice1 = new InvoicePayableModel();
         invoice1.setInvoiceReference("INV123");
-        invoice1.setAmount(BigDecimal.valueOf(15)); // Mismatched amount
+        invoice1.setAmount(BigDecimal.TEN);
         invoice1.setInvoiceType("CREDIT");
         invoices.add(invoice1);
 
         when(invoiceServiceApi.getListOfInvoices(List.of("INV123"))).thenReturn(invoices);
+
+        // Mock ReferentialServiceApi.getProviderDetails() to throw an exception
+        when(referentialServiceApi.getProviderDetails("PROV1", "MNEM1")).thenThrow(new RuntimeException("Provider details exception"));
+
+        // Call the method and verify the error
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(paymentLines, "testUser");
+        assertNotNull(response.getErrorMessage());
+    }
+
+    @Test
+    void testInsertPaymentLines_UserDetailsException() {
+        // Create a list of PaymentLinesFeoModel objects
+        List<PaymentLinesFeoModel> paymentLines = new ArrayList<>();
+        PaymentLinesFeoModel paymentLine1 = new PaymentLinesFeoModel();
+        paymentLines.add(paymentLine1);
+
+        // Mock InvoiceServiceApi.getListOfInvoices()
+        List<InvoicePayableModel> invoices = new ArrayList<>();
+        InvoicePayableModel invoice1 = new InvoicePayableModel();
+        invoice1.setInvoiceReference("INV123");
+        invoice1.setAmount(BigDecimal.TEN);
+        invoice1.setInvoiceType("CREDIT");
+        invoices.add(invoice1);
+
+        when(invoiceServiceApi.getListOfInvoices(List.of("INV123"))).thenReturn(invoices);
+
+        // Mock ReferentialServiceApi.getUserInitials() to throw an exception
+        when(referentialServiceApi.getUserInitials("testUser")).thenThrow(new RuntimeException("User details exception"));
+
+        // Call the method and verify the error
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(paymentLines, "testUser");
+        assertNotNull(response.getErrorMessage());
+    }
+
+    @Test
+    void testInsertPaymentLines_EntityDetailsException() {
+        // Create a list of PaymentLinesFeoModel objects
+        List<PaymentLinesFeoModel> paymentLines = new ArrayList<>();
+        PaymentLinesFeoModel paymentLine1 = new PaymentLinesFeoModel();
+        paymentLine1.setEntityBdrId("123");
+        paymentLines.add(paymentLine1);
+
+        // Mock InvoiceServiceApi.getListOfInvoices()
+        List<InvoicePayableModel> invoices = new ArrayList<>();
+        InvoicePayableModel invoice1 = new InvoicePayableModel();
+        invoice1.setInvoiceReference("INV123");
+        invoice1.setAmount(BigDecimal.TEN);
+        invoice1.setInvoiceType("CREDIT");
+        invoices.add(invoice1);
+
+        when(invoiceServiceApi.getListOfInvoices(List.of("INV123"))).thenReturn(invoices);
+
+        // Mock ReferentialServiceApi.getEntireListOfEntities() to throw an exception
+        when(referentialServiceApi.getEntireListOfEntities()).thenThrow(new RuntimeException("Entity details exception"));
+
+        // Call the method and verify the error
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(paymentLines, "testUser");
+        assertNotNull(response.getErrorMessage());
+    }
+
+    @Test
+    void testInsertPaymentLines_BackOfficeDetailsException() {
+        // Create a list of PaymentLinesFeoModel objects
+        List<PaymentLinesFeoModel> paymentLines = new ArrayList<>();
+        PaymentLinesFeoModel paymentLine1 = new PaymentLinesFeoModel();
+        paymentLine1.setEntityBdrId("123");
+        paymentLine1.setProviderId("PROV1");
+        paymentLine1.setProviderMnemonic("MNEM1");
+        paymentLines.add(paymentLine1);
+
+        // Mock InvoiceServiceApi.getListOfInvoices()
+        List<InvoicePayableModel> invoices = new ArrayList<>();
+        InvoicePayableModel invoice1 = new InvoicePayableModel();
+        invoice1.setInvoiceReference("INV123");
+        invoice1.setAmount(BigDecimal.TEN);
+        invoice1.setInvoiceType("CREDIT");
+        invoices.add(invoice1);
+
+        when(invoiceServiceApi.getListOfInvoices(List.of("INV123"))).thenReturn(invoices);
+
+        // Mock ReferentialServiceApi.getProviderDetails()
+        when(referentialServiceApi.getProviderDetails("PROV1", "MNEM1")).thenReturn(new ProviderDetails());
+
+        // Mock ReferentialServiceApi.getUserInitials()
+        when(referentialServiceApi.getUserInitials("testUser")).thenReturn(new UserDetailsModel());
+
+        // Mock ReferentialServiceApi.getEntireListOfEntities()
+        List<EntityDetails> entities = new ArrayList<>();
+        EntityDetails entity = new EntityDetails();
+        entity.setEntityCode("CODE123");
+        entities.add(entity);
+        when(referentialServiceApi.getEntireListOfEntities()).thenReturn(entities);
+
+        // Mock ReferentialServiceApi.getBackOfficeDetails() to throw an exception
+        when(referentialServiceApi.getBackOfficeDetails("CODE123", "CODGRPHABBO")).thenThrow(new RuntimeException("Back office details exception"));
 
         // Call the method and verify the error
         InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(paymentLines, "testUser");
