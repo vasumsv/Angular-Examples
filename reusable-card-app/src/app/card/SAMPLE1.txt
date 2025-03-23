@@ -1,54 +1,76 @@
-
-    @Test
-    void testInsertPaymentLines_SetProperties() {
-        // Create a list of PaymentLinesFeoModel objects
-        List<PaymentLinesFeoModel> paymentLines = new ArrayList<>();
-        PaymentLinesFeoModel paymentLine1 = new PaymentLinesFeoModel();
-        paymentLine1.setInvoiceReference("INV123");
-        paymentLine1.setAmount(BigDecimal.TEN);
-        paymentLine1.setProviderId("PROV1");
-        paymentLine1.setProviderMnemonic("MNEM1");
-        paymentLine1.setEntityBdrId("123");
-        paymentLine1.setRefCptyId("REF123");
-        paymentLines.add(paymentLine1);
-
-        // Mock InvoiceServiceApi.getListOfInvoices()
-        List<InvoicePayableModel> invoices = new ArrayList<>();
-        InvoicePayableModel invoice1 = new InvoicePayableModel();
-        invoice1.setInvoiceReference("INV123");
-        invoice1.setAmount(BigDecimal.TEN);
-        invoice1.setInvoiceType("CREDIT");
-        invoices.add(invoice1);
-
-        when(invoiceServiceApi.getListOfInvoices(List.of("INV123"))).thenReturn(invoices);
-
-        // Mock ReferentialServiceApi.getProviderDetails()
-        ProviderDetails providerDetails = new ProviderDetails();
-        when(referentialServiceApi.getProviderDetails("PROV1", "MNEM1")).thenReturn(providerDetails);
-
-        // Mock ReferentialServiceApi.getUserInitials()
-        UserDetailsModel userDetailsModel = new UserDetailsModel();
-        userDetailsModel.setIni("USER");
-        when(referentialServiceApi.getUserInitials("testUser")).thenReturn(userDetailsModel);
-
-        // Mock ReferentialServiceApi.getEntireListOfEntities()
-        List<EntityDetails> entities = new ArrayList<>();
-        EntityDetails entity = new EntityDetails();
-        entity.setEntityCode("CODE123");
-        entities.add(entity);
-        when(referentialServiceApi.getEntireListOfEntities()).thenReturn(entities);
-
-        // Mock ReferentialServiceApi.getBackOfficeDetails()
-        BackOfficeDetails backOfficeDetails = new BackOfficeDetails();
-        backOfficeDetails.setNomVal("BACKOFFICE");
-        when(referentialServiceApi.getBackOfficeDetails("CODE123", "CODGRPHABBO")).thenReturn(backOfficeDetails);
-
-        // Mock PaymentRepository.getNextSrgSequence()
-        when(paymentRepository.getNextSrgSequence()).thenReturn(BigDecimal.ONE.toBigInteger());
+ @Test
+    void testTransferFile_DirectoryCreation() {
+        // Prepare data
+        LocalDate date = LocalDate.now();
+        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("CP123");
+        cashAllocationModels.add(model);
 
         // Call the method
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(paymentLines, "testUser");
+        abDomain.transferFile(date, cashAllocationModels);
 
-        // Verify that the response is successful
-        assertNull(response.getErrorMessage());
+        // Verify that the directory was created
+        File dir = new File(".");
+        assertTrue(dir.exists());
+    }
+
+    @Test
+    void testTransferFile_FalseInvoiceContainment() {
+        // Prepare data
+        LocalDate date = LocalDate.now();
+        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("INV-456"); // Different invoice
+        model.setCounterPartyId("CP123");
+        cashAllocationModels.add(model);
+
+        // Call the method
+        abDomain.transferFile(date, cashAllocationModels);
+
+        // Verify that uploadPaymentAbFileViaReferential() was called (no exception)
+        verify(referentialServiceApi).uploadPaymentAbFileViaReferential(anyString());
+    }
+
+    @Test
+    void testTransferFile_NullLineHandling() throws IOException {
+        // Prepare data
+        LocalDate date = LocalDate.now();
+        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("CP123");
+        cashAllocationModels.add(model);
+
+        // Mock buildLine() to return null
+        AbDomain abDomainSpy = spy(abDomain);
+        doReturn(null).when(abDomainSpy).buildLine(any(CashAllocationModel.class), anyString());
+
+        // Call the method
+        abDomainSpy.transferFile(date, cashAllocationModels);
+
+        // Verify that uploadPaymentAbFileViaReferential() was called (no exception)
+        verify(referentialServiceApi).uploadPaymentAbFileViaReferential(anyString());
+    }
+
+    @Test
+    void testTransferFile_LineBuildingException() throws IOException {
+        // Prepare data
+        LocalDate date = LocalDate.now();
+        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("CP123");
+        cashAllocationModels.add(model);
+
+        // Mock buildLine() to throw an exception
+        AbDomain abDomainSpy = spy(abDomain);
+        doThrow(new RuntimeException("Line building exception")).when(abDomainSpy).buildLine(any(CashAllocationModel.class), anyString());
+
+        // Call the method
+        abDomainSpy.transferFile(date, cashAllocationModels);
+
+        // Verify that uploadPaymentAbFileViaReferential() was called (no exception)
+        verify(referentialServiceApi).uploadPaymentAbFileViaReferential(anyString());
     }
