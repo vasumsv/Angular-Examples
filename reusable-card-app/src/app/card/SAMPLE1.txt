@@ -1,4 +1,4 @@
-   @Test
+ @Test
     void testUpdateCashAllocationStatus_UNMATCHED_Flow_NonRSF() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
@@ -7,8 +7,8 @@
 
         // Mock invoiceServiceApi.getFnsInvoice
         FnsInvoicesList fnsInvoicesList = new FnsInvoicesList();
-        List<Invoice> invoices = new ArrayList<>();
-        Invoice invoice = new Invoice(); // Populate with data if needed
+        List<FnsInvoice> invoices = new ArrayList<>(); // Create a List<FnsInvoice>
+        FnsInvoice invoice = new FnsInvoice(); // Populate with data if needed
         invoices.add(invoice);
         fnsInvoicesList.setInvoices(invoices);
 
