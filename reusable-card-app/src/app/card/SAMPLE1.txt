@@ -11,6 +11,10 @@ void updatePaymentLines_Success() {
     // Mock the repository save method (if needed)
     when(cashAllocationRepositoryApi.save(any())).thenReturn(null);
 
+    // Mock the invoiceServiceApi to return a non-null value if it's used to populate the array
+    // (Replace with the actual method call and return value)
+    when(invoiceServiceApi.getArray()).thenReturn(new String[] {"element1", "element2"});
+
     String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
     assertEquals("SUCCESSFUL", result);
