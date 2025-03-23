@@ -1,19 +1,9 @@
-    @Test
-    void testUploadPaymentAbFileViaReferential_FileDeleted() throws IOException {
-        // Create a temporary file
-        File tempFile = File.createTempFile("test", ".txt");
-
-        // Mock the uploadFileToGaiaServer method
-        when(referentialServiceApi.uploadFileToGaiaServer(any(ByteArrayResource.class), anyString(), anyString())).thenReturn(null); // Use any()
-
-        // Call the method
-        abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
-
-        // Verify that the file was deleted
-        assertFalse(tempFile.exists());
-
-        // Clean up the temporary file (if the deletion failed)
-        if (tempFile.exists()) {
-            tempFile.delete();
-        }
+ @Test
+    void testCashAllocationModels_LineFiltering() {
+        List<String> lines = Arrays.asList(
+                "200201472755     20230101     1234567890123456     00000000000000000000     D     ", // Should be filtered out
+                "A00201472755     20230101     1234567890123456     00000000000000000000     C     "  // Should be processed
+        );
+        List<CashAllocationModel> models = cashAllocationDomain.cashAllocationModels(lines, "GAIA_NXG_FILE");
+        assertEquals(1, models.size());
     }
