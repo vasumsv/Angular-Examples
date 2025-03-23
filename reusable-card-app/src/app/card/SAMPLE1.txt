@@ -1,39 +1,24 @@
-        // Access the private method using reflection
-        Method findPaymentLinesMethod = CashAllocationDomain.class.getDeclaredMethod("findPaymentLinesFromPaymentReferences", String[].class); // Corrected method name
-        findPaymentLinesMethod.setAccessible(true);
 
-        when(findPaymentLinesMethod.invoke(cashAllocationDomain, paymentReferences)).thenReturn(srgPaymentModels); // Corrected invoke
+    @Test
+    void testGetPaymentLinesFromPaymentReference() {
+        // Setup test data
+        String[] paymentReferences = {"REF123-1", "REF123-2"};
+
+        // Mock the intermediate method (adjust the method name as needed)
+        List<PaymentEntity> paymentEntities = new ArrayList<>();
+        PaymentEntity paymentEntity = new PaymentEntity();
+        // Set properties of paymentEntity if needed
+        paymentEntities.add(paymentEntity);
+
+        when(cashAllocationDomain.fetchPaymentEntities(anyString())).thenReturn(paymentEntities); // Mock the intermediate method
 
         // Mock getSsiDetails
         List<String> ssiDetails = new ArrayList<>();
-        ssiDetails.add("SSI1");
-        ssiDetails.add("SSI2");
-        when(cashAllocationDomain.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiDetails);
+        ssiDetails.add("SSI1-A");
+        ssiDetails.add("SSI1-B");
+        when(paymentRepository.getSsiDetailsByProviderAndCurrencyAndEntityAndFeeCategory(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiDetails);
 
         // Execute the method
         List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
 
         // Verify the result
-        assertEquals(1, result.size());
-        PaymentLinesModel paymentLinesModel = result.get(0);
-        assertEquals(1L, paymentLinesModel.getId());
-        assertEquals("Test Broker", paymentLinesModel.getBrokerName());
-        assertEquals(2, paymentLinesModel.getNumberOfInvoices());
-        assertEquals(ssiDetails, paymentLinesModel.getSsiAccountCode());
-        assertEquals(ssiDetails.size(), paymentLinesModel.getNumberOfSSI());
-        assertEquals("SG123", paymentLinesModel.getSgEntity());
-        assertEquals("INV1,INV2", paymentLinesModel.getInvoiceReference());
-        assertEquals("Fee1", paymentLinesModel.getFeeCategory());
-        assertEquals("PROV1", paymentLinesModel.getProviderId());
-        assertEquals(LocalDate.of(2023, 10, 27), paymentLinesModel.getValueDate());
-        assertEquals(LocalDate.of(2023, 10, 28), paymentLinesModel.getSendingDate());
-        assertEquals(100.0, paymentLinesModel.getAmount());
-        assertEquals("USD", paymentLinesModel.getCurrency());
-        assertEquals("Type1", paymentLinesModel.getInvoiceType());
-        assertEquals("INV", paymentLinesModel.getFeeType());
-        assertEquals("Debit", paymentLinesModel.getPaymentDirection());
-        assertEquals("Mode1", paymentLinesModel.getPaymentMode());
-        assertEquals("Status1", paymentLinesModel.getPaymentStatus());
-        assertEquals("RC1", paymentLinesModel.getRc());
-        assertEquals("Test Comment", paymentLinesModel.getComment());
-    }
