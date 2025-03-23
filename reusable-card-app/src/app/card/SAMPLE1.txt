@@ -1,21 +1,28 @@
-  @Test
+
+    @Test
     void testUpdateCashAllocationStatus_MATCHED_Flow_NonEmptyMatchedCashModels() throws Exception {
         // Create test data
         ProcessCashRequest processCashRequest = new ProcessCashRequest();
-        processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456")); // Invoice refs start with "RSF-*"
+        processCashRequest.setInvoiceRefs(Arrays.asList("RSF-123", "RSF-456"));
         processCashRequest.setPaymentIds(Collections.singletonList(UUID.randomUUID().toString()));
 
-        // Mock statusMatched method
+        // Create a non-empty matchedCashModels list
         List<CashAllocationModel> matchedCashModels = new ArrayList<>();
         CashAllocationModel cashAllocationModel = new CashAllocationModel();
-        cashAllocationModel.setValueDate(LocalDate.now()); // Set a LocalDate object
+        cashAllocationModel.setValueDate(LocalDate.now()); // Set a LocalDate
         matchedCashModels.add(cashAllocationModel);
 
-        // Create an InvoicesList object
+        // Create InvoicesList and populate if needed
         InvoicesList invoicesList = new InvoicesList();
-        // Populate invoicesList with data if needed
 
-        when(cashAllocationDomain.statusMatched(anyString(), eq(processCashRequest), anyString(), anyList(), eq(invoicesList), any(), any())).thenReturn(matchedCashModels); // Pass invoicesList
+        // Create InvoicesAbList and populate if needed
+        InvoicesAbList invoicesAbList = new InvoicesAbList();
+
+        // Create List<CashAllocationModel> and populate if needed
+        List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
+
+        // Mock statusMatched to return non-empty matchedCashModels
+        when(cashAllocationDomain.statusMatched(anyString(), eq(processCashRequest), anyString(), anyList(), eq(invoicesList), eq(invoicesAbList), eq(cashAllocationModelList))).thenReturn(matchedCashModels);
 
         // Execute the method
         cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "TEST_USER");
