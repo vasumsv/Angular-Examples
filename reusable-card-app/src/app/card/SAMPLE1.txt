@@ -1,39 +1,26 @@
-   @Test
-    void testUpdateCashAllocationStatus_CancelledInvoice() {
-        // Create a ProcessCashRequest object
-        ProcessCashRequest processCashRequest = new ProcessCashRequest();
+  @Test
+    void testAutoPaymentMatching_NotAllocatedModel() {
+        // Mock InvoiceServiceApi.getSd2Invoice()
+        InvoiceSd2Model invoiceSd2Model = new InvoiceSd2Model();
+        invoiceSd2Model.setInvoiceSd2(List.of(new Invoice()));
+        when(invoiceServiceApi.getSd2Invoice(anyString())).thenReturn(invoiceSd2Model);
 
-        // Create a list of Invoice objects
-        List<Invoice> invoicesList = new ArrayList<>();
-        Invoice cancelledInvoice = new Invoice();
-        cancelledInvoice.setInvoiceStatus(InvoiceServiceEnums.CANCELLED.getValue());
-        invoicesList.add(cancelledInvoice);
+        // Mock CashAllocationRepositoryApi.findByInvoiceReferenceReceived()
+        CashAllocationModel notAllocatedModel = new CashAllocationModel();
+        notAllocatedModel.setStatus("NOT_ALLOCATED");
+        notAllocatedModel.setId(123L);
+        notAllocatedModel.setAmount(BigDecimal.TEN);
+        notAllocatedModel.setValueDate(LocalDate.now());
 
-        // Mock the InvoiceService.getInvoiceReferences() method
-        when(invoiceService.getInvoiceReferences(processCashRequest)).thenReturn(invoicesList);
+        List<CashAllocationModel> cashAllocationModels = List.of(notAllocatedModel);
+        when(cashAllocationRepositoryApi.findByInvoiceReferenceReceived(anyString())).thenReturn(cashAllocationModels);
 
-        // Verify that CashAllocationCustomException is thrown
-        assertThrows(CashAllocationCustomException.class, () -> {
-            cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "testUser");
-        });
-    }
+        // Call the method
+        cashAllocationDomain.autoPaymentMatching();
 
-    @Test
-    void testUpdateCashAllocationStatus_NoCancelledInvoice() {
-        // Create a ProcessCashRequest object
-        ProcessCashRequest processCashRequest = new ProcessCashRequest();
+        // Verify that findByInvoiceReferenceReceived() was called
+        verify(cashAllocationRepositoryApi).findByInvoiceReferenceReceived(anyString());
 
-        // Create a list of Invoice objects (no cancelled invoices)
-        List<Invoice> invoicesList = new ArrayList<>();
-        Invoice activeInvoice = new Invoice();
-        activeInvoice.setInvoiceStatus(InvoiceServiceEnums.ACTIVE.getValue());
-        invoicesList.add(activeInvoice);
-
-        // Mock the InvoiceService.getInvoiceReferences() method
-        when(invoiceService.getInvoiceReferences(processCashRequest)).thenReturn(invoicesList);
-
-        // Verify that no exception is thrown
-        assertDoesNotThrow(() -> {
-            cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "testUser");
-        });
+        // Verify that processingCashAllocation() was called
+        verify(cashAllocationDomain).processingCashAllocation(eq("MATCHED"), any(ProcessCashRequest.class), eq("AutoPaymentMatching"));
     }
