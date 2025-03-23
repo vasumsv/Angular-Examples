@@ -1,15 +1,39 @@
- @Test
-    void testAutoPaymentMatching_Exception() {
-        // Verify CashAllocationCustomException is loaded
-        System.out.println("CashAllocationCustomException class: " + CashAllocationCustomException.class);
+   @Test
+    void testUpdateCashAllocationStatus_CancelledInvoice() {
+        // Create a ProcessCashRequest object
+        ProcessCashRequest processCashRequest = new ProcessCashRequest();
 
-        // Mock LocalDate.now() to throw an exception
-        try (var mockedStatic = mockStatic(LocalDate.class)) {
-            mockedStatic.when(LocalDate::now).thenThrow(new RuntimeException());
+        // Create a list of Invoice objects
+        List<Invoice> invoicesList = new ArrayList<>();
+        Invoice cancelledInvoice = new Invoice();
+        cancelledInvoice.setInvoiceStatus(InvoiceServiceEnums.CANCELLED.getValue());
+        invoicesList.add(cancelledInvoice);
 
-            // Verify that CashAllocationCustomException is thrown
-            assertThrows(CashAllocationCustomException.class, () -> {
-                cashAllocationDomain.autoPaymentMatching();
-            });
-        }
+        // Mock the InvoiceService.getInvoiceReferences() method
+        when(invoiceService.getInvoiceReferences(processCashRequest)).thenReturn(invoicesList);
+
+        // Verify that CashAllocationCustomException is thrown
+        assertThrows(CashAllocationCustomException.class, () -> {
+            cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "testUser");
+        });
+    }
+
+    @Test
+    void testUpdateCashAllocationStatus_NoCancelledInvoice() {
+        // Create a ProcessCashRequest object
+        ProcessCashRequest processCashRequest = new ProcessCashRequest();
+
+        // Create a list of Invoice objects (no cancelled invoices)
+        List<Invoice> invoicesList = new ArrayList<>();
+        Invoice activeInvoice = new Invoice();
+        activeInvoice.setInvoiceStatus(InvoiceServiceEnums.ACTIVE.getValue());
+        invoicesList.add(activeInvoice);
+
+        // Mock the InvoiceService.getInvoiceReferences() method
+        when(invoiceService.getInvoiceReferences(processCashRequest)).thenReturn(invoicesList);
+
+        // Verify that no exception is thrown
+        assertDoesNotThrow(() -> {
+            cashAllocationDomain.updateCashAllocationStatus("MATCHED", processCashRequest, "testUser");
+        });
     }
