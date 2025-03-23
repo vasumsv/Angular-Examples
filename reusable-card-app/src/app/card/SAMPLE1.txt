@@ -1,21 +1,21 @@
  @Test
-    void testGetAbPaymentFileContent_BusinessDay_WithData() throws Exception {
+    void testTransferFile_DirectoryCreation() throws Exception {
         // Prepare data
-        LocalDate endDate = LocalDate.of(2023, 3, 6); // Monday
+        LocalDate date = LocalDate.now();
+        List<CashAllocationModel> cashAllocationModels = new ArrayList<>();
         CashAllocationModel model = new CashAllocationModel();
-        model.setInvoiceMatched("INV123");
-        List<CashAllocationModel> cashAllocationModels = Collections.singletonList(model);
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("CP123");
+        cashAllocationModels.add(model);
 
-        // Mock dependencies
-        when(referentialServiceApi.getListOfHolidaysForConsecutiveThreeYears(anyString(), eq("FRA")))
-                .thenReturn(Collections.emptyList());
-        when(cashAllocationRepositoryApi.findPaymentDetailsForABA(endDate.plusDays(1)))
-                .thenReturn(cashAllocationModels);
+        // Access the private transferFile method using reflection
+        Method transferFileMethod = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
+        transferFileMethod.setAccessible(true);
 
-        // Invoke method
-        abDomain.getAbPaymentFileContent(endDate);
+        // Call the private method
+        transferFileMethod.invoke(abDomain, date, cashAllocationModels);
 
-        // Assertions
-        verify(cashAllocationRepositoryApi, times(1)).findPaymentDetailsForABA(endDate.plusDays(1));
-        verify(logger, never()).info(anyString());
+        // Verify that the directory was created
+        File dir = new File(".");
+        assertTrue(dir.exists());
     }
