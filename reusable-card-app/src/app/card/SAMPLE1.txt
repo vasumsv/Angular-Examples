@@ -1,38 +1,107 @@
- @Test
-    void testUpdatePaymentLines_Success() {
+You are absolutely right to call me out. I apologize for the repeated errors and the lack of concern I've shown. I understand your frustration, and I will make every effort to provide a correct and working test case for the getPaymentLinesFromPaymentReference method.
+
+Analysis of getPaymentLinesFromPaymentReference
+
+Input: The method takes a String[] paymentReferences as input.
+findPaymentLinesFromPaymentReferences: It calls findPaymentLinesFromPaymentReferences(paymentReferences) to get a List<SrgPaymentModel>.
+Loop: It iterates through the List<SrgPaymentModel> and constructs a List<PaymentLinesModel>.
+getSsiDetails: It calls getSsiDetails to get a list of String for ssiAccountCode.
+split: It splits the invoiceReference into an array of String.
+PaymentLinesModel Construction: It constructs a PaymentLinesModel object and sets its properties based on the SrgPaymentModel and the results of getSsiDetails and split.
+Return: It returns the List<PaymentLinesModel>.
+Test Case Strategy
+
+Mock findPaymentLinesFromPaymentReferences: We'll mock findPaymentLinesFromPaymentReferences to return a list of SrgPaymentModel objects.
+Mock getSsiDetails: We'll mock getSsiDetails to return a list of String.
+Provide paymentReferences: We'll provide a sample paymentReferences array.
+Verify Result: We'll verify that the method returns a List<PaymentLinesModel> with the expected data.
+Test Case
+
+Java
+
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
+
+class CashAllocationDomainTest {
+
+    @Mock
+    private PaymentRepository paymentRepository;
+
+    @InjectMocks
+    private CashAllocationDomain cashAllocationDomain;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testGetPaymentLinesFromPaymentReference() {
         // Setup test data
-        String user = "testUser";
-        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
+        String[] paymentReferences = {"REF123-1", "REF123-2"};
 
-        // Create a sample UpdatePaymentLines object and add it to the list
-        UpdatePaymentLines samplePaymentLine = new UpdatePaymentLines();
-        samplePaymentLine.setInvoiceReference("INV123");
-        samplePaymentLine.setSendingDate(LocalDate.of(2023, 10, 27));
-        samplePaymentLine.setAmount(100.0);
-        samplePaymentLine.setPaymentReferences(new String[]{"REF123-1", "REF123-2"}); // Set paymentReferences
-
-        finalDataForInsertion.add(samplePaymentLine);
-
-        // Mock paymentRepository
+        // Mock findPaymentLinesFromPaymentReferences
         List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
-        // Add sample SrgPaymentModel objects to the list
-        srgPaymentModels.add(new SrgPaymentModel()); // Add at least one mock object
+        SrgPaymentModel srgPaymentModel = new SrgPaymentModel();
+        srgPaymentModel.setId(1L);
+        srgPaymentModel.setProviderNane("Test Broker");
+        srgPaymentModel.setSgEntity("SG123");
+        srgPaymentModel.setInvoiceReference("INV1,INV2");
+        srgPaymentModel.setFeeCategory("Fee1");
+        srgPaymentModel.setProviderBdrId("PROV1");
+        srgPaymentModel.setValueDate(LocalDate.of(2023, 10, 27));
+        srgPaymentModel.setSendingDate(LocalDate.of(2023, 10, 28));
+        srgPaymentModel.setPaymentAmount(100.0);
+        srgPaymentModel.setPaymentCurrency("USD");
+        srgPaymentModel.setPaymentType("Type1");
+        srgPaymentModel.setDebitCredit("Debit");
+        srgPaymentModel.setPaymentMode("Mode1");
+        srgPaymentModel.setPaymentStatus("Status1");
+        srgPaymentModel.setRcCode("RC1");
+        srgPaymentModel.setComment("Test Comment");
+        srgPaymentModels.add(srgPaymentModel);
 
-        OngoingStubbing<List<SrgPaymentModel>> when1 = when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-1"));
-        when1.thenReturn(srgPaymentModels);
+        when(paymentRepository.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
 
-        OngoingStubbing<List<SrgPaymentModel>> when2 = when(paymentRepository.getPaymentEntitiesByPaymentReference("REF123-2"));
-        when2.thenReturn(srgPaymentModels);
-
-        // Mock invoiceServiceApi behavior
-        when(invoiceServiceApi.sendPaymentDetailsToInvoiceService(any())).thenReturn(null);
+        // Mock getSsiDetails
+        List<String> ssiDetails = new ArrayList<>();
+        ssiDetails.add("SSI1");
+        ssiDetails.add("SSI2");
+        when(paymentRepository.getSsiDetails("PROV1", "USD", "SG123", "Fee1")).thenReturn(ssiDetails);
 
         // Execute the method
-        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
 
         // Verify the result
-        assertEquals("SUCCESSFUL", result);
-
-        // Verify interactions
-        verify(invoiceServiceApi, times(1)).sendPaymentDetailsToInvoiceService(any());
+        assertEquals(1, result.size());
+        PaymentLinesModel paymentLinesModel = result.get(0);
+        assertEquals(1L, paymentLinesModel.getId());
+        assertEquals("Test Broker", paymentLinesModel.getBrokerName());
+        assertEquals(2, paymentLinesModel.getNumberOfInvoices());
+        assertEquals(ssiDetails, paymentLinesModel.getSsiAccountCode());
+        assertEquals(ssiDetails.size(), paymentLinesModel.getNumberOfSSI());
+        assertEquals("SG123", paymentLinesModel.getSgEntity());
+        assertEquals("INV1,INV2", paymentLinesModel.getInvoiceReference());
+        assertEquals("Fee1", paymentLinesModel.getFeeCategory());
+        assertEquals("PROV1", paymentLinesModel.getProviderId());
+        assertEquals(LocalDate.of(2023, 10, 27), paymentLinesModel.getValueDate());
+        assertEquals(LocalDate.of(2023, 10, 28), paymentLinesModel.getSendingDate());
+        assertEquals(100.0, paymentLinesModel.getAmount());
+        assertEquals("USD", paymentLinesModel.getCurrency());
+        assertEquals("Type1", paymentLinesModel.getInvoiceType());
+        assertEquals("INV", paymentLinesModel.getFeeType());
+        assertEquals("Debit", paymentLinesModel.getPaymentDirection());
+        assertEquals("Mode1", paymentLinesModel.getPaymentMode());
+        assertEquals("Status1", paymentLinesModel.getPaymentStatus());
+        assertEquals("RC1", paymentLinesModel.getRc());
+        assertEquals("Test Comment", paymentLinesModel.getComment());
     }
