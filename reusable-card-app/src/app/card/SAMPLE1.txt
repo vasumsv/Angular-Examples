@@ -1,24 +1,34 @@
  @Test
-    void testCashAllocationModelList_Lines311_334_Success() throws ParseException {
+    void testCashAllocationModelList_Lines306_314_LongLine() {
         List<String> lines = new ArrayList<>();
-        String inputLine = " ".repeat(21) + "123" + " ".repeat(15) + "123456789012345678" + " ".repeat(2) + "  " + " ".repeat(36) + "20231027" + " ".repeat(116) + "invoiceRef" + " ".repeat(358);
-        lines.add(inputLine);
+        lines.add(" ".repeat(514) + "invoiceRefFromLongLine");
+        Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(lines.get(0));
 
-        Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(inputLine);
-        Mockito.when(cashAllocationDomain.getCashAllocationModel(
-                Mockito.anyString(), // invoiceRef
-                Mockito.any(BigDecimal.class), // finalAmount
-                Mockito.anyString(), // counterPartyId
-                Mockito.anyString(), // lineSubstrings.substring(116, 157).trim()
-                Mockito.anyString(), // lineSubstrings.substring(21, 24)
-                Mockito.anyString(), // accountNumber
-                Mockito.any(Date.class), // date
-                Mockito.anyString()  // ref - ADDED THE 8TH ARGUMENT
-        )).thenReturn(new CashAllocationModel());
-        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("account123");
+        String invoiceRef = cashAllocationDomain.getInvoiceRefFromLine(lines.get(0));
 
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
+        assertEquals("invoiceRefFromLongLine", invoiceRef);
+    }
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
+    @Test
+    void testCashAllocationModelList_Lines306_314_ShortLine() {
+        List<String> lines = new ArrayList<>();
+        lines.add(" ".repeat(116) + "invoiceRefFromShortLine" + " ".repeat(358));
+        Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(lines.get(0));
+        Mockito.when(cashAllocationDomain.getInvoiceRefFromSupplementaryDetails(Mockito.anyString())).thenReturn("invoiceRefFromShortLine");
+
+        String invoiceRef = cashAllocationDomain.getInvoiceRefFromLine(lines.get(0));
+
+        assertEquals("invoiceRefFromShortLine", invoiceRef);
+    }
+
+    @Test
+    void testCashAllocationModelList_Lines306_314_Exception() {
+        List<String> lines = new ArrayList<>();
+        lines.add(" ".repeat(116) + "invoiceRefFromShortLine" + " ".repeat(358));
+        Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(lines.get(0));
+        Mockito.when(cashAllocationDomain.getInvoiceRefFromSupplementaryDetails(Mockito.anyString())).thenThrow(new RuntimeException("Test Exception"));
+
+        String invoiceRef = cashAllocationDomain.getInvoiceRefFromLine(lines.get(0));
+
+        assertEquals("", invoiceRef); // Expect an empty string due to the catch block
     }
