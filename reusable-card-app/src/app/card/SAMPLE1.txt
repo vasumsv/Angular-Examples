@@ -1,105 +1,36 @@
-@Mock
-    private ReferentialServiceApi referentialServiceApi;
+@Test
+void testGetRetiredRows_SuccessScenario() throws Exception {
+    // Mock dependencies
+    PaymentModeAndLocationModel mockMode = new PaymentModeAndLocationModel();
+    mockMode.setPaymentMode("BANK_TRANSFER");
+    
+    PaymentDates mockDates = new PaymentDates();  // Changed from PaymentDate to PaymentDates
+    mockDates.setValueDate(LocalDate.now());  // Changed LookDate to LocalDate
 
-    @Mock
-    private CashAllocationRepositoryApi cashAllocationRepositoryApi;
+    when(referentialServiceApi.getPaymentModeAndSettlementLocation(  // Fixed method name
+        any(BigInteger.class), 
+        anyString(), 
+        any(BigInteger.class), 
+        any(BigInteger.class),
+        anyString(), 
+        anyString()))
+        .thenReturn(mockMode);  // Fixed variable name
+    
+    when(referentialServiceApi.getPaymentDates(  // Fixed method name
+        anyString(), 
+        anyString(), 
+        anyString(), 
+        anyString(), 
+        anyString(), 
+        anyString()))
+        .thenReturn(mockDates);
 
-    @InjectMocks
-    private CashAllocationDomain cashAllocationDomain;
+    // Execute
+    List<PaymentLinesModel> result = cashAllocationDomain.getRetiredRows(paymentList, TEST_USER);
 
-    private List<InvoicePayableModelForPayment> paymentList;
-    private final String TEST_USER = "testUser";
-
-    @BeforeEach
-    void setUp() {
-        paymentList = new ArrayList<>();
-        InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
-        payment.setProviderId("456");
-        payment.setFeeCategory("TEST_CAT");
-        payment.setInvoiceReference("INV123");
-        payment.setCurrency("USD");
-        payment.setEntity("ENTITY1");
-        paymentList.add(payment);
-    }
-
-    @Test
-    void testGetNettedRows_SuccessScenario() throws Exception {
-        // Mock dependencies
-        PaymentModeAndLocationModel mockMode = new PaymentModeAndLocationModel();
-        mockMode.setPaymentMode("BANK_TRANSFER");
-
-        PaymentDates mockDates = new PaymentDates();
-        mockDates.setValueDate(LocalDate.now().toString());
-
-        when(referentialServiceApi.getPaymentModeAndSettlementLocation(
-            any(BigInteger.class), anyString(), any(BigInteger.class), any(BigInteger.class),
-            anyString(), anyString()))
-            .thenReturn(mockMode);
-
-        when(referentialServiceApi.getPaymentDates(
-            anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-            .thenReturn(mockDates);
-
-        // Execute
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, TEST_USER);
-
-        // Verify
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        PaymentLinesModel model = result.get(0);
-        assertEquals("BANK_TRANSFER", model.getPaymentMode());
-        assertEquals("INV123", model.getInvoiceReference());
-        assertEquals("USD", model.getCurrency());
-        assertNull(model.getComment());
-    }
-
-    @Test
-    void testGetNettedRows_EmptyPaymentList() {
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(new ArrayList<>(), TEST_USER);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testGetNettedRows_ExceptionHandling() throws Exception {
-        when(referentialServiceApi.getPaymentModeAndSettlementLocation(any(), any(), any(), any(), any(), any()))
-            .thenThrow(new RuntimeException("Service unavailable"));
-
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, TEST_USER);
-
-        assertFalse(result.isEmpty());
-        assertTrue(result.get(0).getComment().contains("Service unavailable"));
-    }
-
-    @Test
-    void testGetNettedRows_AggregationLogic() throws Exception {
-        // Add multiple payments to test aggregation
-        InvoicePayableModelForPayment payment2 = new InvoicePayableModelForPayment();
-        payment2.setProviderId("456");
-        payment2.setFeeCategory("TEST_CAT");
-        payment2.setInvoiceReference("INV124");
-        payment2.setCurrency("USD");
-        payment2.setEntity("ENTITY1");
-        paymentList.add(payment2);
-
-        // Mock dependencies
-        PaymentModeAndLocationModel mockMode = new PaymentModeAndLocationModel();
-        mockMode.setPaymentMode("BANK_TRANSFER");
-
-        PaymentDates mockDates = new PaymentDates();
-        mockDates.setValueDate(LocalDate.now().toString());
-
-        when(referentialServiceApi.getPaymentModeAndSettlementLocation(any(), any(), any(), any(), any(), any()))
-            .thenReturn(mockMode);
-
-        when(referentialServiceApi.getPaymentDates(any(), any(), any(), any(), any(), any()))
-            .thenReturn(mockDates);
-
-        // Execute
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, TEST_USER);
-
-        // Verify aggregation
-        assertNotNull(result);
-        assertEquals(1, result.size()); // Assuming netting aggregates into one row
-        PaymentLinesModel model = result.get(0);
-        assertEquals(2, model.getNumberOfInvoices()); // Verify invoice count
-    }
+    // Verify
+    assertFalse(result.isEmpty());
+    PaymentLinesModel model = result.get(0);
+    assertEquals("BANK_TRANSFER", model.getPaymentMode());
+    assertNull(model.getComment());
+}
