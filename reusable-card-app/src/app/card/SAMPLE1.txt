@@ -1,83 +1,49 @@
- // Assuming you have a mock or stub for SettlementsAccounts
-    static class SettlementsAccounts {
-        private String numcptrgl;
+@Test
+    void getNettedRows_paymentModeUnavailable() throws Exception {
+        // Arrange
+        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
+        InvoicePayableModelForPayment invoice = new InvoicePayableModelForPayment();
+        invoice.setProviderId("123");
+        invoice.setFeeCategory("456");
+        invoice.setInvoiceReference("ABC789");
+        paymentList.add(invoice);
 
-        public SettlementsAccounts(String numcptrgl) {
-            this.numcptrgl = numcptrgl;
-        }
+        when(referentialServiceApi.getPaymentModeAndSettlementLocation(
+                any(BigInteger.class), anyString(), any(BigInteger.class), any(BigInteger.class), anyString(), anyString()))
+                .thenThrow(new Exception("Payment Mode unavailable"));
 
-        public String getNumcptrgl() {
-            return numcptrgl;
-        }
-    }
+        // Act
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, "user");
 
-    // Assuming you have a mock or stub for GroupingKey
-    static class GroupingKey {
-        private String entity;
-        private String currency;
-
-        public GroupingKey(String entity, String currency) {
-            this.entity = entity;
-            this.currency = currency;
-        }
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals("Payment Mode unavailable for provider 123AND_CURRENCYUSD", result.get(0).getComment()); 
     }
 
     @Test
-    void testPaymentLinesModelCreation() {
+    void getNettedRows_paymentDatesUnavailable() throws Exception {
         // Arrange
         List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
-        InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
-        paymentList.add(payment);
+        InvoicePayableModelForPayment invoice = new InvoicePayableModelForPayment();
+        invoice.setProviderId("123");
+        invoice.setFeeCategory("456");
+        invoice.setInvoiceReference("ABC789");
+        paymentList.add(invoice);
 
-        List<SettlementsAccounts> settlementsAccountsList = new ArrayList<>();
-        settlementsAccountsList.add(new SettlementsAccounts("account1"));
-        settlementsAccountsList.add(new SettlementsAccounts("account2"));
+        PaymentModeAndLocationModel paymentModeAndLocationModel = new PaymentModeAndLocationModel();
+        paymentModeAndLocationModel.setPaymentMode("Mode1");
 
-        List<BigDecimal> finalAmountList = new ArrayList<>();
-        finalAmountList.add(new BigDecimal("100"));
-        finalAmountList.add(new BigDecimal("-50"));
+        when(referentialServiceApi.getPaymentModeAndSettlementLocation(
+                any(BigInteger.class), anyString(), any(BigInteger.class), any(BigInteger.class), anyString(), anyString()))
+                .thenReturn(paymentModeAndLocationModel);
 
-        String entity = "EntityA";
-        String currency = "USD";
-        PaymentDates dates = new PaymentDates();
-        dates.setValueDate("2023-11-20");
-        dates.setSendingDate("2023-11-19");
+        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new Exception("Payment Dates unavailable"));
 
         // Act
-        List<PaymentLinesModel> newNettedRows = new ArrayList<>();
-        int numberOfInvoicesNetted = 2; // Example value
-        for (int i = 0; i < finalAmountList.size(); i++) {
-            PaymentLinesModel paymentLinesModel = new PaymentLinesModel();
-            paymentLinesModel.setSgEntity(entity);
-            paymentLinesModel.setProviderId("provider123");
-            paymentLinesModel.setBrokerName("brokerName");
-            paymentLinesModel.setValueDate(dates.getValueDate());
-            paymentLinesModel.setSendingDate(dates.getSendingDate());
-            paymentLinesModel.setNumberOfSSI(finalAmountList.size());
-            paymentLinesModel.setCurrency(currency);
-            paymentLinesModel.setSsiAccountCode(settlementsAccountsList.stream().map(SettlementsAccounts::getNumcptrgl).collect(Collectors.toList()));
-            paymentLinesModel.setPaymentDirection(finalAmountList.get(i).compareTo(BigDecimal.ZERO) > 0 ? "D" : "C");
-            paymentLinesModel.setAmount(paymentLinesModel.getPaymentDirection().equals("C") ? finalAmountList.get(i).multiply(new BigDecimal("-1")) : finalAmountList.get(i));
-            paymentLinesModel.setPaymentMode(null);
-            paymentLinesModel.setPaymentStatus("R");
-            paymentLinesModel.setPaymentType("MANUAL");
-            paymentLinesModel.setFeeType("feeType");
-            paymentLinesModel.setRc("rcCode");
-            paymentLinesModel.setNumberOfInvoices(numberOfInvoicesNetted);
-            String invReference = "invRef1,invRef2,";
-            paymentLinesModel.setInvoiceReference(invReference.substring(0, invReference.length() - 1));
-            newNettedRows.add(paymentLinesModel);
-        }
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, "user");
 
         // Assert
-        assertEquals(2, newNettedRows.size());
-        assertEquals("EntityA", newNettedRows.get(0).getSgEntity());
-        assertEquals("USD", newNettedRows.get(0).getCurrency());
-        assertEquals("D", newNettedRows.get(0).getPaymentDirection());
-        assertEquals(new BigDecimal("100"), newNettedRows.get(0).getAmount());
-        assertEquals("C", newNettedRows.get(1).getPaymentDirection());
-        assertEquals(new BigDecimal("50"), newNettedRows.get(1).getAmount());
-        assertEquals("account1", newNettedRows.get(0).getSsiAccountCode().get(0));
-        assertEquals("account2", newNettedRows.get(0).getSsiAccountCode().get(1));
-        assertEquals("invRef1,invRef2", newNettedRows.get(0).getInvoiceReference());
+        assertEquals(1, result.size());
+        assertEquals("Payment Dates unavailable for entity nullAND_CURRENCYUSD", result.get(0).getComment());
     }
