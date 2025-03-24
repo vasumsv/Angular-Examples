@@ -1,40 +1,65 @@
-@Test
-    public void testInsertPaymentLines_referentialServiceApiExceptions() {
+  @Test
+    public void testInsertPaymentLines_referentialServiceApiExceptions_feeMnemonic_portfolio() {
         // Arrange
         List<PaymentLinesFeoModel> finalDataForInsertion = new ArrayList<>();
         PaymentLinesFeoModel paymentLine = new PaymentLinesFeoModel();
-        paymentLine.setProviderId("provider1");
-        paymentLine.setProviderMnemonic("mnemonic1");
+        paymentLine.setFeeBdrId("fee123");
+        paymentLine.setCurrency("USD");
+        paymentLine.setEntityBdrId("entity456");
         finalDataForInsertion.add(paymentLine);
 
         InsertPaymentResponse response = new InsertPaymentResponse();
 
-        // Mock the first call to throw an exception (providerDetails)
-        when(referentialServiceApi.getProviderDetails("provider1", "mnemonic1"))
-                .thenThrow(new RuntimeException("Provider details error"));
+        // Mock getFeeMnemonic to throw an exception
+        when(referentialServiceApi.getFeeMnemonic("fee123"))
+                .thenThrow(new RuntimeException("Fee mnemonic error"));
 
         // Act
         response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, "user");
 
-        // Assert - Provider Details Exception
+        // Assert - Fee Mnemonic Exception
         Assertions.assertEquals("MESSAGE", response.getStatus());
-        Assertions.assertTrue(response.getErrorMessage().contains("Error occurred while getting provider details"));
+        Assertions.assertTrue(response.getErrorMessage().contains("Error occurred while getting fee mnemonic"));
 
-        verify(logger).error(anyString()); // Verify logger was called
+        verify(logger).error(anyString());
 
         // Reset the response
         response = new InsertPaymentResponse();
 
-        // Mock the second call to throw an exception (userDetails)
-        when(referentialServiceApi.getUserInitials("user"))
-                .thenThrow(new RuntimeException("User details error"));
+        // Mock getPortfolioDetails to throw an exception
+        when(referentialServiceApi.getPortfolioDetails("user", new BigInteger("fee123"), "USD", "entity456"))
+                .thenThrow(new RuntimeException("Portfolio details error"));
 
         // Act
         response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, "user");
 
-        // Assert - User Details Exception
+        // Assert - Portfolio Details Exception
         Assertions.assertEquals("MESSAGE", response.getStatus());
-        Assertions.assertTrue(response.getErrorMessage().contains("Error occurred while getting user initial details"));
+        Assertions.assertTrue(response.getErrorMessage().contains("Error occurred while getting portfolio details"));
 
-        verify(logger, times(2)).error(anyString()); // Verify logger was called twice (once for each exception)
+        verify(logger, times(2)).error(anyString());
+    }
+
+    @Test
+    public void testInsertPaymentLines_referentialServiceApiExceptions_currency() {
+        // Arrange
+        List<PaymentLinesFeoModel> finalDataForInsertion = new ArrayList<>();
+        PaymentLinesFeoModel paymentLine = new PaymentLinesFeoModel();
+        paymentLine.setCurrency("USD");
+        finalDataForInsertion.add(paymentLine);
+
+        InsertPaymentResponse response = new InsertPaymentResponse();
+
+        // Mock getCurrencyDetails to throw an exception
+        when(referentialServiceApi.getCurrencyDetails("USD"))
+                .thenThrow(new RuntimeException("Currency details error"));
+
+        // Act
+        response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, "user");
+
+        // Assert - Currency Details Exception
+        Assertions.assertEquals("MESSAGE", response.getStatus());
+        Assertions.assertTrue(response.getErrorMessage().contains("Error occurred while getting currency details"));
+
+        verify(logger).error(anyString());
     }
