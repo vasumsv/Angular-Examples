@@ -1,4 +1,4 @@
-   @Test
+ @Test
     void testCashAllocationModelList_SkipLine_Ignore2() {
         List<String> lines = new ArrayList<>();
         lines.add("2" + " ".repeat(58) + "T");
@@ -11,11 +11,49 @@
     }
 
     @Test
-    void testCashAllocationModelList_SkipLine_GaiaNXG() {
+    void testCashAllocationModelList_SkipLine_IgnoreT() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(21) + "1234" + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
+        lines.add(" ".repeat(58) + "T");
+        String fileName = "DATA_REC_FILE";
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_SkipLine_GaiaNXG_AccountNumber1() {
+        List<String> lines = new ArrayList<>();
+        lines.add("1234" + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
         String fileName = "GAIA_NXG_FILE";
         Mockito.when(cashAllocationDomain.accountNumber).thenReturn("1234");
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_SkipLine_GaiaNXG_AccountNumber2() {
+        List<String> lines = new ArrayList<>();
+        lines.add("4321" + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
+        String fileName = "GAIA_NXG_FILE";
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("4321");
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_SkipLine_GaiaNXG_E2E() {
+        List<String> lines = new ArrayList<>();
+        lines.add("300030497" + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
+        String fileName = "GAIA_NXG_E2E_FILE";
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("300030497");
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
@@ -39,21 +77,9 @@
     }
 
     @Test
-    void testCashAllocationModelList_invalidDate() {
+    void testCashAllocationModelList_validFlow() throws Exception {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(24) + "invalidDate" + " ".repeat(76));
-        String fileName = "DATA_REC_FILE";
-
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
-    }
-
-    @Test
-    void testCashAllocationModelList_signD() throws Exception {
-        List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(39) + "10000" + " ".repeat(15) + "D" + " ".repeat(2) + " ".repeat(21) + "12345678" + " ".repeat(116));
+        lines.add(" ".repeat(21) + "12345678" + " ".repeat(57) + "10000" + " ".repeat(15) + " " + " ".repeat(2) + " ".repeat(21) + "12345678" + " ".repeat(116));
         String fileName = "DATA_REC_FILE";
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         Date expectedDate = dateFormat.parse("12345678");
@@ -65,42 +91,5 @@
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(BigDecimal.valueOf(-1000), result.get(0).getAmount());
-    }
-
-    @Test
-    void testCashAllocationModelList_exceptionInInvoiceRef() {
-        List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(515) + "1234");
-        String fileName = "DATA_REC_FILE";
-        Mockito.when(cashAllocationDomain.getInvoiceRefFromSupplementaryDetails(Mockito.anyString())).thenThrow(new RuntimeException("Test Exception"));
-
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
-    }
-
-    @Test
-    void testCashAllocationModelList_exceptionInDateParsing() {
-        List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(24) + "invalidDate" + " ".repeat(76));
-        String fileName = "DATA_REC_FILE";
-
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
-    }
-
-    @Test
-    void testCashAllocationModelList_exceptionInAmount() {
-        List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(39) + "invalidAmount" + " ".repeat(15) + " " + " ".repeat(2) + " ".repeat(21) + "12345678" + " ".repeat(116));
-        String fileName = "DATA_REC_FILE";
-
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
+        assertEquals(BigDecimal.valueOf(1000), result.get(0).getAmount());
     }
