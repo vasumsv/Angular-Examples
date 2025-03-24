@@ -1,40 +1,40 @@
- @Test
-    public void testInsertPaymentLines_invoiceAmountMismatch() {
+@Test
+    public void testInsertPaymentLines_referentialServiceApiExceptions() {
         // Arrange
         List<PaymentLinesFeoModel> finalDataForInsertion = new ArrayList<>();
         PaymentLinesFeoModel paymentLine = new PaymentLinesFeoModel();
-        paymentLine.setAmount(BigDecimal.valueOf(100));
+        paymentLine.setProviderId("provider1");
+        paymentLine.setProviderMnemonic("mnemonic1");
         finalDataForInsertion.add(paymentLine);
 
-        List<InvoicePayableModel> invoices = new ArrayList<>();
-        InvoicePayableModel invoice1 = new InvoicePayableModel();
-        invoice1.setAmount(BigDecimal.valueOf(50));
-        invoice1.setInvoiceType("CREDIT");
-        invoices.add(invoice1);
-        InvoicePayableModel invoice2 = new InvoicePayableModel();
-        invoice2.setAmount(BigDecimal.valueOf(100));
-        invoice2.setInvoiceType("DEBIT");
-        invoices.add(invoice2);
+        InsertPaymentResponse response = new InsertPaymentResponse();
 
-        // Mock the method call that gets the invoice list (you'll need to adjust this based on your actual logic)
-        // Assuming your class has a method to get the invoice list, let's call it getInvoicesForPaymentLine
-        when(cashAllocationDomain.getInvoicesForPaymentLine(paymentLine)).thenReturn(invoices); 
+        // Mock the first call to throw an exception (providerDetails)
+        when(referentialServiceApi.getProviderDetails("provider1", "mnemonic1"))
+                .thenThrow(new RuntimeException("Provider details error"));
 
         // Act
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, "user");
+        response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, "user");
 
-        // Assert
+        // Assert - Provider Details Exception
         Assertions.assertEquals("MESSAGE", response.getStatus());
-        Assertions.assertEquals("Payment amount is different than invoice amount. Payment Line Amount (100), Aggregate Invoice Amount (50)", response.getErrorMessage());
+        Assertions.assertTrue(response.getErrorMessage().contains("Error occurred while getting provider details"));
 
-        // Verify logger calls
-        verify(logger).info("Netted invoice amount, 50, finalAmt");
-        verify(logger).info("Payment line amount, 100, p.getAmount()");
-        verify(logger).error("Payment amount is different than invoice amount. Payment Line Amount (100), Aggregate Invoice Amount (50)");
-    }
+        verify(logger).error(anyString()); // Verify logger was called
 
-    // Add a mock method to simulate getting the invoice list
-    public List<InvoicePayableModel> getInvoicesForPaymentLine(PaymentLinesFeoModel paymentLine) {
-        // This is a placeholder, replace with your actual logic
-        return new ArrayList<>();
+        // Reset the response
+        response = new InsertPaymentResponse();
+
+        // Mock the second call to throw an exception (userDetails)
+        when(referentialServiceApi.getUserInitials("user"))
+                .thenThrow(new RuntimeException("User details error"));
+
+        // Act
+        response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, "user");
+
+        // Assert - User Details Exception
+        Assertions.assertEquals("MESSAGE", response.getStatus());
+        Assertions.assertTrue(response.getErrorMessage().contains("Error occurred while getting user initial details"));
+
+        verify(logger, times(2)).error(anyString()); // Verify logger was called twice (once for each exception)
     }
