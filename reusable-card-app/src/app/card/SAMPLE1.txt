@@ -1,9 +1,8 @@
-    @Test
+ @Test
     void testCashAllocationModelList_SkipLine_GaiaNXG_AccountNumber1_True() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(1) + " ".repeat(19) + "ACCOUNT_NUMBER_1" + " ".repeat(39) + " ");
+        lines.add(" ACCOUNT_NUMBER_1     " + " ".repeat(39)); // Substring(1, 21).trim() == "ACCOUNT_NUMBER_1"
         String fileName = "GAIA_NXG_FILE";
-        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("ACCOUNT_NUMBER_1");
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
@@ -14,9 +13,8 @@
     @Test
     void testCashAllocationModelList_SkipLine_GaiaNXG_AccountNumber2_True() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(1) + " ".repeat(19) + "ACCOUNT_NUMBER_2" + " ".repeat(39) + " ");
+        lines.add(" ACCOUNT_NUMBER_2     " + " ".repeat(39)); // Substring(1, 21).trim() == "ACCOUNT_NUMBER_2"
         String fileName = "GAIA_NXG_FILE";
-        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("ACCOUNT_NUMBER_2");
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
@@ -27,7 +25,7 @@
     @Test
     void testCashAllocationModelList_ProcessLine_GaiaNXG_False_AccountNumber_False() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(60));
+        lines.add(" DIFFERENT_ACCOUNT  " + " ".repeat(39)); // Substring(1, 21).trim() == "DIFFERENT_ACCOUNT"
         String fileName = "DATA_REC_FILE"; // fileName does not contain "GAIA_NXG_FILE"
         Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
             .thenReturn(new CashAllocationModel());
@@ -41,9 +39,8 @@
     @Test
     void testCashAllocationModelList_ProcessLine_GaiaNXG_True_AccountNumber_False() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(60));
+        lines.add(" DIFFERENT_ACCOUNT  " + " ".repeat(39)); // Substring(1, 21).trim() == "DIFFERENT_ACCOUNT"
         String fileName = "GAIA_NXG_FILE";
-        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("ACCOUNT_NUMBER_3"); // accountNumber does not equal ACCOUNT_NUMBER_1 or ACCOUNT_NUMBER_2
         Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
             .thenReturn(new CashAllocationModel());
 
