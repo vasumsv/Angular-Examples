@@ -1,4 +1,5 @@
- @Test
+
+    @Test
     void getNettedPaymentRowsForManualPayment_shouldReturnPaymentLinesModelList() {
         // Arrange
         List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
@@ -7,9 +8,9 @@
         InvoicePayable invoicePayable = new InvoicePayable();
         invoicePayable.setProviderMnemo("providerMnemo");
         payment.setInvoicePayable(invoicePayable);
-        // **Crucially set the amount to a non-null value**
-        payment.setAmount(new BigDecimal("100.00"));
-
+        // **Crucially, set the invoiceType here:**
+        payment.setInvoiceType("SomeInvoiceType"); // Replace with a relevant non-null value
+        payment.setAmount(new BigDecimal("100.00")); // Assuming you'll need this later as well
         paymentList.add(payment);
 
         List<BapPayableModel> bapPayableModels = new ArrayList<>();
