@@ -1,14 +1,4 @@
-private String[] paymentReferences;
-    private List<SrgPaymentModel> srgPaymentModels;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        paymentReferences = new String[]{"ref1", "ref2"};
-        srgPaymentModels = new ArrayList<>();
-
-        // Create sample SrgPaymentModel objects
+ // Create sample SrgPaymentModel objects
         SrgPaymentModel srgPaymentModel1 = new SrgPaymentModel();
         srgPaymentModel1.setId(1L);
         srgPaymentModel1.setProviderName("Broker1");
@@ -46,11 +36,28 @@ private String[] paymentReferences;
         srgPaymentModel2.setRcCode("rc2");
         srgPaymentModel2.setComment("comment2");
         srgPaymentModels.add(srgPaymentModel2);
+
+        // Create sample PaymentEntity objects to be returned by the mock
+        PaymentEntity paymentEntity1 = new PaymentEntity();
+        paymentEntity1.setProviderName(srgPaymentModel1.getProviderName());
+        paymentEntity1.setInvoiceReference(srgPaymentModel1.getInvoiceReference());
+        // ... populate other fields as needed
+
+        PaymentEntity paymentEntity2 = new PaymentEntity();
+        paymentEntity2.setProviderName(srgPaymentModel2.getProviderName());
+        paymentEntity2.setInvoiceReference(srgPaymentModel2.getInvoiceReference());
+        // ... populate other fields as needed
+
+        paymentEntities.add(paymentEntity1);
+        paymentEntities.add(paymentEntity2);
     }
 
     @Test
     void testGetPaymentLinesFromPaymentReference_success() {
-        when(paymentRepository.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
+        // Mock the paymentRepository.getPaymentEntitiesByPaymentReference method
+        when(paymentRepository.getPaymentEntitiesByPaymentReference(anyString()))
+                .thenReturn(paymentEntities.subList(0, 1)) // For "ref1"
+                .thenReturn(paymentEntities.subList(1, 2)); // For "ref2"
         when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(List.of("ssi1", "ssi2"));
 
         List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
@@ -85,19 +92,22 @@ private String[] paymentReferences;
         assertEquals("rc2", result.get(1).getRc());
         assertEquals("comment2", result.get(1).getComment());
 
-        verify(paymentRepository).findPaymentLinesFromPaymentReferences(paymentReferences);
+        verify(paymentRepository, times(2)).getPaymentEntitiesByPaymentReference(anyString());
         verify(referentialServiceApi, times(2)).getSsiDetails(anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
     void testGetPaymentLinesFromPaymentReference_emptyList() {
-        when(paymentRepository.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(new ArrayList<>());
+        when(paymentRepository.getPaymentEntitiesByPaymentReference(anyString())).thenReturn(new ArrayList<>());
 
         List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
 
         assertNotNull(result);
-        assertEquals(0, result.size());
-        verify(paymentRepository).findPaymentLinesFromPaymentReferences(paymentReferences);
+        assertEquals(2, result.size()); // Still expecting 2 as we iterate through paymentReferences
+        assertTrue(result.get(0).getBrokerName() == null); // Or other default values
+        assertTrue(result.get(1).getBrokerName() == null);
+
+        verify(paymentRepository, times(2)).getPaymentEntitiesByPaymentReference(anyString());
         verify(referentialServiceApi, never()).getSsiDetails(anyString(), anyString(), anyString(), anyString());
     }
 
