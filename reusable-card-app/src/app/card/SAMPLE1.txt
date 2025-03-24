@@ -1,51 +1,9 @@
- @Test
-    void getNettedPaymentRowsForManualPayment_shouldReturnPaymentLinesModelList() {
-        // Arrange
-        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
-        InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
-        payment.setProviderId("provider123");
-        InvoicePayable invoicePayable = new InvoicePayable();
-        invoicePayable.setProviderMnemo("providerMnemo");
-        payment.setInvoicePayable(invoicePayable);
-        paymentList.add(payment);
-
-        List<BapPayableModel> bapPayableModels = new ArrayList<>();
-        BapPayableModel bapPayableModel = new BapPayableModel();
-        bapPayableModel.setPortfolio("portfolio1");
-        bapPayableModels.add(bapPayableModel);
-
-        PortfolioAdvanceDetailResponse portfolioAdvanceDetailResponse = new PortfolioAdvanceDetailResponse();
-        portfolioAdvanceDetailResponse.setCodTrs("bdr1");
-
-        List<SettlementsAccounts> settlementsAccounts = new ArrayList<>();
-        SettlementsAccounts settlementsAccount = new SettlementsAccounts();
-        settlementsAccount.setNumcptrgl("numcptrgl1");
-        settlementsAccounts.add(settlementsAccount);
-
-        PaymentDates paymentDates = new PaymentDates();
-        paymentDates.setValueDate("2024-03-15");
-        paymentDates.setSendingDate("2024-03-14");
-
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(anyList())).thenReturn(bapPayableModels);
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(anyString())).thenReturn(portfolioAdvanceDetailResponse);
-        when(referentialServiceApi.getSettlementAccounts(anyString(), anyString(), anyString())).thenReturn(settlementsAccounts);
-        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(paymentDates);
-
-        // Act
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user");
-
-        // Assert
-        assertEquals(1, result.size());
-        PaymentLinesModel paymentLinesModel = result.get(0);
-        assertEquals("entity", paymentLinesModel.getSgEntity()); // Assuming entity is set somewhere in the logic
-        assertEquals("provider123", paymentLinesModel.getProviderId());
-        assertEquals("providerMnemo", paymentLinesModel.getBrokerName());
-        assertEquals("2024-03-15", paymentLinesModel.getValueDate());
-        assertEquals("2024-03-14", paymentLinesModel.getSendingDate());
-        assertEquals(1, paymentLinesModel.getNumberOfSSI());
-        assertEquals("currency", paymentLinesModel.getCurrency()); // Assuming currency is set somewhere in the logic
-        assertEquals(Arrays.asList("numcptrgl1"), paymentLinesModel.getSsiAccountCode());
-        assertEquals("D", paymentLinesModel.getPaymentDirection()); // Assuming D based on the logic
-        assertEquals(new BigDecimal("amount"), paymentLinesModel.getAmount()); // Assuming amount is set somewhere in the logic
-        assertEquals("R", paymentLinesModel.getPaymentStatus());
-    }
+  List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
+    InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
+    payment.setProviderId("provider123");
+    InvoicePayable invoicePayable = new InvoicePayable();
+    invoicePayable.setProviderMnemo("providerMnemo");
+    payment.setInvoicePayable(invoicePayable);
+    // Add this line to set the invoiceType
+    payment.setInvoiceType("SomeType"); // Replace "SomeType" with a valid value
+    paymentList.add(payment);
