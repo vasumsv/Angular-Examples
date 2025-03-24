@@ -1,17 +1,17 @@
-   @Test
+@Test
     void testUpdatePaymentLines_success() {
-        String paymentReference = finalDataForInsertion.get(0).getPaymentLinesFeoModel().getPaymentReference();
+        String invoiceReference = finalDataForInsertion.get(0).getPaymentLinesFeoModel().getInvoiceReference();
 
         // Create a PaymentEntity to be returned by the mock
         PaymentEntity paymentEntity = new PaymentEntity();
         // Populate paymentEntity with data from paymentLinesFeoModel
 
-        when(paymentRepository.getPaymentEntitiesByPaymentReference(paymentReference)).thenReturn(List.of(paymentEntity));
+        when(paymentRepository.getPaymentEntitiesByPaymentReference(invoiceReference)).thenReturn(List.of(paymentEntity));
         doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
 
         String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
         assertEquals("SUCCESSFUL", result);
-        verify(paymentRepository).getPaymentEntitiesByPaymentReference(paymentReference);
+        verify(paymentRepository).getPaymentEntitiesByPaymentReference(invoiceReference);
         verify(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
     }
