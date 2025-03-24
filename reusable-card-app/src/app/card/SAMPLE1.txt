@@ -1,50 +1,106 @@
-    // Assuming you have a mock of CashAllocationDomain and any dependencies.
-    // Replace with your actual setup.
-    private CashAllocationDomain cashAllocationDomain = Mockito.mock(CashAllocationDomain.class);
+   @Test
+    void testCashAllocationModelList_SkipLine_Ignore2() {
+        List<String> lines = new ArrayList<>();
+        lines.add("2" + " ".repeat(58) + "T");
+        String fileName = "DATA_REC_FILE";
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
 
     @Test
-    void testCashAllocationModelList_ValidLines() throws Exception {
+    void testCashAllocationModelList_SkipLine_GaiaNXG() {
         List<String> lines = new ArrayList<>();
-        lines.add("DATA_REC_FILE12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
-        String fileName = "DATA_REC_FILE";
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-        Date expectedDate = dateFormat.parse("12345678");
+        lines.add(" ".repeat(21) + "1234" + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
+        String fileName = "GAIA_NXG_FILE";
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("1234");
 
-        // Assuming getCashAllocationModel is correctly mocked or implemented.
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_invoiceRef_shortLine() {
+        List<String> lines = new ArrayList<>();
+        lines.add(" ".repeat(116) + "1234");
+        String fileName = "DATA_REC_FILE";
+        Mockito.when(cashAllocationDomain.getInvoiceRefFromSupplementaryDetails(Mockito.anyString())).thenReturn("invoiceRef");
         Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
-            .thenReturn(new CashAllocationModel()); // Replace with actual CashAllocationModel creation
+            .thenReturn(new CashAllocationModel());
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        // Add more assertions to verify the content of the CashAllocationModel objects.
-        // For example:
-        // assertEquals("extractedInvoiceRef", result.get(0).getInvoiceRef());
-        // assertEquals(BigDecimal.valueOf(extractedAmount), result.get(0).getAmount());
-
     }
 
     @Test
-    void testCashAllocationModelList_InvalidDate() {
+    void testCashAllocationModelList_invalidDate() {
         List<String> lines = new ArrayList<>();
-        lines.add("DATA_REC_FILEinvalidDate12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
+        lines.add(" ".repeat(24) + "invalidDate" + " ".repeat(76));
         String fileName = "DATA_REC_FILE";
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
         assertNotNull(result);
-        assertEquals(0, result.size()); // No CashAllocationModel should be created due to invalid date.
+        assertEquals(0, result.size());
     }
 
     @Test
-    void testCashAllocationModelList_shortLine() {
+    void testCashAllocationModelList_signD() throws Exception {
         List<String> lines = new ArrayList<>();
-        lines.add("shortLine");
+        lines.add(" ".repeat(39) + "10000" + " ".repeat(15) + "D" + " ".repeat(2) + " ".repeat(21) + "12345678" + " ".repeat(116));
+        String fileName = "DATA_REC_FILE";
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        Date expectedDate = dateFormat.parse("12345678");
+
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
+            .thenReturn(new CashAllocationModel());
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(BigDecimal.valueOf(-1000), result.get(0).getAmount());
+    }
+
+    @Test
+    void testCashAllocationModelList_exceptionInInvoiceRef() {
+        List<String> lines = new ArrayList<>();
+        lines.add(" ".repeat(515) + "1234");
+        String fileName = "DATA_REC_FILE";
+        Mockito.when(cashAllocationDomain.getInvoiceRefFromSupplementaryDetails(Mockito.anyString())).thenThrow(new RuntimeException("Test Exception"));
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_exceptionInDateParsing() {
+        List<String> lines = new ArrayList<>();
+        lines.add(" ".repeat(24) + "invalidDate" + " ".repeat(76));
         String fileName = "DATA_REC_FILE";
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
         assertNotNull(result);
-        assertEquals(0, result.size()); // No CashAllocationModel should be created due to short line.
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_exceptionInAmount() {
+        List<String> lines = new ArrayList<>();
+        lines.add(" ".repeat(39) + "invalidAmount" + " ".repeat(15) + " " + " ".repeat(2) + " ".repeat(21) + "12345678" + " ".repeat(116));
+        String fileName = "DATA_REC_FILE";
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
     }
