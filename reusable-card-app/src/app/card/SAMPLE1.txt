@@ -1,138 +1,37 @@
-@Mock
-    private ReferentialServiceApi referentialServiceApi;
-    
-    @InjectMocks
-    private CashAllocationDomain cashAllocationDomain;
-    
-    private List<InvoicePayableModelForPayment> paymentList;
-    private final String TEST_USER = "testUser";
-    private final String TEST_ENTITY = "ENTITY_01";
-    private final String TEST_CURRENCY = "USD";
+ @Test
+    void paymentDetailsByValueDate_ValidStartDate_ReturnsCashDetails() {
+        // Arrange
+        String validDate = "2023-10-01";
+        LocalDate parsedDate = LocalDate.parse(validDate);
+        CashAllocationModel mockModel = mock(CashAllocationModel.class);
+        CashDetails mockDetails = mock(CashDetails.class);
+        
+        when(mockModel.getCashDetails()).thenReturn(mockDetails);
+        when(cashAllocationRepositoryApi.findByValueDateGreaterThanEqual(parsedDate))
+            .thenReturn(List.of(mockModel));
 
-    @BeforeEach
-    void setUp() {
-        paymentList = new ArrayList<>();
-        InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
-        payment.setProviderId("PROV_123");
-        payment.setFeeCategory("CAT_A");
-        payment.setInvoiceReference("INV-001");
-        payment.setCurrency(TEST_CURRENCY);
-        payment.setAmount(new BigDecimal("1000.00"));
-        payment.setInvoiceType("COMMERCIAL");
-        paymentList.add(payment);
+        // Act
+        List<CashDetails> result = cashAllocationDomain
+            .paymentDetailsByValueDate(validDate, null);
+
+        // Assert
+        assertEquals(1, result.size());
+        verify(mockDetails).setId(mockModel.getId());
+        verify(cashAllocationRepositoryApi).findByValueDateGreaterThanEqual(parsedDate);
+        verify(logger).info("paymentDetails@CounterpartyId() ends");
     }
 
     @Test
-void testGetBettedRows_SuccessScenario() throws Exception {
-    // Mock dependencies
-    PaymentNodeAndLocationModel mockNode = new PaymentNodeAndLocationModel();
-    mockNode.setPaymentMode("BANK_TRANSFER");
-    
-    PaymentDates mockDates = new PaymentDates();
-    mockDates.setValueDate(LocalDate.now());
+    void paymentDetailsByValueDate_InvalidStartDate_ThrowsException() {
+        // Arrange
+        String invalidDate = "2023/10/01";
 
-    when(referentialServiceApi.getPaymentNodeAndSettlementLocation(
-        any(BigInteger.class), 
-        anyString(),
-        any(BigInteger.class),
-        any(BigInteger.class),
-        anyString(),
-        anyString()))
-        .thenReturn(mockNode);
-
-    when(referentialServiceApi.getPaymentDates(
-        anyString(),
-        anyString(),
-        anyString(),
-        anyString(),
-        anyString(),
-        anyString()))
-        .thenReturn(mockDates);
-
-    // Execute
-    List<PaymentLinesModel> result = cashAllocationDomain.getBettedRows(paymentList, TEST_USER);
-
-    // Verify
-    assertFalse(result.isEmpty());
-    PaymentLinesModel model = result.get(0);
-    assertEquals("BANK_TRANSFER", model.getPaymentMode());
-    assertEquals(TEST_CURRENCY, model.getCurrency());
-    assertNull(model.getComment());
-}
-
-@Test
-void testGetBettedRows_PaymentNodeUnavailable() throws Exception {
-    when(referentialServiceApi.getPaymentNodeAndSettlementLocation(any(), any(), any(), any(), any(), any()))
-        .thenThrow(new RuntimeException("Service unavailable"));
-
-    List<PaymentLinesModel> result = cashAllocationDomain.getBettedRows(paymentList, TEST_USER);
-    
-    assertFalse(result.isEmpty());
-    assertTrue(result.get(0).getComment().contains("Payment node unavailable"));
-}
-
-@Test
-void testGetBettedRows_SSIUnavailable() throws Exception {
-    // Mock successful node and dates
-    when(referentialServiceApi.getPaymentNodeAndSettlementLocation(any(), any(), any(), any(), any(), any()))
-        .thenReturn(new PaymentNodeAndLocationModel());
-    when(referentialServiceApi.getPaymentDates(any(), any(), any(), any(), any(), any()))
-        .thenReturn(new PaymentDates());
-    
-    // Force SSI failure
-    doThrow(new RuntimeException("SSI service down"))
-        .when(referentialServiceApi).getSsiDetails(any(), any(), any(), any());
-
-    List<PaymentLinesModel> result = cashAllocationDomain.getBettedRows(paymentList, TEST_USER);
-    assertTrue(result.get(0).getComment().contains("SSI unavailable"));
-}
-
-
-@Test
-void testPaymentHabilitationCheck() throws Exception {
-    // Setup successful base scenario
-    when(referentialServiceApi.getPaymentNodeAndSettlementLocation(any(), any(), any(), any(), any(), any()))
-        .thenReturn(new PaymentNodeAndLocationModel());
-    when(referentialServiceApi.getPaymentDates(any(), any(), any(), any(), any(), any()))
-        .thenReturn(new PaymentDates());
-
-    // Mock validation error
-    PayHabResponse mockResponse = new PayHabResponse();
-    mockResponse.setCodeErr("INVALID_AMOUNT");
-    when(referentialServiceApi.checkPaymentHabilitation(any(), any(), any(), any(), any()))
-        .thenReturn(mockResponse);
-
-    List<PaymentLinesModel> result = cashAllocationDomain.getBettedRows(paymentList, TEST_USER);
-    assertTrue(result.get(0).getComment().contains("INVALID_AMOUNT"));
-}
-
-@Test
-void testPaymentDirectionHandling() throws Exception {
-    // Force debit direction scenario
-    when(referentialServiceApi.getPaymentNodeAndSettlementLocation(any(), any(), any(), any(), any(), any()))
-        .thenReturn(new PaymentNodeAndLocationModel());
-    when(referentialServiceApi.getPaymentDates(any(), any(), any(), any(), any(), any()))
-        .thenReturn(new PaymentDates());
-    
-    // Setup test data with negative amount
-    paymentList.get(0).setAmount(new BigDecimal("-500.00"));
-
-    List<PaymentLinesModel> result = cashAllocationDomain.getBettedRows(paymentList, TEST_USER);
-    assertEquals("C", result.get(0).getPaymentDirection());
-    assertTrue(result.get(0).getAmount().compareTo(BigDecimal.ZERO) > 0);
-}
-
-
-@Test
-void testEmptyPaymentList() {
-    List<PaymentLinesModel> result = cashAllocationDomain.getBettedRows(new ArrayList<>(), TEST_USER);
-    assertTrue(result.isEmpty());
-}
-
-@Test
-void testInvalidCurrencyHandling() {
-    paymentList.get(0).setCurrency(null);
-    assertThrows(NullPointerException.class, () -> 
-        cashAllocationDomain.getBettedRows(paymentList, TEST_USER)
-    );
-}
+        // Act & Assert
+        CashAllocationCustomException exception = assertThrows(
+            CashAllocationCustomException.class,
+            () -> cashAllocationDomain.paymentDetailsByValueDate(invalidDate, null)
+        );
+        
+        assertEquals("Rate format must be yyyy==-0d", exception.getMessage());
+        verifyNoInteractions(cashAllocationRepositoryApi);
+    }
