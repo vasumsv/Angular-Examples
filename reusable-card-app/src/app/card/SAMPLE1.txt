@@ -1,45 +1,50 @@
- @Test
-    void updateCashAllocationStatus_invalidInvoiceStatus_throwsException() {
-        // Arrange
-        String status = "AnyStatus";
-        ProcessCashRequest processCashRequest = new ProcessCashRequest();
-        processCashRequest.setInvoiceRefs(Collections.singletonList("RSF-123"));
-        String actionPerformedBy = "TestUser";
+    // Assuming you have a mock of CashAllocationDomain and any dependencies.
+    // Replace with your actual setup.
+    private CashAllocationDomain cashAllocationDomain = Mockito.mock(CashAllocationDomain.class);
 
-        InvoicesAb invoiceAb = new InvoicesAb();
-        invoiceAb.setInvoiceReference("RSF-123");
-        invoiceAb.setInvoiceStatus(InvoiceServiceEnums.DRAFT.getValue()); // Set an invalid status
-        InvoicesAbList invoicesAbList = new InvoicesAbList();
-        invoicesAbList.setInvoicesAb(Collections.singletonList(invoiceAb));
+    @Test
+    void testCashAllocationModelList_ValidLines() throws Exception {
+        List<String> lines = new ArrayList<>();
+        lines.add("DATA_REC_FILE12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
+        String fileName = "DATA_REC_FILE";
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        Date expectedDate = dateFormat.parse("12345678");
 
-        when(invoiceServiceApi.getAbInvoice(", RSF-123, ")).thenReturn(invoicesAbList);
+        // Assuming getCashAllocationModel is correctly mocked or implemented.
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
+            .thenReturn(new CashAllocationModel()); // Replace with actual CashAllocationModel creation
 
-        // Act & Assert
-        CashAllocationCustomException exception = assertThrows(CashAllocationCustomException.class,
-                () -> cashAllocationDomain.updateCashAllocationStatus(status, processCashRequest, actionPerformedBy));
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
-        assertTrue(exception.getMessage().contains("Invoice Status should not be DRAFT / AMENDED / CANCELLED"));
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        // Add more assertions to verify the content of the CashAllocationModel objects.
+        // For example:
+        // assertEquals("extractedInvoiceRef", result.get(0).getInvoiceRef());
+        // assertEquals(BigDecimal.valueOf(extractedAmount), result.get(0).getAmount());
+
     }
 
     @Test
-    void updateCashAllocationStatus_statusMatched_matchedCashModelsNotEmpty_setsValueDate() {
-        // Arrange
-        String status = "MATCHED";
-        ProcessCashRequest processCashRequest = new ProcessCashRequest();
-        processCashRequest.setInvoiceRefs(Collections.singletonList("INV-456"));
-        String actionPerformedBy = "TestUser";
+    void testCashAllocationModelList_InvalidDate() {
+        List<String> lines = new ArrayList<>();
+        lines.add("DATA_REC_FILEinvalidDate12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
+        String fileName = "DATA_REC_FILE";
 
-        // Mocking the behavior of statusMatched method
-        when(cashAllocationDomain.statusMatched(eq(status), eq(processCashRequest), eq(actionPerformedBy), any(), any(), any(), any()))
-                .thenReturn(Collections.singletonList(new CashAllocationModel() {{
-                    setValueDate(java.time.LocalDate.now());
-                }}));
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
-        // Act
-        ABProcessingRequest result = cashAllocationDomain.updateCashAllocationStatus(status, processCashRequest, actionPerformedBy);
-
-        // Assert
         assertNotNull(result);
-        assertNotNull(result.getProcessCashRequest());
-        assertNotNull(result.getProcessCashRequest().getValueDate());
+        assertEquals(0, result.size()); // No CashAllocationModel should be created due to invalid date.
+    }
+
+    @Test
+    void testCashAllocationModelList_shortLine() {
+        List<String> lines = new ArrayList<>();
+        lines.add("shortLine");
+        String fileName = "DATA_REC_FILE";
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size()); // No CashAllocationModel should be created due to short line.
     }
