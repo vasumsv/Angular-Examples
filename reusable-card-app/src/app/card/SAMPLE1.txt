@@ -1,23 +1,51 @@
  @Test
-    void getNettedPaymentRowsForManualPayment_emptySettlementAccounts() {
+    void getNettedPaymentRowsForManualPayment_shouldReturnPaymentLinesModelList() {
         // Arrange
-        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(new PaymentDates(LocalDate.now(), LocalDate.now().minusDays(1)));
+        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
+        InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
+        payment.setProviderId("provider123");
+        InvoicePayable invoicePayable = new InvoicePayable();
+        invoicePayable.setProviderMnemo("providerMnemo");
+        payment.setInvoicePayable(invoicePayable);
+        paymentList.add(payment);
 
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(anyList())) // Corrected to use anyList()
-                .thenReturn(Arrays.asList(new BapPayableModel("portfolio1"), new BapPayableModel("portfolio2")));
+        List<BapPayableModel> bapPayableModels = new ArrayList<>();
+        BapPayableModel bapPayableModel = new BapPayableModel();
+        bapPayableModel.setPortfolio("portfolio1");
+        bapPayableModels.add(bapPayableModel);
 
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(anyString()))
-                .thenReturn(new PortfolioAdvanceDetailResponse("bdrId1"));
+        PortfolioAdvanceDetailResponse portfolioAdvanceDetailResponse = new PortfolioAdvanceDetailResponse();
+        portfolioAdvanceDetailResponse.setCodTrs("bdr1");
 
-        when(referentialServiceApi.getSettlementAccounts(anyString(), anyString(), anyString()))
-                .thenReturn(Collections.emptyList());
+        List<SettlementsAccounts> settlementsAccounts = new ArrayList<>();
+        SettlementsAccounts settlementsAccount = new SettlementsAccounts();
+        settlementsAccount.setNumcptrgl("numcptrgl1");
+        settlementsAccounts.add(settlementsAccount);
+
+        PaymentDates paymentDates = new PaymentDates();
+        paymentDates.setValueDate("2024-03-15");
+        paymentDates.setSendingDate("2024-03-14");
+
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(anyList())).thenReturn(bapPayableModels);
+        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(anyString())).thenReturn(portfolioAdvanceDetailResponse);
+        when(referentialServiceApi.getSettlementAccounts(anyString(), anyString(), anyString())).thenReturn(settlementsAccounts);
+        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(paymentDates);
 
         // Act
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(Collections.singletonList(new InvoicePayableModelForPayment()), "user"); // You might need to provide a sample InvoicePayableModelForPayment object
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user");
 
         // Assert
         assertEquals(1, result.size());
-        assertEquals(Collections.emptyList(), result.get(0).getSsiAccountCode());
-        assertEquals(0, result.get(0).getNumberOfSSI());
+        PaymentLinesModel paymentLinesModel = result.get(0);
+        assertEquals("entity", paymentLinesModel.getSgEntity()); // Assuming entity is set somewhere in the logic
+        assertEquals("provider123", paymentLinesModel.getProviderId());
+        assertEquals("providerMnemo", paymentLinesModel.getBrokerName());
+        assertEquals("2024-03-15", paymentLinesModel.getValueDate());
+        assertEquals("2024-03-14", paymentLinesModel.getSendingDate());
+        assertEquals(1, paymentLinesModel.getNumberOfSSI());
+        assertEquals("currency", paymentLinesModel.getCurrency()); // Assuming currency is set somewhere in the logic
+        assertEquals(Arrays.asList("numcptrgl1"), paymentLinesModel.getSsiAccountCode());
+        assertEquals("D", paymentLinesModel.getPaymentDirection()); // Assuming D based on the logic
+        assertEquals(new BigDecimal("amount"), paymentLinesModel.getAmount()); // Assuming amount is set somewhere in the logic
+        assertEquals("R", paymentLinesModel.getPaymentStatus());
     }
