@@ -1,68 +1,8 @@
- @InjectMocks
-    private CashAllocationDomain cashAllocationDomain;
-
-    @Mock
-    private CashAllocationRepositoryApi cashAllocationRepositoryApi;
-
-    @Mock
-    private Logger logger;
-
-    private static final String DATEFORMATSTRING = "Date Format must be yyyy-MM-dd";
-    private static final String PAYMENTDETAILSSTRING = "paymentDetailsByCounterPartyId ( ) ends ";
-
-    @Test
-    void paymentDetailsByValueDate_onlyStartDateProvided_validDate() {
+ @Test
+    void paymentDetailsByValueDate_onlyStartDateProvided_noMatchingRecords_corrected() {
         // Arrange
         String valueDateStart = "2025-03-20";
-        CashAllocationModel model1 = new CashAllocationModel();
-        model1.setId("1");
-        CashDetails details1 = new CashDetails();
-        details1.setValueDate(LocalDate.parse("2025-03-20"));
-        model1.setCashDetails(details1);
-
-        CashAllocationModel model2 = new CashAllocationModel();
-        model2.setId("2");
-        CashDetails details2 = new CashDetails();
-        details2.setValueDate(LocalDate.parse("2025-03-19"));
-        model2.setCashDetails(details2);
-
-        List<CashAllocationModel> mockResults = Arrays.asList(model1, model2);
-        when(cashAllocationRepositoryApi.findByValueDateLesserThanEqual(LocalDate.parse(valueDateStart)))
-                .thenReturn(mockResults);
-
-        // Act
-        List<CashDetails> result = cashAllocationDomain.paymentDetailsByValueDate(valueDateStart, null);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("1", result.get(0).getId());
-        assertEquals(LocalDate.parse("2025-03-20"), result.get(0).getValueDate());
-        assertEquals("2", result.get(1).getId());
-        assertEquals(LocalDate.parse("2025-03-19"), result.get(1).getValueDate());
-        verify(cashAllocationRepositoryApi, times(1)).findByValueDateLesserThanEqual(LocalDate.parse(valueDateStart));
-        verify(logger, times(1)).info(PAYMENTDETAILSSTRING);
-    }
-
-    @Test
-    void paymentDetailsByValueDate_onlyStartDateProvided_invalidDate() {
-        // Arrange
-        String valueDateStart = "2025/03/20";
-
-        // Act & Assert
-        CashAllocationCustomException exception = assertThrows(CashAllocationCustomException.class,
-                () -> cashAllocationDomain.paymentDetailsByValueDate(valueDateStart, null));
-
-        assertEquals(DATEFORMATSTRING, exception.getMessage());
-        verify(cashAllocationRepositoryApi, never()).findByValueDateLesserThanEqual(any());
-        verify(logger, never()).info(PAYMENTDETAILSSTRING);
-    }
-
-    @Test
-    void paymentDetailsByValueDate_onlyStartDateProvided_noMatchingRecords() {
-        // Arrange
-        String valueDateStart = "2025-03-20";
-        when(cashAllocationRepositoryApi.findByValueDateLesserThanEqual(LocalDate.parse(valueDateStart)))
+        when(cashAllocationRepositoryApi.findByValueDateGreaterThanEqual(LocalDate.parse(valueDateStart)))
                 .thenReturn(java.util.Collections.emptyList());
 
         // Act
@@ -71,6 +11,6 @@
         // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
-        verify(cashAllocationRepositoryApi, times(1)).findByValueDateLesserThanEqual(LocalDate.parse(valueDateStart));
+        verify(cashAllocationRepositoryApi, times(1)).findByValueDateGreaterThanEqual(LocalDate.parse(valueDateStart));
         verify(logger, times(1)).info(PAYMENTDETAILSSTRING);
     }
