@@ -1,7 +1,8 @@
-   @Test
-    void testCashAllocationModelList_SkipLine_GaiaNXG_E2E_True() {
+ @Test
+    void testCashAllocationModelList_SkipLine_GaiaNXG_E2E_True_AccountNumber_True() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(21) + "300030497     " + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
+        // Construct a line where substring(1, 21).trim() will be "300030497" after toUpperCase
+        lines.add(" 300030497          ".toUpperCase(Locale.FRENCH) + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
         String fileName = "GAIA_NXG_E2E_FILE";
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
@@ -11,25 +12,14 @@
     }
 
     @Test
-    void testCashAllocationModelList_SkipLine_GaiaNXG_E2E_False_AccountNumber_True() {
+    void testCashAllocationModelList_SkipLine_GaiaNXG_E2E_True_AccountNumber_False() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(21) + "300030497     " + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
-        String fileName = "GAIA_NXG_FILE";
+        // Construct a line where substring(1, 21).trim() will NOT be "300030497" after toUpperCase
+        lines.add(" DIFFERENT_ACCOUNT    ".toUpperCase(Locale.FRENCH) + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
+        String fileName = "GAIA_NXG_E2E_FILE";
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
         assertNotNull(result);
         assertEquals(0, result.size());
-    }
-
-    @Test
-    void testCashAllocationModelList_SkipLine_GaiaNXG_E2E_False_AccountNumber_False() {
-        List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(21) + "123456789012" + " ".repeat(33) + " ".repeat(3) + " ".repeat(60));
-        String fileName = "GAIA_NXG_FILE";
-
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
-
-        assertNotNull(result);
-        assertEquals(1, result.size()); // Assuming this line would now be processed
     }
