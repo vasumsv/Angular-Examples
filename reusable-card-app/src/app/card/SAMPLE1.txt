@@ -1,79 +1,136 @@
- finalDataForInsertion = new ArrayList<>();
-        PaymentLinesFeoModel model = new PaymentLinesFeoModel();
-        model.setProviderId("provider123");
-        model.setProviderMnemonic("mnemonic456");
-        model.setEntityBdrId("789");
-        finalDataForInsertion.add(model);
+  @InjectMocks
+    private CashAllocationDomain cashAllocationDomain;
+
+    private List<PaymentLinesFeoModel> finalDataForInsertion;
+    private PaymentLinesFeoModel pmt;
+    private FeeDetails feeDetails;
+    private InsertPaymentResponse responseForInsertion;
+    private String user;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        finalDataForInsertion = new ArrayList<>();
+        pmt = new PaymentLinesFeoModel();
+        pmt.setSendingDate(LocalDate.of(2023, 10, 26));
+        pmt.setPaymentType("A");
+        pmt.setProviderId("provider123");
+        pmt.setCurrency("USD");
+        pmt.setEntityBdrId("789");
+        pmt.setSsi("account123");
+        pmt.setProviderMnemonic("mnemonic456");
+        pmt.setValueDate(LocalDate.of(2023, 11, 15));
+        pmt.setInvoiceType("D"); // Setting a default invoice type
+
+        feeDetails = new FeeDetails();
+        feeDetails.setCodeBatch("batch123");
+
+        finalDataForInsertion.add(pmt);
         responseForInsertion = new InsertPaymentResponse();
         user = "testUser";
     }
 
     @Test
-    void testInsertPaymentLines_providerDetailsRuntimeException() {
-        RuntimeException exception = new RuntimeException("Provider details error");
-        when(referentialServiceApi.getProviderDetails(anyString(), anyString())).thenThrow(exception);
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
-        assertEquals(ERROR_STATUS, response.getStatus());
-        assertEquals("Error occurred while getting provider details. Detailed message " + exception, response.getErrorMessage());
-        verify(logger).error(anyString());
-    }
-
-    @Test
-    void testInsertPaymentLines_userDetailsRuntimeException() {
-        RuntimeException exception = new RuntimeException("User initials error");
-        when(referentialServiceApi.getUserInitials(anyString())).thenThrow(exception);
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
-        assertEquals(ERROR_STATUS, response.getStatus());
-        assertEquals("Error occurred while getting user initial details. Detailed message " + exception, response.getErrorMessage());
-        verify(logger).error(anyString());
-    }
-
-    @Test
-    void testInsertPaymentLines_entityListRuntimeException() {
-        RuntimeException exception = new RuntimeException("Entity list error");
-        when(referentialServiceApi.getEntirelistofEntities()).thenThrow(exception);
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
-        assertEquals(ERROR_STATUS, response.getStatus());
-        assertEquals("Error occurred while getting entity details. Detailed message " + exception, response.getErrorMessage());
-        verify(logger).error(anyString());
-    }
-
-    @Test
-    void testInsertPaymentLines_backOfficeDetailsRuntimeException() {
-        List<Entity> entityList = new ArrayList<>();
-        Entity entity = new Entity();
-        entity.setEntityCode("entityCode");
-        entityList.add(entity);
-
-        UserDetailsModel userDetailsModel = new UserDetailsModel();
-        userDetailsModel.setCodgrphabbo("codgrphabbo");
-
-        when(referentialServiceApi.getEntirelistofEntities()).thenReturn(entityList);
-        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(userDetailsModel);
-        RuntimeException exception = new RuntimeException("Back office details error");
-        when(referentialServiceApi.getBackOfficeDetails(anyString(), anyString())).thenThrow(exception);
+    void testInsertPaymentLines_paymentTypeA_success() {
+        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(123));
+        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(createSsiResponseList());
+        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), eq("S"), anyString(), anyString())).thenReturn(new PaymentCheckResponse());
 
         InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
-        assertEquals(ERROR_STATUS, response.getStatus());
-        assertEquals("Error occurred while getting back office code. Detailed message " + exception, response.getErrorMessage());
-        verify(logger).error(anyString());
-    }
 
-    @Test
-    void testInsertPaymentLines_allSuccess() {
-        List<Entity> entityList = new ArrayList<>();
-        Entity entity = new Entity();
-        entity.setEntityCode("entityCode");
-        entityList.add(entity);
-
-        UserDetailsModel userDetailsModel = new UserDetailsModel();
-        userDetailsModel.setCodgrphabbo("codgrphabbo");
-
-        when(referentialServiceApi.getProviderDetails(anyString(), anyString())).thenReturn(new ProviderDetails());
-        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(userDetailsModel);
-        when(referentialServiceApi.getEntirelistofEntities()).thenReturn(entityList);
-        when(referentialServiceApi.getBackOfficeDetails(anyString(), anyString())).thenReturn(new BackOfficeDetails());
-
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
         assertNull(response.getErrorMessage());
+        verify(paymentRepository).getNextSequence();
+        verify(referentialServiceApi).getSsiDetails(anyString(), anyString(), anyString(), anyString());
+        verify(referentialServiceApi).doPaymentChecks(user, "feeBdrId", "USD", "789", "S", LocalDate.of(2023, 11, 15).toString(), "provider123");
+        assertEquals("BankName1", pmt.getProviderBankName());
+        assertEquals("SwiftCode1", pmt.getProviderBankSwift());
+        assertEquals("06997batch1230000123A", pmt.getPaymentReference());
+    }
+
+    @Test
+    void testInsertPaymentLines_paymentTypeA_invoiceTypeE_success() {
+        pmt.setInvoiceType("E");
+        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(456));
+        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(createSsiResponseList());
+        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), eq("E"), anyString(), anyString())).thenReturn(new PaymentCheckResponse());
+
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+
+        assertNull(response.getErrorMessage());
+        verify(paymentRepository).getNextSequence();
+        verify(referentialServiceApi).getSsiDetails(anyString(), anyString(), anyString(), anyString());
+        verify(referentialServiceApi).doPaymentChecks(user, "feeBdrId", "USD", "789", "E", LocalDate.of(2023, 11, 15).toString(), "provider123");
+        assertEquals("BankName1", pmt.getProviderBankName());
+        assertEquals("SwiftCode1", pmt.getProviderBankSwift());
+        assertEquals("06997batch1230000456A", pmt.getPaymentReference());
+    }
+
+    @Test
+    void testInsertPaymentLines_paymentTypeA_ssiDetailsException() {
+        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(123));
+        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenThrow(new RuntimeException("SSI details error"));
+
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+
+        assertEquals("ERROR", response.getStatus());
+        assertTrue(response.getErrorMessage().contains("SSI details error"));
+        verify(logger).error(anyString());
+        verify(referentialServiceApi, never()).doPaymentChecks(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testInsertPaymentLines_paymentTypeA_paymentChecksException() {
+        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(123));
+        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(createSsiResponseList());
+        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenThrow(new RuntimeException("Payment checks error"));
+
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+
+        assertEquals("ERROR", response.getStatus());
+        assertTrue(response.getErrorMessage().contains("Payment checks error"));
+        verify(logger).error(anyString());
+    }
+
+    @Test
+    void testInsertPaymentLines_paymentTypeNotA() {
+        pmt.setPaymentType("B");
+        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(123));
+
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+
+        assertNull(response.getErrorMessage());
+        verify(paymentRepository).getNextSequence();
+        verify(referentialServiceApi, never()).getSsiDetails(anyString(), anyString(), anyString(), anyString());
+        verify(referentialServiceApi, never()).doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
+        assertNull(pmt.getProviderBankName());
+        assertNull(pmt.getProviderBankSwift());
+        assertEquals("06997batch1230000123A", pmt.getPaymentReference());
+    }
+
+    @Test
+    void testInsertPaymentLines_paymentTypeA_emptySsiDetails() {
+        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(789));
+        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(new ArrayList<>());
+
+        // This should ideally throw an exception or handle the empty list gracefully
+        // Based on the code, it might throw an IndexOutOfBoundsException at currentSsiDetails.get(0)
+        // Let's test for that.
+        assertThrows(IndexOutOfBoundsException.class, () -> cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user));
+        verify(logger, never()).error(anyString()); // No explicit try-catch around the list access
+    }
+
+    private List<SsiResponse> createSsiResponseList() {
+        List<SsiResponse> ssiResponses = new ArrayList<>();
+        SsiResponse ssiResponse1 = new SsiResponse();
+        ssiResponse1.setAccountNumber("account123");
+        ssiResponse1.setBankName("BankName1");
+        ssiResponse1.setSwiftCode("SwiftCode1");
+        ssiResponses.add(ssiResponse1);
+
+        SsiResponse ssiResponse2 = new SsiResponse();
+        ssiResponse2.setAccountNumber("account456");
+        ssiResponse2.setBankName("BankName2");
+        ssiResponse2.setSwiftCode("SwiftCode2");
+        ssiResponses.add(ssiResponse2);
+        return ssiResponses;
     }
