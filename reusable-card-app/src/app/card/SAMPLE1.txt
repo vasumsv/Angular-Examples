@@ -1,15 +1,64 @@
  @Test
-    void testCashAllocationModelList_LineLengthNotGreaterThan517() {
-        // Arrange
-        String shortLine = "12345678901234567890 20231027          REF123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"; // Length less than 517
-        List<String> lines = new ArrayList<>();
-        lines.add(shortLine);
-        String fileName = "test.txt";
+    void shouldSkipLineWhenAccountNumberMatchesAndCorrectFileName() {
+        String testLine = "2VALID_ACCOUNT_00201472755    20230930";
+        List<String> lines = List.of(testLine);
+        String fileName = "GATA_MXG_FILE_123.txt";
 
-        // Act
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
 
-        // Assert (Add assertions based on your expected behavior)
-        assertFalse(result.isEmpty()); // Assuming a CashAllocationModel is created
-        // You might need to add more specific assertions based on your logic
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void shouldProcessLineWhenAccountNumberNotInIgnoreList() {
+        String testLine = "1OTHER_ACCOUNT_12345678901    20230930";
+        List<String> lines = List.of(testLine);
+        String fileName = "OTHER_FILE.txt";
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void shouldExtractInvoiceRefFromMainLineWhenLengthSufficient() {
+        String longLine = "1".repeat(600);
+        List<String> lines = List.of(longLine);
+        
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, "anyfile.txt");
+        
+        assertEquals(longLine.substring(517).trim(), result.get(0).getInvoiceRef());
+    }
+
+    @Test
+    void shouldUseSupplementaryDetailsForInvoiceRefWhenLineShort() {
+        String shortLine = "1".repeat(200);
+        List<String> lines = List.of(shortLine);
+        
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, "anyfile.txt");
+        
+        verify(cashAllocationDomain).getInvoiceRefFromSupplementaryDetails(anyString());
+    }
+
+    @Test
+    void shouldHandleInvalidDateFormatGracefully() {
+        String invalidDateLine = "1ACCOUNT_12345678901    INVALID_DATE";
+        List<String> lines = List.of(invalidDateLine);
+        
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, "anyfile.txt");
+        
+        verify(logger).error(eq("EXCEPTIONSTRING"), any(Exception.class));
+        assertNull(result.get(0).getDate());
+    }
+
+    @Test
+    void shouldCalculateAmountWithCorrectSign() {
+        String amountLine = "1ACCOUNT_123".padRight(58, '0') + "+1234567890123456";
+        List<String> lines = List.of(amountLine);
+        
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, "anyfile.txt");
+        
+        double expectedAmount = Double.parseDouble(amountLine.substring(40, 58)) / 10000;
+        assertEquals(expectedAmount, result.get(0).getAmount());
     }
