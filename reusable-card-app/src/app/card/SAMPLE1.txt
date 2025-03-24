@@ -1,26 +1,155 @@
- @Test
-    void testGetPaymentLinesFromPaymentReference_success() {
-        // Mock the paymentRepository.getPaymentEntitiesByPaymentReference method
-        when(paymentRepository.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
+  private static final String IGNORE_LINE_NOT_CONTAIN_2 = "2";
+    private static final String IGNORE_LINE_NOT_CONTAIN_T = "T";
+    private static final String GAIA_NXG_FILE = "GAIA_NXG_FILE";
+    private static final String ACCOUNT_NUMBER_1 = "12345678901234567890";
+    private static final String ACCOUNT_NUMBER_2 = "98765432109876543210";
+    private static final String ACCOUNT_NUMBER_3 = "00201472755";
+    private static final String EXCEPTIONSTRING = "Error during processing";
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 
-        // Create a List of SsiResponse objects
-        List<SsiResponse> ssiResponses = new ArrayList<>();
-        SsiResponse ssiResponse1 = new SsiResponse();
-        // Set properties of ssiResponse1 as needed
-        ssiResponses.add(ssiResponse1);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        lines = new ArrayList<>();
+        fileName = "GAIA_NXG_FILE.txt";
+    }
 
-        SsiResponse ssiResponse2 = new SsiResponse();
-        // Set properties of ssiResponse2 as needed
-        ssiResponses.add(ssiResponse2);
+    @Test
+    void testCashAllocationModels_lines739to768_processingSuccessful_shortLine() throws Exception {
+        String line = "1" + ACCOUNT_NUMBER_1 + " 20230815      000000000010000000D" + " ".repeat(58 - 40) + "T" + " ".repeat(738 - 60) + "SUPPLEMENTARY_INFO";
+        lines.add(line);
 
-        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiResponses);
+        when(cashAllocationService.getInvoiceRefFromSupplementaryDetails(anyString())).thenReturn("supp_inv_ref");
+        when(cashAllocationService.getCashAllocationModel(eq("supp_inv_ref"), eq(BigDecimal.valueOf(1000000, 4)), anyString(), anyString(), anyString(), any(Date.class), anyString()))
+                .thenReturn(cashAllocationModel);
 
-        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
 
         assertNotNull(result);
-        assertEquals(2, result.size());
-        // ... (other assertions) ...
+        assertEquals(1, result.size());
+        assertSame(cashAllocationModel, result.get(0));
+        verify(cashAllocationService).getInvoiceRefFromSupplementaryDetails("SUPPLEMENTARY_INFO");
+        verify(cashAllocationService).getCashAllocationModel(eq("supp_inv_ref"), eq(BigDecimal.valueOf(1000000, 4)), anyString(), eq("SUPPLEMENTARY_INFO"), eq(ACCOUNT_NUMBER_1), eq(dateFormat.parse("20230815")), eq(""));
+        verifyNoMoreInteractions(cashAllocationService, logger, cashAllocationModel);
+    }
 
-        verify(paymentRepository).findPaymentLinesFromPaymentReferences(paymentReferences);
-        verify(referentialServiceApi, times(2)).getSsiDetails(anyString(), anyString(), anyString(), anyString());
+    @Test
+    void testCashAllocationModels_lines739to768_processingSuccessful_longLine() throws Exception {
+        String line = "1" + ACCOUNT_NUMBER_2 + " 20230901      000000000050000000C" + " ".repeat(58 - 40) + " " + " ".repeat(738 - 60) + "EXTRA_INFO" + "LONG_INVOICE_REF";
+        lines.add(line);
+
+        when(cashAllocationService.getCashAllocationModel(eq("LONG_INVOICE_REF"), eq(BigDecimal.valueOf(5000000, 4)), anyString(), anyString(), anyString(), any(Date.class), anyString()))
+                .thenReturn(cashAllocationModel);
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertSame(cashAllocationModel, result.get(0));
+        verify(cashAllocationService).getCashAllocationModel(eq("LONG_INVOICE_REF"), eq(BigDecimal.valueOf(5000000, 4)), anyString(), eq("EXTRA_INFO"), eq(ACCOUNT_NUMBER_2), eq(dateFormat.parse("20230901")), eq(""));
+        verifyNoInteractions(cashAllocationService, logger, cashAllocationModel);
+    }
+
+    @Test
+    void testCashAllocationModels_lines739to768_lineIgnored_condition1() {
+        lines.add("2" + ACCOUNT_NUMBER_1 + " ..."); // Starts with '2'
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(cashAllocationService, logger, cashAllocationModel);
+    }
+
+    @Test
+    void testCashAllocationModels_lines739to768_lineIgnored_condition2() {
+        String line = "1" + ACCOUNT_NUMBER_1 + " ".repeat(59) + IGNORE_LINE_NOT_CONTAIN_T + " ..."; // Contains 'T' at index 59
+        lines.add(line);
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(cashAllocationService, logger, cashAllocationModel);
+    }
+
+    @Test
+    void testCashAllocationModels_lines739to768_lineIgnored_condition3_filenameMismatch() {
+        String line = "1" + ACCOUNT_NUMBER_1 + " ".repeat(59) + " " + " ".repeat(679);
+        lines.add(line);
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, "OTHER_FILE.txt");
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(cashAllocationService, logger, cashAllocationModel);
+    }
+
+    @Test
+    void testCashAllocationModels_lines739to768_lineIgnored_condition3_accountNumberMismatch() {
+        String line = "1" + "WRONG_ACCOUNT_NUMBER" + " ".repeat(59) + " " + " ".repeat(679);
+        lines.add(line);
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(cashAllocationService, logger, cashAllocationModel);
+    }
+
+    @Test
+    void testCashAllocationModels_lines739to768_getInvoiceRefFromSupplementaryDetails_exception() throws Exception {
+        String line = "1" + ACCOUNT_NUMBER_1 + " 20230815      000000000010000000D" + " ".repeat(58 - 40) + " " + " ".repeat(738 - 60) + "SUPPLEMENTARY_INFO";
+        lines.add(line);
+
+        when(cashAllocationService.getInvoiceRefFromSupplementaryDetails(anyString())).thenThrow(new RuntimeException("Error getting supplementary details"));
+        doNothing().when(logger).error(eq(EXCEPTIONSTRING), any(Exception.class));
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty()); // Should not process further on exception
+        verify(cashAllocationService).getInvoiceRefFromSupplementaryDetails("SUPPLEMENTARY_INFO");
+        verify(logger).error(eq(EXCEPTIONSTRING), any(Exception.class));
+        verifyNoMoreInteractions(cashAllocationService, logger, cashAllocationModel);
+    }
+
+    @Test
+    void testCashAllocationModels_lines739to768_dateParseException() {
+        String line = "1" + ACCOUNT_NUMBER_1 + " INVALID_DATE" + "      000000000010000000D" + " ".repeat(60 - 40) + " " + " ".repeat(679);
+        lines.add(line);
+        doNothing().when(logger).error(eq(EXCEPTIONSTRING), any(Exception.class));
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty()); // Should not process further on date parsing exception
+        verify(logger).error(eq(EXCEPTIONSTRING), any(ParseException.class));
+        verifyNoInteractions(cashAllocationService, logger, cashAllocationModel);
+    }
+
+    @Test
+    void testCashAllocationModels_lines739to768_positiveAmount() throws Exception {
+        String line = "1" + ACCOUNT_NUMBER_1 + " 20230815      000000000012345678 " + " ".repeat(60 - 40) + " " + " ".repeat(679); // No 'D' sign
+        lines.add(line);
+
+        when(cashAllocationService.getCashAllocationModel(anyString(), eq(BigDecimal.valueOf(123456.78)), anyString(), anyString(), anyString(), any(Date.class), anyString()))
+                .thenReturn(cashAllocationModel);
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertSame(cashAllocationModel, result.get(0));
+        verify(cashAllocationService).getCashAllocationModel(anyString(), eq(BigDecimal.valueOf(123456.78)), anyString(), eq(""), eq(ACCOUNT_NUMBER_1), eq(dateFormat.parse("20230815")), eq(""));
+        verifyNoMoreInteractions(cashAllocationService, logger, cashAllocationModel);
+    }
+
+    @Test
+    void testCashAllocationModels_lines739to768_debitAmount() throws Exception {
+        String line = "1" + ACCOUNT_NUMBER_2 + " 20230901      000000000098765432 D" + " ".repeat(60 - 40) + " " + " ".repeat(679); // 'D' sign
+        lines.add(line);
+
+        when(cashAllocationService.getCashAllocationModel(anyString(), eq(BigDecimal.valueOf(987654.32)), anyString(), anyString(), anyString(), any(Date.class), anyString()))
+                .thenReturn(cashAllocationModel);
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertSame(cashAllocationModel, result.get(0));
+        verify(cashAllocationService).getCashAllocationModel(anyString(), eq(BigDecimal.valueOf(987654.32)), anyString(), eq(""), eq(ACCOUNT_NUMBER_2), eq(dateFormat.parse("20230901")), eq(""));
+        verifyNoMoreInteractions(cashAllocationService, logger, cashAllocationModel);
     }
