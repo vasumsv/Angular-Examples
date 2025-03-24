@@ -1,16 +1,49 @@
  @Test
-    void paymentDetailsByValueDate_onlyStartDateProvided_noMatchingRecords_corrected() {
+    void updateCashAllocationStatus_invalidInvoiceStatus_throwsException() {
         // Arrange
-        String valueDateStart = "2025-03-20";
-        when(cashAllocationRepositoryApi.findByValueDateGreaterThanEqual(LocalDate.parse(valueDateStart)))
-                .thenReturn(java.util.Collections.emptyList());
+        String status = "AnyStatus";
+        ProcessCashRequest processCashRequest = new ProcessCashRequest();
+        processCashRequest.setInvoiceRefs(Collections.singletonList("RSF-123"));
+        String actionPerformedBy = "TestUser";
+
+        Invoices invoice = new Invoices();
+        invoice.setInvoiceReference("RSF-123");
+        invoice.setInvoiceStatus(InvoiceServiceEnums.DRAFT.getValue()); // Set an invalid status
+        FnsInvoicesList fnsInvoicesList = new FnsInvoicesList();
+        fnsInvoicesList.setInvoices(Collections.singletonList(invoice));
+
+        when(invoiceServiceApi.getFnsInvoice(anyString())).thenReturn(fnsInvoicesList);
+
+        // Act & Assert
+        CashAllocationCustomException exception = assertThrows(CashAllocationCustomException.class,
+                () -> cashAllocationDomain.updateCashAllocationStatus(status, processCashRequest, actionPerformedBy));
+
+        assertTrue(exception.getMessage().contains("Invoice Status should not be DRAFT / AMENDED / CANCELLED"));
+    }
+
+    @Test
+    void updateCashAllocationStatus_statusMatched_matchedCashModelsNotEmpty_setsValueDate() {
+        // Arrange
+        String status = "MATCHED";
+        ProcessCashRequest processCashRequest = new ProcessCashRequest();
+        processCashRequest.setInvoiceRefs(Collections.singletonList("INV-456"));
+        String actionPerformedBy = "TestUser";
+
+        List<CashAllocationModel> matchedCashModels = Arrays.asList(
+                new CashAllocationModel() {{
+                    setValueDate(LocalDate.now());
+                }}
+        );
+
+        // Assuming statusMatched method exists and is called
+        when(cashAllocationDomain.statusMatched(eq(status), eq(processCashRequest), eq(actionPerformedBy), any(), any(), any(), any()))
+                .thenReturn(matchedCashModels);
 
         // Act
-        List<CashDetails> result = cashAllocationDomain.paymentDetailsByValueDate(valueDateStart, null);
+        ABProcessingRequest result = cashAllocationDomain.updateCashAllocationStatus(status, processCashRequest, actionPerformedBy);
 
         // Assert
         assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(cashAllocationRepositoryApi, times(1)).findByValueDateGreaterThanEqual(LocalDate.parse(valueDateStart));
-        verify(logger, times(1)).info(PAYMENTDETAILSSTRING);
+        assertNotNull(result.getProcessCashRequest());
+        assertEquals(matchedCashModels.get(0).getValueDate(), result.getProcessCashRequest().getValueDate());
     }
