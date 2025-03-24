@@ -1,17 +1,107 @@
-@Test
-    void testUpdatePaymentLines_success() {
-        String invoiceReference = finalDataForInsertion.get(0).getPaymentLinesFeoModel().getInvoiceReference();
+private String[] paymentReferences;
+    private List<SrgPaymentModel> srgPaymentModels;
 
-        // Create a PaymentEntity to be returned by the mock
-        PaymentEntity paymentEntity = new PaymentEntity();
-        // Populate paymentEntity with data from paymentLinesFeoModel
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
 
-        when(paymentRepository.getPaymentEntitiesByPaymentReference(invoiceReference)).thenReturn(List.of(paymentEntity));
-        doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
+        paymentReferences = new String[]{"ref1", "ref2"};
+        srgPaymentModels = new ArrayList<>();
 
-        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+        // Create sample SrgPaymentModel objects
+        SrgPaymentModel srgPaymentModel1 = new SrgPaymentModel();
+        srgPaymentModel1.setId(1L);
+        srgPaymentModel1.setProviderName("Broker1");
+        srgPaymentModel1.setInvoiceReference("inv1,inv2");
+        srgPaymentModel1.setSgEntity("entity1");
+        srgPaymentModel1.setFeeCategory("category1");
+        srgPaymentModel1.setProviderBdrId("provider1");
+        srgPaymentModel1.setValueDate(LocalDate.now());
+        srgPaymentModel1.setSendingDate(LocalDate.now());
+        srgPaymentModel1.setPaymentAmount(BigDecimal.TEN);
+        srgPaymentModel1.setPaymentCurrency("USD");
+        srgPaymentModel1.setPaymentType("type1");
+        srgPaymentModel1.setDebitCredit("credit");
+        srgPaymentModel1.setPaymentMode("mode1");
+        srgPaymentModel1.setPaymentStatus("status1");
+        srgPaymentModel1.setRcCode("rc1");
+        srgPaymentModel1.setComment("comment1");
+        srgPaymentModels.add(srgPaymentModel1);
 
-        assertEquals("SUCCESSFUL", result);
-        verify(paymentRepository).getPaymentEntitiesByPaymentReference(invoiceReference);
-        verify(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
+        SrgPaymentModel srgPaymentModel2 = new SrgPaymentModel();
+        srgPaymentModel2.setId(2L);
+        srgPaymentModel2.setProviderName("Broker2");
+        srgPaymentModel2.setInvoiceReference("inv3");
+        srgPaymentModel2.setSgEntity("entity2");
+        srgPaymentModel2.setFeeCategory("category2");
+        srgPaymentModel2.setProviderBdrId("provider2");
+        srgPaymentModel2.setValueDate(LocalDate.now());
+        srgPaymentModel2.setSendingDate(LocalDate.now());
+        srgPaymentModel2.setPaymentAmount(BigDecimal.ONE);
+        srgPaymentModel2.setPaymentCurrency("EUR");
+        srgPaymentModel2.setPaymentType("type2");
+        srgPaymentModel2.setDebitCredit("debit");
+        srgPaymentModel2.setPaymentMode("mode2");
+        srgPaymentModel2.setPaymentStatus("status2");
+        srgPaymentModel2.setRcCode("rc2");
+        srgPaymentModel2.setComment("comment2");
+        srgPaymentModels.add(srgPaymentModel2);
+    }
+
+    @Test
+    void testGetPaymentLinesFromPaymentReference_success() {
+        when(paymentRepository.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
+        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(List.of("ssi1", "ssi2"));
+
+        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("Broker1", result.get(0).getBrokerName());
+        assertEquals(2, result.get(0).getNumberOfInvoices());
+        assertEquals(2, result.get(0).getNumberOfSSI());
+        assertEquals("inv1,inv2", result.get(0).getInvoiceReference());
+        assertEquals("category1", result.get(0).getFeeCategory());
+        assertEquals("provider1", result.get(0).getProviderId());
+        assertEquals("USD", result.get(0).getCurrency());
+        assertEquals("type1", result.get(0).getInvoiceType());
+        assertEquals("credit", result.get(0).getPaymentDirection());
+        assertEquals("mode1", result.get(0).getPaymentMode());
+        assertEquals("status1", result.get(0).getPaymentStatus());
+        assertEquals("rc1", result.get(0).getRc());
+        assertEquals("comment1", result.get(0).getComment());
+
+        assertEquals("Broker2", result.get(1).getBrokerName());
+        assertEquals(1, result.get(1).getNumberOfInvoices());
+        assertEquals(2, result.get(1).getNumberOfSSI());
+        assertEquals("inv3", result.get(1).getInvoiceReference());
+        assertEquals("category2", result.get(1).getFeeCategory());
+        assertEquals("provider2", result.get(1).getProviderId());
+        assertEquals("EUR", result.get(1).getCurrency());
+        assertEquals("type2", result.get(1).getInvoiceType());
+        assertEquals("debit", result.get(1).getPaymentDirection());
+        assertEquals("mode2", result.get(1).getPaymentMode());
+        assertEquals("status2", result.get(1).getPaymentStatus());
+        assertEquals("rc2", result.get(1).getRc());
+        assertEquals("comment2", result.get(1).getComment());
+
+        verify(paymentRepository).findPaymentLinesFromPaymentReferences(paymentReferences);
+        verify(referentialServiceApi, times(2)).getSsiDetails(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testGetPaymentLinesFromPaymentReference_emptyList() {
+        when(paymentRepository.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(new ArrayList<>());
+
+        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+        verify(paymentRepository).findPaymentLinesFromPaymentReferences(paymentReferences);
+        verify(referentialServiceApi, never()).getSsiDetails(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testGetPaymentLinesFromPaymentReference_nullReferences() {
+        assertThrows(NullPointerException.class, () -> cashAllocationDomain.getPaymentLinesFromPaymentReference(null));
     }
