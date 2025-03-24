@@ -1,11 +1,15 @@
-
-    @Test
+  @Test
     void testCashAllocationModelList_Line297_IgnoreT_True() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(59) + "T"); // Assuming IGNORE_LINE_NOT_CONTAIN_T is "T"
-        String fileName = "DATA_REC_FILE";
+        String inputLine = " ".repeat(59) + "T";
+        lines.add(inputLine);
 
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+        // Debugging: Print the extracted substring and IGNORE_LINE_NOT_CONTAIN_T
+        String extractedSubstring = inputLine.toUpperCase(Locale.FRENCH).substring(59, 60);
+        System.out.println("Extracted Substring: [" + extractedSubstring + "]");
+        System.out.println("IGNORE_LINE_NOT_CONTAIN_T: [" + cashAllocationDomain.IGNORE_LINE_NOT_CONTAIN_T + "]"); // Assuming IGNORE_LINE_NOT_CONTAIN_T is accessible
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
 
         assertNotNull(result);
         assertEquals(0, result.size());
