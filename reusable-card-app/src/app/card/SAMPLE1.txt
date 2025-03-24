@@ -1,31 +1,49 @@
-   @Test
-    public void testAutoPaymentMatching_DateFormatException() throws Exception {
-        // Create a mock instance of CashAllocationRepositoryApi
-        CashAllocationRepositoryApi mockRepository = Mockito.mock(CashAllocationRepositoryApi.class);
+  @Test
+    void getNettedPaymentRowsForManualPayment_shouldReturnPaymentLinesModelList() {
+        // Arrange
+        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
+        InvoicePayableModelForPayment invoicePayableModel = new InvoicePayableModelForPayment();
+        invoicePayableModel.setProviderId("provider123");
+        invoicePayableModel.setFeeCategory("feeCategory");
+        InvoicePayable invoicePayable = new InvoicePayable();
+        invoicePayable.setProviderMnemo("providerMnemo");
+        invoicePayableModel.setInvoicePayable(invoicePayable);
+        paymentList.add(invoicePayableModel);
 
-        // Create an instance of CashAllocationDomain
-        CashAllocationDomain cashAllocationDomain = new CashAllocationDomain();
+        GroupingKey groupingKey = new GroupingKey("entity1", "USD");
+        BigDecimal amount = new BigDecimal("100");
 
-        try {
-            // Use reflection to access and set the cashAllocationRepositoryApi field
-            Field repositoryField = CashAllocationDomain.class.getDeclaredField("cashAllocationRepositoryApi");
-            repositoryField.setAccessible(true); // Allow access to private fields
-            repositoryField.set(cashAllocationDomain, mockRepository);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to inject mock repository using reflection", e);
-        }
+        when(referentialServiceApi.getPaymentDates(eq("entity1"), eq("USD"), eq("SWI"), eq("S"), eq("provider123"), eq("feeCategory")))
+                .thenReturn(new PaymentDates("2024-03-15", "2024-03-14"));
 
-        // Now, when autoPaymentMatching() is called, it will use the mockRepository
-        // You still need to trigger the exception within the try block (lines 793-798)
-        // for the catch block (lines 799-800) to be executed.
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(anyList()))
+                .thenReturn(Arrays.asList(new BapPayableModel("portfolio1"), new BapPayableModel("portfolio2")));
 
-        // How you trigger the exception depends on the logic in the try block.
-        // For example, if it depends on the system date, you might need to
-        // find a way to influence that indirectly (though this is harder without code modification).
+        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(eq("portfolio1")))
+                .thenReturn(new PortfolioAdvanceDetailResponse("bdrId1"));
+        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(eq("portfolio2")))
+                .thenReturn(new PortfolioAdvanceDetailResponse("bdrId2"));
 
-        assertThrows(CashAllocationCustomException.class, () -> {
-            cashAllocationDomain.autoPaymentMatching();
-        });
+        when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("entity1"), eq("bdrId1")))
+                .thenReturn(Arrays.asList(new SettlementsAccounts("account1"), new SettlementsAccounts("account2")));
+        when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("entity1"), eq("bdrId2")))
+                .thenReturn(Arrays.asList(new SettlementsAccounts("account3")));
 
-        // Optionally assert the exception message if needed
+        // Act
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user");
+
+        // Assert
+        assertEquals(1, result.size());
+        PaymentLinesModel paymentLinesModel = result.get(0);
+        assertEquals("entity1", paymentLinesModel.getSgEntity());
+        assertEquals("provider123", paymentLinesModel.getProviderId());
+        assertEquals("providerMnemo", paymentLinesModel.getBrokerName());
+        assertEquals("2024-03-15", paymentLinesModel.getValueDate());
+        assertEquals("2024-03-14", paymentLinesModel.getSendingDate());
+        assertEquals(3, paymentLinesModel.getNumberOfSSI());
+        assertEquals("USD", paymentLinesModel.getCurrency());
+        assertEquals(Arrays.asList("account1", "account2", "account3"), paymentLinesModel.getSsiAccountCode());
+        assertEquals("D", paymentLinesModel.getPaymentDirection());
+        assertEquals(amount, paymentLinesModel.getAmount());
+        assertEquals("R", paymentLinesModel.getPaymentStatus());
     }
