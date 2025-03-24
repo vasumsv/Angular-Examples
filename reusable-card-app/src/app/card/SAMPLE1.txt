@@ -1,19 +1,18 @@
-@Test
-    void testCashAllocationModelList_Line297_IgnoreT_True() throws Exception {
+ @Test
+    void testCashAllocationModelList_Line297_IgnoreT_True() {
         List<String> lines = new ArrayList<>();
         String inputLine = " ".repeat(59) + "T";
         lines.add(inputLine);
 
-        // Access the static field directly from the CashAllocationDomain class
-        Field field = CashAllocationDomain.class.getDeclaredField("IGNORE_LINE_NOT_CONTAIN_T");
-        String ignoreTValue = (String) field.get(null); // 'null' because it's a static field
+        // Mock the getter method
+        Mockito.when(cashAllocationDomain.getIgnoreLineNotContainT()).thenReturn(Constant.IGNORE_LINE_NOT_CONTAIN_T);
 
         // Debugging: Print byte values
         String extractedSubstring = inputLine.toUpperCase(Locale.FRENCH).substring(59, 60);
         System.out.println("Extracted Substring: [" + extractedSubstring + "]");
         System.out.println("Extracted Substring Bytes: " + java.util.Arrays.toString(extractedSubstring.getBytes(StandardCharsets.UTF_8)));
-        System.out.println("IGNORE_LINE_NOT_CONTAIN_T: [" + ignoreTValue + "]");
-        System.out.println("IGNORE_LINE_NOT_CONTAIN_T Bytes: " + java.util.Arrays.toString(ignoreTValue.getBytes(StandardCharsets.UTF_8)));
+        System.out.println("IGNORE_LINE_NOT_CONTAIN_T: [" + cashAllocationDomain.getIgnoreLineNotContainT() + "]");
+        System.out.println("IGNORE_LINE_NOT_CONTAIN_T Bytes: " + java.util.Arrays.toString(cashAllocationDomain.getIgnoreLineNotContainT().getBytes(StandardCharsets.UTF_8)));
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
 
