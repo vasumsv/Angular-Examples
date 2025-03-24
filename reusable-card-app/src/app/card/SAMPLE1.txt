@@ -1,25 +1,42 @@
-    @Test
-    public void testTransferFile_FileNotFoundException() throws Exception {
-        LocalDate date = LocalDate.now();
-        List<CashAllocationModel> cashAllocationModelList = Collections.emptyList();
+  @Test
+    public void testTransferFile_FileNotFoundExceptionCaught() throws Exception {
+        // Arrange
+        LocalDate testDate = LocalDate.now();
+        List<CashAllocationModel> testList = Collections.emptyList();
+        String testFilename = "any_filename";
 
-        doThrow(new FileNotFoundException("File not found")).when(abDomain).uploadPaymentAbFileViaReferential(anyString());
+        // Mock the private method's behavior indirectly
+        // We'll make the public method call throw the exception
+        AbDomain abDomainSpy = spy(abDomain);
+        doThrow(new FileNotFoundException("Test File Not Found")).when(abDomainSpy, "uploadPaymentAbFileViaReferential", anyString());
 
-        String result = abDomain.transferFile(date, cashAllocationModelList);
+        // Act
+        String result = abDomainSpy.transferFile(testDate, testList);
 
-        verify(logger).error(anyString(), any(FileNotFoundException.class));
-        assertNull(result); // Assuming transferFile returns null on exception
+        // Assert
+        // Verify that the logger.error for FileNotFoundException was called
+        verify(logger).error(contains("File not found"), any(FileNotFoundException.class));
+        // Optionally assert the return value of transferFile if it has a specific behavior on exception
+        assertNull(result); // Assuming transferFile returns null or some error indicator on failure
     }
 
     @Test
-    public void testTransferFile_IOException() throws Exception {
-        LocalDate date = LocalDate.now();
-        List<CashAllocationModel> cashAllocationModelList = Collections.emptyList();
+    public void testTransferFile_IOExceptionCaught() throws Exception {
+        // Arrange
+        LocalDate testDate = LocalDate.now();
+        List<CashAllocationModel> testList = Collections.emptyList();
+        String testFilename = "another_filename";
 
-        doThrow(new IOException("Exception while writing file")).when(abDomain).uploadPaymentAbFileViaReferential(anyString());
+        // Mock the private method's behavior indirectly
+        AbDomain abDomainSpy = spy(abDomain);
+        doThrow(new IOException("Test IO Exception")).when(abDomainSpy, "uploadPaymentAbFileViaReferential", anyString());
 
-        String result = abDomain.transferFile(date, cashAllocationModelList);
+        // Act
+        String result = abDomainSpy.transferFile(testDate, testList);
 
-        verify(logger).error(anyString(), any(IOException.class));
-        assertNull(result); // Assuming transferFile returns null on exception
+        // Assert
+        // Verify that the logger.error for IOException was called
+        verify(logger).error(contains("Exception while writing file"), any(IOException.class));
+        // Optionally assert the return value
+        assertNull(result);
     }
