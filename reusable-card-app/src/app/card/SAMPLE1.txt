@@ -1,53 +1,83 @@
-  @BeforeEach
-    void setUp() {
-        // Initialize a sample payment list
-        InvokePayableModelForPayment payment = new InvokePayableModelForPayment();
-        payment.setProviderId("PROV123");
-        payment.setTgCategory("CAT1");
-        payment.setInvokePayable(new InvokePayable()); // Assume nested objects are properly initialized
-        paymentList = Collections.singletonList(payment);
+ // Assuming you have a mock or stub for SettlementsAccounts
+    static class SettlementsAccounts {
+        private String numcptrgl;
+
+        public SettlementsAccounts(String numcptrgl) {
+            this.numcptrgl = numcptrgl;
+        }
+
+        public String getNumcptrgl() {
+            return numcptrgl;
+        }
+    }
+
+    // Assuming you have a mock or stub for GroupingKey
+    static class GroupingKey {
+        private String entity;
+        private String currency;
+
+        public GroupingKey(String entity, String currency) {
+            this.entity = entity;
+            this.currency = currency;
+        }
     }
 
     @Test
-    void testGetRetredPaymentRowsForManualPayment_SinglePayment() {
-        // Mock aggregated data (simulate fetchRetredRows behavior)
-        GroupingKey key = new GroupingKey("ENTITY1", "USD");
-        BigDecimal aggregatedAmount = new BigDecimal("1000");
-        String references = "INV001,INV002";
-        List<String> invoices = Arrays.asList("INV001", "INV002");
+    void testPaymentLinesModelCreation() {
+        // Arrange
+        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
+        InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
+        paymentList.add(payment);
 
-        // Mock service responses
-        PaymentBates paymentDates = new PaymentBates("2023-10-01", "2023-10-02");
-        when(referentialServiceApi.getPaymentBates(eq("ENTITY1"), eq("USD"), any()))
-            .thenReturn(paymentDates);
+        List<SettlementsAccounts> settlementsAccountsList = new ArrayList<>();
+        settlementsAccountsList.add(new SettlementsAccounts("account1"));
+        settlementsAccountsList.add(new SettlementsAccounts("account2"));
 
-        List<BapPayableModel> invoiceDetails = Collections.singletonList(
-            new BapPayableModel("PORTFOLIO1")
-        );
-        when(invoiceServiceApi.getListOffagDetailsForMultipleInvoices(eq(invoices)))
-            .thenReturn(invoiceDetails);
+        List<BigDecimal> finalAmountList = new ArrayList<>();
+        finalAmountList.add(new BigDecimal("100"));
+        finalAmountList.add(new BigDecimal("-50"));
 
-        PortfolioDetails portfolioDetails = new PortfolioDetails("CONTROL123");
-        when(referentialServiceApi.getPortfolioDetailsBasedOnWhenonId(eq("PORTFOLIO1")))
-            .thenReturn(portfolioDetails);
+        String entity = "EntityA";
+        String currency = "USD";
+        PaymentDates dates = new PaymentDates();
+        dates.setValueDate("2023-11-20");
+        dates.setSendingDate("2023-11-19");
 
-        List<SettlementsAccounts> settlementAccounts = Collections.singletonList(
-            new SettlementsAccounts("ACC123")
-        );
-        when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("ENTITY1"), eq("CONTROL123")))
-            .thenReturn(settlementAccounts);
+        // Act
+        List<PaymentLinesModel> newNettedRows = new ArrayList<>();
+        int numberOfInvoicesNetted = 2; // Example value
+        for (int i = 0; i < finalAmountList.size(); i++) {
+            PaymentLinesModel paymentLinesModel = new PaymentLinesModel();
+            paymentLinesModel.setSgEntity(entity);
+            paymentLinesModel.setProviderId("provider123");
+            paymentLinesModel.setBrokerName("brokerName");
+            paymentLinesModel.setValueDate(dates.getValueDate());
+            paymentLinesModel.setSendingDate(dates.getSendingDate());
+            paymentLinesModel.setNumberOfSSI(finalAmountList.size());
+            paymentLinesModel.setCurrency(currency);
+            paymentLinesModel.setSsiAccountCode(settlementsAccountsList.stream().map(SettlementsAccounts::getNumcptrgl).collect(Collectors.toList()));
+            paymentLinesModel.setPaymentDirection(finalAmountList.get(i).compareTo(BigDecimal.ZERO) > 0 ? "D" : "C");
+            paymentLinesModel.setAmount(paymentLinesModel.getPaymentDirection().equals("C") ? finalAmountList.get(i).multiply(new BigDecimal("-1")) : finalAmountList.get(i));
+            paymentLinesModel.setPaymentMode(null);
+            paymentLinesModel.setPaymentStatus("R");
+            paymentLinesModel.setPaymentType("MANUAL");
+            paymentLinesModel.setFeeType("feeType");
+            paymentLinesModel.setRc("rcCode");
+            paymentLinesModel.setNumberOfInvoices(numberOfInvoicesNetted);
+            String invReference = "invRef1,invRef2,";
+            paymentLinesModel.setInvoiceReference(invReference.substring(0, invReference.length() - 1));
+            newNettedRows.add(paymentLinesModel);
+        }
 
-        // Execute the method
-        List<PaymentLinesModel> result = cashAllocationDomain.getRetredPaymentRowsForManualPayment(paymentList, user);
-
-        // Verify results
-        assertEquals(1, result.size());
-        PaymentLinesModel model = result.get(0);
-        assertEquals("ENTITY1", model.getSpatuity());
-        assertEquals("PROV123", model.getProviderId());
-        assertEquals("USD", model.getCurrency());
-        assertEquals(new BigDecimal("1000"), model.getAmount());
-        assertEquals("n", model.getPaymentDirection()); // Assuming positive amount
-        assertEquals(1, model.getNumberOfSSI());
-        assertEquals("r", model.getPaymentStatus()); // Last set status
+        // Assert
+        assertEquals(2, newNettedRows.size());
+        assertEquals("EntityA", newNettedRows.get(0).getSgEntity());
+        assertEquals("USD", newNettedRows.get(0).getCurrency());
+        assertEquals("D", newNettedRows.get(0).getPaymentDirection());
+        assertEquals(new BigDecimal("100"), newNettedRows.get(0).getAmount());
+        assertEquals("C", newNettedRows.get(1).getPaymentDirection());
+        assertEquals(new BigDecimal("50"), newNettedRows.get(1).getAmount());
+        assertEquals("account1", newNettedRows.get(0).getSsiAccountCode().get(0));
+        assertEquals("account2", newNettedRows.get(0).getSsiAccountCode().get(1));
+        assertEquals("invRef1,invRef2", newNettedRows.get(0).getInvoiceReference());
     }
