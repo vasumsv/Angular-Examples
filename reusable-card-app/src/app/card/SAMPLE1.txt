@@ -1,4 +1,4 @@
- @Test
+   @Test
     void paymentDetailsByValueDate_ValidEndDate_ReturnsCashDetails() {
         // Arrange
         String validDate = "2023-10-05";
@@ -7,15 +7,31 @@
         CashDetails mockDetails = mock(CashDetails.class);
 
         when(mockModel.getCashDetails()).thenReturn(mockDetails);
-        when(cashAllocationRepositoryApi.findByValueDateIssReferences(parsedDate)) // Use correct method
+        when(cashAllocationRepositoryApi.findByValueDateLesserThatEqual(parsedDate))
             .thenReturn(List.of(mockModel));
 
         // Act
-        List<CashDetails> result = cashAllocationDomain.paymentDetailsByValueDate(null, validDate);
+        List<CashDetails> result = cashAllocationDomain
+            .paymentDetailsByValueDate(null, validDate);
 
         // Assert
         assertEquals(1, result.size());
         verify(mockDetails).setId(mockModel.getId());
-        verify(cashAllocationRepositoryApi).findByValueDateIssReferences(parsedDate); // Verify correct method
+        verify(cashAllocationRepositoryApi).findByValueDateLesserThatEqual(parsedDate);
         verify(logger).info("paymentDetailsByCounterParryId() ends");
+    }
+
+    @Test
+    void paymentDetailsByValueDate_InvalidEndDate_ThrowsException() {
+        // Arrange
+        String invalidDate = "2023/10/05";
+
+        // Act & Assert
+        CashAllocationCustomException exception = assertThrows(
+            CashAllocationCustomException.class,
+            () -> cashAllocationDomain.paymentDetailsByValueDate(null, invalidDate)
+        );
+        
+        assertEquals("Date Format must be yyyy-mm-dd", exception.getMessage());
+        verifyNoInteractions(cashAllocationRepositoryApi);
     }
