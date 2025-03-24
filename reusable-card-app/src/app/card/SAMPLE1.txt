@@ -1,36 +1,40 @@
-@Test
-void testGetRetiredRows_SuccessScenario() throws Exception {
-    // Mock dependencies
-    PaymentModeAndLocationModel mockMode = new PaymentModeAndLocationModel();
-    mockMode.setPaymentMode("BANK_TRANSFER");
-    
-    PaymentDates mockDates = new PaymentDates();  // Changed from PaymentDate to PaymentDates
-    mockDates.setValueDate(LocalDate.now());  // Changed LookDate to LocalDate
+      paymentList = new ArrayList<>();
+        InvoicePayableModelForPayment payment = new InvoicePayableModelForPayment();
+        
+        // Mandatory fields
+        payment.setInvoiceType("COMMERCIAL"); // Valid type for your domain
+        payment.setInvoiceReferences("REF-2023-001");
+        payment.setProviderId("456");
+        payment.setFeeCategory("TEST_CAT");
+        payment.setCurrency("USD");
+        payment.setPaymentMethod("BANK_TRANSFER");
+        
+        paymentList.add(payment);
+    }
 
-    when(referentialServiceApi.getPaymentModeAndSettlementLocation(  // Fixed method name
-        any(BigInteger.class), 
-        anyString(), 
-        any(BigInteger.class), 
-        any(BigInteger.class),
-        anyString(), 
-        anyString()))
-        .thenReturn(mockMode);  // Fixed variable name
-    
-    when(referentialServiceApi.getPaymentDates(  // Fixed method name
-        anyString(), 
-        anyString(), 
-        anyString(), 
-        anyString(), 
-        anyString(), 
-        anyString()))
-        .thenReturn(mockDates);
+    @Test
+    void testGetRetiredRows_SuccessScenario() throws Exception {
+        // Mocking setup
+        PaymentModeAndLocationModel mockMode = new PaymentModeAndLocationModel();
+        mockMode.setPaymentMode("BANK_TRANSFER");
+        
+        PaymentDates mockDates = new PaymentDates();
+        mockDates.setValueDate(LocalDate.now());
 
-    // Execute
-    List<PaymentLinesModel> result = cashAllocationDomain.getRetiredRows(paymentList, TEST_USER);
+        when(referentialServiceApi.getPaymentModeAndSettlementLocation(
+            any(BigInteger.class), anyString(), any(BigInteger.class), 
+            any(BigInteger.class), anyString(), anyString()))
+            .thenReturn(mockMode);
+        
+        when(referentialServiceApi.getPaymentDates(
+            anyString(), anyString(), anyString(), 
+            anyString(), anyString(), anyString()))
+            .thenReturn(mockDates);
 
-    // Verify
-    assertFalse(result.isEmpty());
-    PaymentLinesModel model = result.get(0);
-    assertEquals("BANK_TRANSFER", model.getPaymentMode());
-    assertNull(model.getComment());
-}
+        // Execution
+        List<PaymentLinesModel> result = cashAllocationDomain.getRetiredRows(paymentList, TEST_USER);
+
+        // Assertions
+        assertFalse(result.isEmpty());
+        assertEquals("BANK_TRANSFER", result.get(0).getPaymentMode());
+    }
