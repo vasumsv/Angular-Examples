@@ -1,37 +1,37 @@
-   @Test
-    void paymentDetailsByValueDate_ValidEndDate_ReturnsCashDetails() {
-        // Arrange
-        String validDate = "2023-10-05";
-        LocalDate parsedDate = LocalDate.parse(validDate);
-        CashAllocationModel mockModel = mock(CashAllocationModel.class);
-        CashDetails mockDetails = mock(CashDetails.class);
+@Test
+void paymentDetailsByValueDate_ValidEndDate_ReturnsCashDetails() {
+    // Arrange
+    String validDate = "2023-05-15";
+    LocalDate parsedDate = LocalDate.parse(validDate);
+    CashAllocationModel mockModel = mock(CashAllocationModel.class);
+    CashDetails mockDetails = mock(CashDetails.class);
 
-        when(mockModel.getCashDetails()).thenReturn(mockDetails);
-        when(cashAllocationRepositoryApi.findByValueDateLesserThatEqual(parsedDate))
-            .thenReturn(List.of(mockModel));
+    when(mockModel.getCashDetails()).thenReturn(mockDetails);
+    when(cashAllocationRepositoryApi.findByValueDateLesserThatEqual(parsedDate)) // Match repository method name
+        .thenReturn(List.of(mockModel));
 
-        // Act
-        List<CashDetails> result = cashAllocationDomain
-            .paymentDetailsByValueDate(null, validDate);
+    // Act
+    List<CashDetails> result = cashAllocationDomain
+        .paymentDetailsByValueDate(null, validDate);
 
-        // Assert
-        assertEquals(1, result.size());
-        verify(mockDetails).setId(mockModel.getId());
-        verify(cashAllocationRepositoryApi).findByValueDateLesserThatEqual(parsedDate);
-        verify(logger).info("paymentDetailsByCounterParryId() ends");
-    }
+    // Assert
+    assertEquals(1, result.size());
+    verify(mockDetails).setId(mockModel.getId());
+    verify(cashAllocationRepositoryApi).findByValueDateLesserThatEqual(parsedDate);
+    verify(logger).info("paymentDetailsByCounterParryId() ends");
+}
 
-    @Test
-    void paymentDetailsByValueDate_InvalidEndDate_ThrowsException() {
-        // Arrange
-        String invalidDate = "2023/10/05";
+@Test
+void paymentDetailsByValueDate_InvalidEndDate_ThrowsException() {
+    // Arrange
+    String invalidDate = "2023/05/15";
 
-        // Act & Assert
-        CashAllocationCustomException exception = assertThrows(
-            CashAllocationCustomException.class,
-            () -> cashAllocationDomain.paymentDetailsByValueDate(null, invalidDate)
-        );
-        
-        assertEquals("Date Format must be yyyy-mm-dd", exception.getMessage());
-        verifyNoInteractions(cashAllocationRepositoryApi);
-    }
+    // Act & Assert
+    CashAllocationCustomException exception = assertThrows(
+        CashAllocationCustomException.class,
+        () -> cashAllocationDomain.paymentDetailsByValueDate(null, invalidDate)
+    );
+    
+    assertEquals("Date Format must be yyyy-mm-dd", exception.getMessage());
+    verifyNoInteractions(cashAllocationRepositoryApi);
+}
