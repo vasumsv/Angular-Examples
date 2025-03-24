@@ -1,41 +1,67 @@
- @Test
-    void testCashAllocationModelList_Line297_IgnoreT_True() throws Exception {
+  @Test
+    void testCashAllocationModelList_Lines311_334_Success() throws ParseException {
         List<String> lines = new ArrayList<>();
-        String inputLine = " ".repeat(59) + "T";
+        String inputLine = " ".repeat(21) + "123" + " ".repeat(15) + "123456789012345678" + " ".repeat(2) + "  " + " ".repeat(36) + "20231027" + " ".repeat(116) + "invoiceRef" + " ".repeat(358);
         lines.add(inputLine);
 
-        // Create an actual instance of CashAllocationDomain
-        CashAllocationDomain actualInstance = new CashAllocationDomain();
-
-        // Use reflection to set the field value on the ACTUAL INSTANCE
-        Field field = CashAllocationDomain.class.getDeclaredField("IGNORE_LINE_NOT_CONTAIN_T");
-        field.setAccessible(true);
-        field.set(actualInstance, Constant.IGNORE_LINE_NOT_CONTAIN_T);
-
-        // Mock the behavior of the method that uses the field
-        Mockito.when(cashAllocationDomain.cashAllocationModelList(Mockito.anyList(), Mockito.anyString()))
-            .thenAnswer(invocation -> {
-                // Use the actual instance's field value in the mock's behavior
-                List<String> inputLines = invocation.getArgument(0);
-                if (inputLines.size() > 0 && inputLines.get(0).toUpperCase(Locale.FRENCH).substring(59, 60).equals(actualInstance.IGNORE_LINE_NOT_CONTAIN_T)) {
-                    return new ArrayList<>(); // Simulate skipping the line
-                } else {
-                    // Simulate processing the line
-                    List<CashAllocationModel> result = new ArrayList<>();
-                    result.add(new CashAllocationModel());
-                    return result;
-                }
-            });
-
-        // Debugging: Print byte values
-        String extractedSubstring = inputLine.toUpperCase(Locale.FRENCH).substring(59, 60);
-        System.out.println("Extracted Substring: [" + extractedSubstring + "]");
-        System.out.println("Extracted Substring Bytes: " + java.util.Arrays.toString(extractedSubstring.getBytes(StandardCharsets.UTF_8)));
-        System.out.println("IGNORE_LINE_NOT_CONTAIN_T: [" + actualInstance.IGNORE_LINE_NOT_CONTAIN_T + "]");
-        System.out.println("IGNORE_LINE_NOT_CONTAIN_T Bytes: " + java.util.Arrays.toString(actualInstance.IGNORE_LINE_NOT_CONTAIN_T.getBytes(StandardCharsets.UTF_8)));
+        Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(inputLine);
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
+            .thenReturn(new CashAllocationModel());
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("account123");
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
 
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_Lines311_334_DateParseException() {
+        List<String> lines = new ArrayList<>();
+        String inputLine = " ".repeat(21) + "123" + " ".repeat(15) + "123456789012345678" + " ".repeat(2) + "  " + " ".repeat(36) + "invalidDate" + " ".repeat(116) + "invoiceRef" + " ".repeat(358);
+        lines.add(inputLine);
+
+        Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(inputLine);
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
+            .thenReturn(new CashAllocationModel());
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("account123");
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_Lines311_334_SignEqualsD() throws ParseException {
+        List<String> lines = new ArrayList<>();
+        String inputLine = " ".repeat(21) + "123" + " ".repeat(15) + "123456789012345678" + " D" + " ".repeat(36) + "20231027" + " ".repeat(116) + "invoiceRef" + " ".repeat(358);
+        lines.add(inputLine);
+
+        Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(inputLine);
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
+            .thenReturn(new CashAllocationModel());
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("account123");
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_Lines311_334_CatchException() {
+        List<String> lines = new ArrayList<>();
+        String inputLine = " ".repeat(21) + "123" + " ".repeat(15) + "invalidDouble" + "  " + " ".repeat(36) + "20231027" + " ".repeat(116) + "invoiceRef" + " ".repeat(358);
+        lines.add(inputLine);
+
+        Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(inputLine);
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
+            .thenReturn(new CashAllocationModel());
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("account123");
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
     }
