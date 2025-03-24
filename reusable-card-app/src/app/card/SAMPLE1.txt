@@ -1,4 +1,4 @@
-  @Test
+ @Test
     void getNettedPaymentRowsForManualPayment_shouldReturnPaymentLinesModelList() {
         // Arrange
         List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
@@ -16,7 +16,9 @@
         when(referentialServiceApi.getPaymentDates(eq("entity1"), eq("USD"), eq("SWI"), eq("S"), eq("provider123"), eq("feeCategory")))
                 .thenReturn(new PaymentDates("2024-03-15", "2024-03-14"));
 
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(anyList()))
+        // Mock the InvoicePayable objects that would be passed to getListOfBapDetailsForMultipleInvoices
+        List<InvoicePayable> expectedInvoicePayables = Collections.singletonList(invoicePayable);
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(eq(expectedInvoicePayables)))
                 .thenReturn(Arrays.asList(new BapPayableModel("portfolio1"), new BapPayableModel("portfolio2")));
 
         when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(eq("portfolio1")))
@@ -27,7 +29,7 @@
         when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("entity1"), eq("bdrId1")))
                 .thenReturn(Arrays.asList(new SettlementsAccounts("account1"), new SettlementsAccounts("account2")));
         when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("entity1"), eq("bdrId2")))
-                .thenReturn(Arrays.asList(new SettlementsAccounts("account3")));
+                .thenReturn(Collections.singletonList(new SettlementsAccounts("account3")));
 
         // Act
         List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user");
