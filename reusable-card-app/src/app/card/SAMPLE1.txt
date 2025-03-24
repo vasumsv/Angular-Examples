@@ -1,64 +1,33 @@
- @Test
-    void shouldSkipLineWhenAccountNumberMatchesAndCorrectFileName() {
-        String testLine = "2VALID_ACCOUNT_00201472755    20230930";
-        List<String> lines = List.of(testLine);
-        String fileName = "GATA_MXG_FILE_123.txt";
+   @Test
+    public void testAutoPaymentMatching_DateFormatException() {
+        CashAllocationDomain cashAllocationDomain = new CashAllocationDomain();
 
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+        // Simulate an exception being thrown during date calculation
+        // (This might require mocking or reflection, depending on your setup)
+        // For simplicity, let's assume we can force an exception by setting a specific date
+        // that causes an issue in the date calculation logic within the try block.
 
-        assertTrue(result.isEmpty());
-    }
+        // Example: If your logic relies on system date, you might need to mock LocalDate.now()
+        // to return a date that triggers the exception.
+        // For demonstration, let's assume we can set a date that causes an exception.
 
-    @Test
-    void shouldProcessLineWhenAccountNumberNotInIgnoreList() {
-        String testLine = "1OTHER_ACCOUNT_12345678901    20230930";
-        List<String> lines = List.of(testLine);
-        String fileName = "OTHER_FILE.txt";
+        // You'll need to adjust this part based on how you can actually trigger the exception
+        // in your specific code.
+        // If you can't easily trigger the exception, you might need to refactor the code
+        // to make it more testable.
 
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, fileName);
+        // Assuming you have a way to set the date that causes the exception:
+        // LocalDate problematicDate = ...; // Set the problematic date
+        // cashAllocationDomain.setDateForTesting(problematicDate); // Method to set date for testing
 
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-    }
+        // Now, call the method that should throw the exception
+        assertThrows(CashAllocationCustomException.class, () -> {
+            cashAllocationDomain.autoPaymentMatching();
+        });
 
-    @Test
-    void shouldExtractInvoiceRefFromMainLineWhenLengthSufficient() {
-        String longLine = "1".repeat(600);
-        List<String> lines = List.of(longLine);
-        
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, "anyfile.txt");
-        
-        assertEquals(longLine.substring(517).trim(), result.get(0).getInvoiceRef());
-    }
-
-    @Test
-    void shouldUseSupplementaryDetailsForInvoiceRefWhenLineShort() {
-        String shortLine = "1".repeat(200);
-        List<String> lines = List.of(shortLine);
-        
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, "anyfile.txt");
-        
-        verify(cashAllocationDomain).getInvoiceRefFromSupplementaryDetails(anyString());
-    }
-
-    @Test
-    void shouldHandleInvalidDateFormatGracefully() {
-        String invalidDateLine = "1ACCOUNT_12345678901    INVALID_DATE";
-        List<String> lines = List.of(invalidDateLine);
-        
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, "anyfile.txt");
-        
-        verify(logger).error(eq("EXCEPTIONSTRING"), any(Exception.class));
-        assertNull(result.get(0).getDate());
-    }
-
-    @Test
-    void shouldCalculateAmountWithCorrectSign() {
-        String amountLine = "1ACCOUNT_123".padRight(58, '0') + "+1234567890123456";
-        List<String> lines = List.of(amountLine);
-        
-        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModels(lines, "anyfile.txt");
-        
-        double expectedAmount = Double.parseDouble(amountLine.substring(40, 58)) / 10000;
-        assertEquals(expectedAmount, result.get(0).getAmount());
+        // Optionally, you can assert the exception message:
+        // CashAllocationCustomException exception = assertThrows(CashAllocationCustomException.class, () -> {
+        //     cashAllocationDomain.autoPaymentMatching();
+        // });
+        // assertEquals("DATEFORMATSTRING", exception.getMessage()); // Assuming "DATEFORMATSTRING" is the expected message
     }
