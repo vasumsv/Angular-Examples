@@ -1,105 +1,40 @@
-
-    @Test
-    void getPaymentLinesFromPaymentReference_shouldReturnPaymentLinesModelList() {
+ @Test
+    public void testInsertPaymentLines_invoiceAmountMismatch() {
         // Arrange
-        String[] paymentReferences = {"ref1", "ref2"};
-        List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
+        List<PaymentLinesFeoModel> finalDataForInsertion = new ArrayList<>();
+        PaymentLinesFeoModel paymentLine = new PaymentLinesFeoModel();
+        paymentLine.setAmount(BigDecimal.valueOf(100));
+        finalDataForInsertion.add(paymentLine);
 
-        // Create mock SrgPaymentModel objects
-        SrgPaymentModel model1 = new SrgPaymentModel();
-        model1.setId(1L);
-        model1.setProviderBdrId("provider1");
-        model1.setPaymentCurrency("USD");
-        model1.setSgEntity("entity1");
-        model1.setFeeCategory("fee1");
-        model1.setInvoiceReference("inv1 inv2");
-        model1.setProviderName("broker1");
-        model1.setValueDate("2023-10-27");
-        model1.setSendingDate("2023-10-26");
-        model1.setPaymentAmount(100.0);
-        model1.setPaymentType("type1");
-        model1.setDebitCredit("debit");
-        model1.setPaymentMode("mode1");
-        model1.setPaymentStatus("status1");
-        model1.setRcCode("rc1");
-        model1.setComment("comment1");
+        List<InvoicePayableModel> invoices = new ArrayList<>();
+        InvoicePayableModel invoice1 = new InvoicePayableModel();
+        invoice1.setAmount(BigDecimal.valueOf(50));
+        invoice1.setInvoiceType("CREDIT");
+        invoices.add(invoice1);
+        InvoicePayableModel invoice2 = new InvoicePayableModel();
+        invoice2.setAmount(BigDecimal.valueOf(100));
+        invoice2.setInvoiceType("DEBIT");
+        invoices.add(invoice2);
 
-        SrgPaymentModel model2 = new SrgPaymentModel();
-        model2.setId(2L);
-        model2.setProviderBdrId("provider2");
-        model2.setPaymentCurrency("EUR");
-        model2.setSgEntity("entity2");
-        model2.setFeeCategory("fee2");
-        model2.setInvoiceReference("inv3");
-        model2.setProviderName("broker2");
-        model2.setValueDate("2023-10-28");
-        model2.setSendingDate("2023-10-27");
-        model2.setPaymentAmount(200.0);
-        model2.setPaymentType("type2");
-        model2.setDebitCredit("credit");
-        model2.setPaymentMode("mode2");
-        model2.setPaymentStatus("status2");
-        model2.setRcCode("rc2");
-        model2.setComment("comment2");
-
-        srgPaymentModels.add(model1);
-        srgPaymentModels.add(model2);
-
-        when(yourSrgPaymentModelService.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
-
-        // Mock getSsiDetails method (assuming it's a method you can mock)
-        when(yourClassName.getSsiDetails("provider1", "USD", "entity1", "fee1")).thenReturn(Arrays.asList("ssi1", "ssi2"));
-        when(yourClassName.getSsiDetails("provider2", "EUR", "entity2", "fee2")).thenReturn(Arrays.asList("ssi3"));
+        // Mock the method call that gets the invoice list (you'll need to adjust this based on your actual logic)
+        // Assuming your class has a method to get the invoice list, let's call it getInvoicesForPaymentLine
+        when(cashAllocationDomain.getInvoicesForPaymentLine(paymentLine)).thenReturn(invoices); 
 
         // Act
-        List<PaymentLinesModel> result = yourClassName.getPaymentLinesFromPaymentReference(paymentReferences);
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, "user");
 
         // Assert
-        assertEquals(2, result.size());
+        Assertions.assertEquals("MESSAGE", response.getStatus());
+        Assertions.assertEquals("Payment amount is different than invoice amount. Payment Line Amount (100), Aggregate Invoice Amount (50)", response.getErrorMessage());
 
-        PaymentLinesModel resultModel1 = result.get(0);
-        assertEquals(1L, resultModel1.getId());
-        assertEquals("broker1", resultModel1.getBrokerName());
-        assertEquals(2, resultModel1.getNumberOfInvoices());
-        assertEquals(Arrays.asList("ssi1", "ssi2"), resultModel1.getSsiAccountCode());
-        assertEquals(2, resultModel1.getNumberOfSSI());
-        assertEquals("entity1", resultModel1.getSgEntity());
-        assertEquals("inv1 inv2", resultModel1.getInvoiceReference());
-        assertEquals("fee1", resultModel1.getFeeCategory());
-        assertEquals("provider1", resultModel1.getProviderId());
-        assertEquals("2023-10-27", resultModel1.getValueDate());
-        assertEquals("2023-10-26", resultModel1.getSendingDate());
-        assertEquals(100.0, resultModel1.getAmount());
-        assertEquals("USD", resultModel1.getCurrency());
-        assertEquals("type1", resultModel1.getInvoiceType());
-        assertEquals("inv1", resultModel1.getFeeType()); // Assuming substring(0, 3) logic
-        assertEquals("debit", resultModel1.getPaymentDirection());
-        assertEquals("mode1", resultModel1.getPaymentMode());
-        assertEquals("status1", resultModel1.getPaymentStatus());
-        assertEquals("type1", resultModel1.getPaymentType());
-        assertEquals("rc1", resultModel1.getRc());
-        assertEquals("comment1", resultModel1.getComment());
+        // Verify logger calls
+        verify(logger).info("Netted invoice amount, 50, finalAmt");
+        verify(logger).info("Payment line amount, 100, p.getAmount()");
+        verify(logger).error("Payment amount is different than invoice amount. Payment Line Amount (100), Aggregate Invoice Amount (50)");
+    }
 
-        PaymentLinesModel resultModel2 = result.get(1);
-        assertEquals(2L, resultModel2.getId());
-        assertEquals("broker2", resultModel2.getBrokerName());
-        assertEquals(1, resultModel2.getNumberOfInvoices());
-        assertEquals(Arrays.asList("ssi3"), resultModel2.getSsiAccountCode());
-        assertEquals(1, resultModel2.getNumberOfSSI());
-        assertEquals("entity2", resultModel2.getSgEntity());
-        assertEquals("inv3", resultModel2.getInvoiceReference());
-        assertEquals("fee2", resultModel2.getFeeCategory());
-        assertEquals("provider2", resultModel2.getProviderId());
-        assertEquals("2023-10-28", resultModel2.getValueDate());
-        assertEquals("2023-10-27", resultModel2.getSendingDate());
-        assertEquals(200.0, resultModel2.getAmount());
-        assertEquals("EUR", resultModel2.getCurrency());
-        assertEquals("type2", resultModel2.getInvoiceType());
-        assertEquals("inv3", resultModel2.getFeeType()); // Assuming substring(0, 3) logic
-        assertEquals("credit", resultModel2.getPaymentDirection());
-        assertEquals("mode2", resultModel2.getPaymentMode());
-        assertEquals("status2", resultModel2.getPaymentStatus());
-        assertEquals("type2", resultModel2.getPaymentType());
-        assertEquals("rc2", resultModel2.getRc());
-        assertEquals("comment2", resultModel2.getComment());
+    // Add a mock method to simulate getting the invoice list
+    public List<InvoicePayableModel> getInvoicesForPaymentLine(PaymentLinesFeoModel paymentLine) {
+        // This is a placeholder, replace with your actual logic
+        return new ArrayList<>();
     }
