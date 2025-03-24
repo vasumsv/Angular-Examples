@@ -1,37 +1,79 @@
-   @Test
-    void updatePaymentLines_Success_PaymentTypeA() {
-        when(srgMapper.mapNew(any())).thenReturn(createPaymentLinesFeoModelList());
-        when(paymentRepository.getPaymentEntitiesByPaymentReference(anyString())).thenReturn(createSrgPaymentModelList());
-        when(referentialServiceApi.getAccountDetailsFromBdrForPayment(any(), any(), any(), any(), any(), any(), any())).thenReturn(new TrglbdrResponse());
-        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(new UserDetailsModel());
-        when(referentialServiceApi.getPaymentModeDetails(anyString())).thenReturn(new PaymentModeModel());
-        when(referentialServiceApi.getSsiDetails(any(), any(), any(), any())).thenReturn(new ArrayList<>());
-
-        String result = cashAllocationDomain.updatePaymentLines("testUser", createUpdatePaymentLinesList("A"));
-
-        assertEquals("SUCCESSFUL", result);
-        verify(srgMapper, times(1)).mapNew(any());
-        verify(paymentRepository, times(1)).getPaymentEntitiesByPaymentReference(anyString());
-        verify(referentialServiceApi, times(1)).getAccountDetailsFromBdrForPayment(any(), any(), any(), any(), any(), any(), any());
-        verify(referentialServiceApi, times(1)).getUserInitials(anyString());
-        verify(referentialServiceApi, times(1)).getPaymentModeDetails(anyString());
-        verify(referentialServiceApi, times(1)).getSsiDetails(any(), any(), any(), any());
+ finalDataForInsertion = new ArrayList<>();
+        PaymentLinesFeoModel model = new PaymentLinesFeoModel();
+        model.setProviderId("provider123");
+        model.setProviderMnemonic("mnemonic456");
+        model.setEntityBdrId("789");
+        finalDataForInsertion.add(model);
+        responseForInsertion = new InsertPaymentResponse();
+        user = "testUser";
     }
 
     @Test
-    void updatePaymentLines_Success_PaymentTypeNotA() {
-        when(srgMapper.mapNew(any())).thenReturn(createPaymentLinesFeoModelList());
-        when(paymentRepository.getPaymentEntitiesByPaymentReference(anyString())).thenReturn(createSrgPaymentModelList());
-        when(referentialServiceApi.getAccountDetailsFromBdrForPayment(any(), any(), any(), any(), any(), any(), any())).thenReturn(new TrglbdrResponse());
-        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(new UserDetailsModel());
+    void testInsertPaymentLines_providerDetailsRuntimeException() {
+        RuntimeException exception = new RuntimeException("Provider details error");
+        when(referentialServiceApi.getProviderDetails(anyString(), anyString())).thenThrow(exception);
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+        assertEquals(ERROR_STATUS, response.getStatus());
+        assertEquals("Error occurred while getting provider details. Detailed message " + exception, response.getErrorMessage());
+        verify(logger).error(anyString());
+    }
 
-        String result = cashAllocationDomain.updatePaymentLines("testUser", createUpdatePaymentLinesList("B"));
+    @Test
+    void testInsertPaymentLines_userDetailsRuntimeException() {
+        RuntimeException exception = new RuntimeException("User initials error");
+        when(referentialServiceApi.getUserInitials(anyString())).thenThrow(exception);
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+        assertEquals(ERROR_STATUS, response.getStatus());
+        assertEquals("Error occurred while getting user initial details. Detailed message " + exception, response.getErrorMessage());
+        verify(logger).error(anyString());
+    }
 
-        assertEquals("SUCCESSFUL", result);
-        verify(srgMapper, times(1)).mapNew(any());
-        verify(paymentRepository, times(1)).getPaymentEntitiesByPaymentReference(anyString());
-        verify(referentialServiceApi, times(1)).getAccountDetailsFromBdrForPayment(any(), any(), any(), any(), any(), any(), any());
-        verify(referentialServiceApi, times(1)).getUserInitials(anyString());
-        verify(referentialServiceApi, never()).getPaymentModeDetails(anyString());
-        verify(referentialServiceApi, never()).getSsiDetails(any(), any(), any(), any());
+    @Test
+    void testInsertPaymentLines_entityListRuntimeException() {
+        RuntimeException exception = new RuntimeException("Entity list error");
+        when(referentialServiceApi.getEntirelistofEntities()).thenThrow(exception);
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+        assertEquals(ERROR_STATUS, response.getStatus());
+        assertEquals("Error occurred while getting entity details. Detailed message " + exception, response.getErrorMessage());
+        verify(logger).error(anyString());
+    }
+
+    @Test
+    void testInsertPaymentLines_backOfficeDetailsRuntimeException() {
+        List<Entity> entityList = new ArrayList<>();
+        Entity entity = new Entity();
+        entity.setEntityCode("entityCode");
+        entityList.add(entity);
+
+        UserDetailsModel userDetailsModel = new UserDetailsModel();
+        userDetailsModel.setCodgrphabbo("codgrphabbo");
+
+        when(referentialServiceApi.getEntirelistofEntities()).thenReturn(entityList);
+        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(userDetailsModel);
+        RuntimeException exception = new RuntimeException("Back office details error");
+        when(referentialServiceApi.getBackOfficeDetails(anyString(), anyString())).thenThrow(exception);
+
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+        assertEquals(ERROR_STATUS, response.getStatus());
+        assertEquals("Error occurred while getting back office code. Detailed message " + exception, response.getErrorMessage());
+        verify(logger).error(anyString());
+    }
+
+    @Test
+    void testInsertPaymentLines_allSuccess() {
+        List<Entity> entityList = new ArrayList<>();
+        Entity entity = new Entity();
+        entity.setEntityCode("entityCode");
+        entityList.add(entity);
+
+        UserDetailsModel userDetailsModel = new UserDetailsModel();
+        userDetailsModel.setCodgrphabbo("codgrphabbo");
+
+        when(referentialServiceApi.getProviderDetails(anyString(), anyString())).thenReturn(new ProviderDetails());
+        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(userDetailsModel);
+        when(referentialServiceApi.getEntirelistofEntities()).thenReturn(entityList);
+        when(referentialServiceApi.getBackOfficeDetails(anyString(), anyString())).thenReturn(new BackOfficeDetails());
+
+        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+        assertNull(response.getErrorMessage());
     }
