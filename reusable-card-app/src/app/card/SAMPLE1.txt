@@ -1,14 +1,54 @@
-  @Test
-    void testCashAllocationModelList_InvoiceRef_LongLine() {
+    @Test
+    void testCashAllocationModelList_SkipLine_GaiaNXG_AccountNumber1_True() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(514) + "invoiceRefFromLongLine");
-        String fileName = "DATA_REC_FILE";
+        lines.add(" ".repeat(1) + " ".repeat(19) + "ACCOUNT_NUMBER_1" + " ".repeat(39) + " ");
+        String fileName = "GAIA_NXG_FILE";
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("ACCOUNT_NUMBER_1");
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_SkipLine_GaiaNXG_AccountNumber2_True() {
+        List<String> lines = new ArrayList<>();
+        lines.add(" ".repeat(1) + " ".repeat(19) + "ACCOUNT_NUMBER_2" + " ".repeat(39) + " ");
+        String fileName = "GAIA_NXG_FILE";
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("ACCOUNT_NUMBER_2");
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testCashAllocationModelList_ProcessLine_GaiaNXG_False_AccountNumber_False() {
+        List<String> lines = new ArrayList<>();
+        lines.add(" ".repeat(60));
+        String fileName = "DATA_REC_FILE"; // fileName does not contain "GAIA_NXG_FILE"
         Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
-            .thenReturn(new CashAllocationModel(BigDecimal.ZERO)); // Pass a valid BigDecimal
+            .thenReturn(new CashAllocationModel());
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals("invoiceRefFromLongLine", result.get(0).getInvoiceRef());
+    }
+
+    @Test
+    void testCashAllocationModelList_ProcessLine_GaiaNXG_True_AccountNumber_False() {
+        List<String> lines = new ArrayList<>();
+        lines.add(" ".repeat(60));
+        String fileName = "GAIA_NXG_FILE";
+        Mockito.when(cashAllocationDomain.accountNumber).thenReturn("ACCOUNT_NUMBER_3"); // accountNumber does not equal ACCOUNT_NUMBER_1 or ACCOUNT_NUMBER_2
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.anyString(), Mockito.anyString(), Mockito.any(Date.class), Mockito.anyString()))
+            .thenReturn(new CashAllocationModel());
+
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
     }
