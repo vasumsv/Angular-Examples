@@ -1,20 +1,19 @@
-    @Test
+@Test
     void testCashAllocationModelList_Line297_IgnoreT_True() throws Exception {
         List<String> lines = new ArrayList<>();
         String inputLine = " ".repeat(59) + "T";
         lines.add(inputLine);
 
-        // Use reflection to set the field value
+        // Access the static field directly from the CashAllocationDomain class
         Field field = CashAllocationDomain.class.getDeclaredField("IGNORE_LINE_NOT_CONTAIN_T");
-        field.setAccessible(true);
-        field.set(cashAllocationDomain, Constant.IGNORE_LINE_NOT_CONTAIN_T);
+        String ignoreTValue = (String) field.get(null); // 'null' because it's a static field
 
         // Debugging: Print byte values
         String extractedSubstring = inputLine.toUpperCase(Locale.FRENCH).substring(59, 60);
         System.out.println("Extracted Substring: [" + extractedSubstring + "]");
         System.out.println("Extracted Substring Bytes: " + java.util.Arrays.toString(extractedSubstring.getBytes(StandardCharsets.UTF_8)));
-        System.out.println("IGNORE_LINE_NOT_CONTAIN_T: [" + CashAllocationDomain.IGNORE_LINE_NOT_CONTAIN_T + "]");
-        System.out.println("IGNORE_LINE_NOT_CONTAIN_T Bytes: " + java.util.Arrays.toString(CashAllocationDomain.IGNORE_LINE_NOT_CONTAIN_T.getBytes(StandardCharsets.UTF_8)));
+        System.out.println("IGNORE_LINE_NOT_CONTAIN_T: [" + ignoreTValue + "]");
+        System.out.println("IGNORE_LINE_NOT_CONTAIN_T Bytes: " + java.util.Arrays.toString(ignoreTValue.getBytes(StandardCharsets.UTF_8)));
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
 
