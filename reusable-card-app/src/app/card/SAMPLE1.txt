@@ -1,136 +1,85 @@
-  @InjectMocks
-    private CashAllocationDomain cashAllocationDomain;
+ finalDataForInsertion = new ArrayList<>();
+        updatePaymentLines = new UpdatePaymentLines();
+        paymentLinesFeoModel = new PaymentLinesFeoModel();
+        srgPaymentModel = new SrgPaymentModel();
 
-    private List<PaymentLinesFeoModel> finalDataForInsertion;
-    private PaymentLinesFeoModel pmt;
-    private FeeDetails feeDetails;
-    private InsertPaymentResponse responseForInsertion;
-    private String user;
+        // Populate test data
+        paymentLinesFeoModel.setPaymentReference("ref123");
+        paymentLinesFeoModel.setPaymentType("A");
+        paymentLinesFeoModel.setInvoiceReference("inv456");
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        finalDataForInsertion = new ArrayList<>();
-        pmt = new PaymentLinesFeoModel();
-        pmt.setSendingDate(LocalDate.of(2023, 10, 26));
-        pmt.setPaymentType("A");
-        pmt.setProviderId("provider123");
-        pmt.setCurrency("USD");
-        pmt.setEntityBdrId("789");
-        pmt.setSsi("account123");
-        pmt.setProviderMnemonic("mnemonic456");
-        pmt.setValueDate(LocalDate.of(2023, 11, 15));
-        pmt.setInvoiceType("D"); // Setting a default invoice type
+        srgPaymentModel.setPaymentAmount(BigDecimal.TEN);
+        srgPaymentModel.setSendingDate(LocalDate.now());
+        srgPaymentModel.setValueDate(LocalDate.now().plusDays(1));
+        srgPaymentModel.setPaymentMode("mode789");
+        srgPaymentModel.setPaymentStatus("statusABC");
+        srgPaymentModel.setProviderAccountNumber("account123");
+        srgPaymentModel.setProviderBankName("bankXYZ");
+        srgPaymentModel.setProviderSwiftCode("swiftDEF");
+        srgPaymentModel.setCodGrpHabbo("codgrphabbo");
+        srgPaymentModel.setNumCptCor("numcptcor");
+        srgPaymentModel.setStaSrg("stasrg");
+        srgPaymentModel.setComSrg("comsrg");
+        srgPaymentModel.setPayLastUpdateUser("user123");
 
-        feeDetails = new FeeDetails();
-        feeDetails.setCodeBatch("batch123");
+        updatePaymentLines.setPaymentLinesFeoModel(paymentLinesFeoModel);
+        updatePaymentLines.setSrgPaymentModel(srgPaymentModel);
+        finalDataForInsertion.add(updatePaymentLines);
 
-        finalDataForInsertion.add(pmt);
-        responseForInsertion = new InsertPaymentResponse();
         user = "testUser";
     }
 
     @Test
-    void testInsertPaymentLines_paymentTypeA_success() {
-        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(123));
-        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(createSsiResponseList());
-        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), eq("S"), anyString(), anyString())).thenReturn(new PaymentCheckResponse());
+    void testUpdatePaymentLines_success() {
+        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenReturn(List.of(paymentLinesFeoModel));
+        doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
 
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
-        assertNull(response.getErrorMessage());
-        verify(paymentRepository).getNextSequence();
-        verify(referentialServiceApi).getSsiDetails(anyString(), anyString(), anyString(), anyString());
-        verify(referentialServiceApi).doPaymentChecks(user, "feeBdrId", "USD", "789", "S", LocalDate.of(2023, 11, 15).toString(), "provider123");
-        assertEquals("BankName1", pmt.getProviderBankName());
-        assertEquals("SwiftCode1", pmt.getProviderBankSwift());
-        assertEquals("06997batch1230000123A", pmt.getPaymentReference());
+        assertEquals("SUCCESSFUL", result);
+        verify(paymentRepository).findPaymentLinesFromPaymentReferences(anyList());
+        verify(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
     }
 
     @Test
-    void testInsertPaymentLines_paymentTypeA_invoiceTypeE_success() {
-        pmt.setInvoiceType("E");
-        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(456));
-        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(createSsiResponseList());
-        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), eq("E"), anyString(), anyString())).thenReturn(new PaymentCheckResponse());
+    void testUpdatePaymentLines_restClientException() {
+        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenReturn(List.of(paymentLinesFeoModel));
+        doThrow(new RestClientException("Invoice service error")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
 
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
-        assertNull(response.getErrorMessage());
-        verify(paymentRepository).getNextSequence();
-        verify(referentialServiceApi).getSsiDetails(anyString(), anyString(), anyString(), anyString());
-        verify(referentialServiceApi).doPaymentChecks(user, "feeBdrId", "USD", "789", "E", LocalDate.of(2023, 11, 15).toString(), "provider123");
-        assertEquals("BankName1", pmt.getProviderBankName());
-        assertEquals("SwiftCode1", pmt.getProviderBankSwift());
-        assertEquals("06997batch1230000456A", pmt.getPaymentReference());
-    }
-
-    @Test
-    void testInsertPaymentLines_paymentTypeA_ssiDetailsException() {
-        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(123));
-        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenThrow(new RuntimeException("SSI details error"));
-
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
-
-        assertEquals("ERROR", response.getStatus());
-        assertTrue(response.getErrorMessage().contains("SSI details error"));
-        verify(logger).error(anyString());
-        verify(referentialServiceApi, never()).doPaymentChecks(any(), any(), any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void testInsertPaymentLines_paymentTypeA_paymentChecksException() {
-        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(123));
-        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(createSsiResponseList());
-        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenThrow(new RuntimeException("Payment checks error"));
-
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
-
-        assertEquals("ERROR", response.getStatus());
-        assertTrue(response.getErrorMessage().contains("Payment checks error"));
+        assertEquals("ERROR_WHILE_PROCESSING", result);
         verify(logger).error(anyString());
     }
 
     @Test
-    void testInsertPaymentLines_paymentTypeNotA() {
-        pmt.setPaymentType("B");
-        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(123));
+    void testUpdatePaymentLines_generalException() {
+        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenReturn(List.of(paymentLinesFeoModel));
+        doThrow(new RuntimeException("General error")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
 
-        InsertPaymentResponse response = cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user);
+        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
-        assertNull(response.getErrorMessage());
-        verify(paymentRepository).getNextSequence();
-        verify(referentialServiceApi, never()).getSsiDetails(anyString(), anyString(), anyString(), anyString());
-        verify(referentialServiceApi, never()).doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
-        assertNull(pmt.getProviderBankName());
-        assertNull(pmt.getProviderBankSwift());
-        assertEquals("06997batch1230000123A", pmt.getPaymentReference());
+        assertEquals("ERROR", result);
+        verify(logger).error(anyString());
     }
 
     @Test
-    void testInsertPaymentLines_paymentTypeA_emptySsiDetails() {
-        when(paymentRepository.getNextSequence()).thenReturn(BigInteger.valueOf(789));
-        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(new ArrayList<>());
+    void testUpdatePaymentLines_cashAllocationCustomException() {
+        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenThrow(new RuntimeException("Repository error"));
 
-        // This should ideally throw an exception or handle the empty list gracefully
-        // Based on the code, it might throw an IndexOutOfBoundsException at currentSsiDetails.get(0)
-        // Let's test for that.
-        assertThrows(IndexOutOfBoundsException.class, () -> cashAllocationDomain.insertPaymentLines(finalDataForInsertion, user));
-        verify(logger, never()).error(anyString()); // No explicit try-catch around the list access
+        CashAllocationCustomException exception = assertThrows(CashAllocationCustomException.class, () -> cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getHttpStatus());
+        verify(logger).error(anyString());
     }
 
-    private List<SsiResponse> createSsiResponseList() {
-        List<SsiResponse> ssiResponses = new ArrayList<>();
-        SsiResponse ssiResponse1 = new SsiResponse();
-        ssiResponse1.setAccountNumber("account123");
-        ssiResponse1.setBankName("BankName1");
-        ssiResponse1.setSwiftCode("SwiftCode1");
-        ssiResponses.add(ssiResponse1);
+    @Test
+    void testUpdatePaymentLines_acknowledgmentStatusNull() {
+        paymentLinesFeoModel.setPaymentType("A");
+        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenReturn(List.of(paymentLinesFeoModel));
+        doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
 
-        SsiResponse ssiResponse2 = new SsiResponse();
-        ssiResponse2.setAccountNumber("account456");
-        ssiResponse2.setBankName("BankName2");
-        ssiResponse2.setSwiftCode("SwiftCode2");
-        ssiResponses.add(ssiResponse2);
-        return ssiResponses;
+        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
+
+        assertEquals("SUCCESSFUL", result);
     }
