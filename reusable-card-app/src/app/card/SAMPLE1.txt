@@ -1,13 +1,18 @@
-  @Test
+    @Test
     void testCashAllocationModelList_Line297_IgnoreT_True() {
         List<String> lines = new ArrayList<>();
         String inputLine = " ".repeat(59) + "T";
         lines.add(inputLine);
 
-        // Debugging: Print the extracted substring and IGNORE_LINE_NOT_CONTAIN_T
+        // Explicitly set IGNORE_LINE_NOT_CONTAIN_T using the Constant class
+        Mockito.when(cashAllocationDomain.IGNORE_LINE_NOT_CONTAIN_T).thenReturn(Constant.IGNORE_LINE_NOT_CONTAIN_T);
+
+        // Debugging: Print byte values
         String extractedSubstring = inputLine.toUpperCase(Locale.FRENCH).substring(59, 60);
         System.out.println("Extracted Substring: [" + extractedSubstring + "]");
-        System.out.println("IGNORE_LINE_NOT_CONTAIN_T: [" + cashAllocationDomain.IGNORE_LINE_NOT_CONTAIN_T + "]"); // Assuming IGNORE_LINE_NOT_CONTAIN_T is accessible
+        System.out.println("Extracted Substring Bytes: " + java.util.Arrays.toString(extractedSubstring.getBytes(StandardCharsets.UTF_8)));
+        System.out.println("IGNORE_LINE_NOT_CONTAIN_T: [" + cashAllocationDomain.IGNORE_LINE_NOT_CONTAIN_T + "]");
+        System.out.println("IGNORE_LINE_NOT_CONTAIN_T Bytes: " + java.util.Arrays.toString(cashAllocationDomain.IGNORE_LINE_NOT_CONTAIN_T.getBytes(StandardCharsets.UTF_8)));
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
 
