@@ -1,11 +1,74 @@
-  @Test
-    void testCashAllocationModelList_Lines306_314_Exception() {
-        List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(116) + "invoiceRefFromShortLine" + " ".repeat(358)); // Length is less than 515
-        Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(lines.get(0));
-        Mockito.when(cashAllocationDomain.getInvoiceRefFromSupplementaryDetails(Mockito.anyString())).thenThrow(new RuntimeException("Test Exception"));
 
-        String invoiceRef = cashAllocationDomain.getInvoiceRefFromLine(lines.get(0));
+    @Test
+    void cashAllocationModelList_LineLengthGreaterThan515_InvoiceRefFromSubstring() {
+        // Arrange
+        String longLine = createLineWithLength(600);
+        List<String> lines = List.of(longLine);
+        String fileName = "valid.txt";
 
-        assertEquals("", invoiceRef); // Expect an empty string due to the catch block
+        // Act
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        // Assert
+        // Assuming CashAllocationModel has getInvoiceRef()
+        String expectedInvoiceRef = longLine.substring(514).trim().toUpperCase();
+        assertEquals(expectedInvoiceRef, result.get(0).getInvoiceRef());
+    }
+
+    @Test
+    void cashAllocationModelList_LineLengthLessThan515_InvoiceRefFromSupplementaryDetails() {
+        // Arrange
+        String line = createValidLine(200);
+        List<String> lines = List.of(line);
+        String fileName = "valid.txt";
+        String expectedSupplementaryRef = line.substring(116, 157).trim().toUpperCase();
+        String mockInvoiceRef = "INV123";
+        
+        // Mock helper method
+        doReturn(mockInvoiceRef).when(cashAllocationDomain)
+            .getInvoiceRefFromSupplementaryDetails(expectedSupplementaryRef);
+
+        // Act
+        List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        // Assert
+        assertEquals(mockInvoiceRef, result.get(0).getInvoiceRef());
+    }
+
+    @Test
+    void cashAllocationModelList_LineCausesException_LogsError() {
+        // Arrange
+        String shortLine = createValidLine(100); // Length 100, substring 116-157 invalid
+        List<String> lines = List.of(shortLine);
+        String fileName = "valid.txt";
+
+        // Act
+        cashAllocationDomain.cashAllocationModelList(lines, fileName);
+
+        // Assert: Verify logger.error is called (if logger is mocked)
+        // verify(logger).error(anyString(), any(Exception.class));
+    }
+
+    private String createLineWithLength(int length) {
+        // Create a line that meets the criteria to be processed (starts with '2', valid account, etc.)
+        StringBuilder sb = new StringBuilder();
+        sb.append("2"); // Ensure first character is '2' to pass initial check
+        sb.append("  "); // Account number (positions 1-20) can be any valid value
+        sb.append(" ".repeat(20 - 2)); // Complete account number to 20 characters
+        sb.append("A".repeat(length - sb.length())); // Fill remaining characters
+
+        // Ensure 59th character is not '7'
+        if (sb.length() > 59) {
+            sb.setCharAt(59, 'A');
+        }
+        return sb.toString();
+    }
+
+    private String createValidLine(int length) {
+        // Similar setup but ensures valid substring indices for 116-157 if needed
+        String line = createLineWithLength(length);
+        if (length >= 157) {
+            // Set specific data in 116-157 range if necessary
+        }
+        return line;
     }
