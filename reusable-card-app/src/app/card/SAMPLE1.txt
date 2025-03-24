@@ -1,10 +1,9 @@
-@Test
+  @Test
     void testCashAllocationModelList_Lines306_314_Exception() {
         List<String> lines = new ArrayList<>();
-        lines.add(" ".repeat(116) + "invoiceRefFromShortLine" + " ".repeat(358));
+        lines.add(" ".repeat(116) + "invoiceRefFromShortLine" + " ".repeat(358)); // Length is less than 515
         Mockito.when(cashAllocationDomain.lineSubstrings).thenReturn(lines.get(0));
-        // Remove the unnecessary stub
-        // Mockito.when(cashAllocationDomain.getInvoiceRefFromSupplementaryDetails(Mockito.anyString())).thenThrow(new RuntimeException("Test Exception"));
+        Mockito.when(cashAllocationDomain.getInvoiceRefFromSupplementaryDetails(Mockito.anyString())).thenThrow(new RuntimeException("Test Exception"));
 
         String invoiceRef = cashAllocationDomain.getInvoiceRefFromLine(lines.get(0));
 
