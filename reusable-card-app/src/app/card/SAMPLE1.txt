@@ -1,18 +1,18 @@
-@Test
+
+    @Test
     void testCashAllocationModelList_Lines311_334_Success() throws ParseException {
         List<String> lines = new ArrayList<>();
-        String accountNumberValue = "123";
+        String accountNumberValue = "ACCOUNT1234567890"; // Length 20
         String amountValue = "123456789012345678";
         String signValue = "  ";
         String generateDateValue = "20231027";
         String invoiceRefValue = "invoiceRef";
         String refValue = "ref123";
-        String line = " ".repeat(21) + accountNumberValue + " ".repeat(15) + amountValue + signValue + " ".repeat(36) + generateDateValue + " ".repeat(116) + invoiceRefValue + " ".repeat(358) + refValue;
+        String line = " " + accountNumberValue + " ".repeat(15) + amountValue + signValue + " ".repeat(36) + generateDateValue + " ".repeat(116) + invoiceRefValue + " ".repeat(358) + refValue;
         lines.add(line);
 
-        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.eq(invoiceRefValue), Mockito.eq(new BigDecimal("12345678901234.5678")), Mockito.eq(""), Mockito.eq(invoiceRefValue), Mockito.eq(accountNumberValue), Mockito.any(Date.class), Mockito.eq(refValue)))
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.eq(invoiceRefValue), Mockito.eq(new BigDecimal("12345678901234.5678")), Mockito.eq(""), Mockito.eq(invoiceRefValue), Mockito.eq(accountNumberValue.trim()), Mockito.any(Date.class), Mockito.eq(refValue)))
             .thenReturn(new CashAllocationModel());
-        Mockito.when(cashAllocationDomain.accountNumber).thenReturn(accountNumberValue);
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
 
@@ -23,18 +23,17 @@
     @Test
     void testCashAllocationModelList_Lines311_334_DateParseException() {
         List<String> lines = new ArrayList<>();
-        String accountNumberValue = "123";
+        String accountNumberValue = "ACCOUNT1234567890";
         String amountValue = "123456789012345678";
         String signValue = "  ";
         String generateDateValue = "invalidDate";
         String invoiceRefValue = "invoiceRef";
         String refValue = "ref123";
-        String line = " ".repeat(21) + accountNumberValue + " ".repeat(15) + amountValue + signValue + " ".repeat(36) + generateDateValue + " ".repeat(116) + invoiceRefValue + " ".repeat(358) + refValue;
+        String line = " " + accountNumberValue + " ".repeat(15) + amountValue + signValue + " ".repeat(36) + generateDateValue + " ".repeat(116) + invoiceRefValue + " ".repeat(358) + refValue;
         lines.add(line);
 
-        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.eq(invoiceRefValue), Mockito.any(BigDecimal.class), Mockito.eq(""), Mockito.eq(invoiceRefValue), Mockito.eq(accountNumberValue), Mockito.isNull(), Mockito.eq(refValue)))
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.eq(invoiceRefValue), Mockito.any(BigDecimal.class), Mockito.eq(""), Mockito.eq(invoiceRefValue), Mockito.eq(accountNumberValue.trim()), Mockito.isNull(), Mockito.eq(refValue)))
             .thenReturn(new CashAllocationModel());
-        Mockito.when(cashAllocationDomain.accountNumber).thenReturn(accountNumberValue);
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
 
@@ -45,18 +44,17 @@
     @Test
     void testCashAllocationModelList_Lines311_334_SignEqualsD() throws ParseException {
         List<String> lines = new ArrayList<>();
-        String accountNumberValue = "123";
+        String accountNumberValue = "ACCOUNT1234567890";
         String amountValue = "123456789012345678";
         String signValue = " D";
         String generateDateValue = "20231027";
         String invoiceRefValue = "invoiceRef";
         String refValue = "ref123";
-        String line = " ".repeat(21) + accountNumberValue + " ".repeat(15) + amountValue + signValue + " ".repeat(36) + generateDateValue + " ".repeat(116) + invoiceRefValue + " ".repeat(358) + refValue;
+        String line = " " + accountNumberValue + " ".repeat(15) + amountValue + signValue + " ".repeat(36) + generateDateValue + " ".repeat(116) + invoiceRefValue + " ".repeat(358) + refValue;
         lines.add(line);
 
-        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.eq(invoiceRefValue), Mockito.eq(new BigDecimal("-12345678901234.5678")), Mockito.eq(""), Mockito.eq(invoiceRefValue), Mockito.eq(accountNumberValue), Mockito.any(Date.class), Mockito.eq(refValue)))
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.eq(invoiceRefValue), Mockito.eq(new BigDecimal("-12345678901234.5678")), Mockito.eq(""), Mockito.eq(invoiceRefValue), Mockito.eq(accountNumberValue.trim()), Mockito.any(Date.class), Mockito.eq(refValue)))
             .thenReturn(new CashAllocationModel());
-        Mockito.when(cashAllocationDomain.accountNumber).thenReturn(accountNumberValue);
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
 
@@ -67,18 +65,17 @@
     @Test
     void testCashAllocationModelList_Lines311_334_CatchException_DoubleParse() {
         List<String> lines = new ArrayList<>();
-        String accountNumberValue = "123";
+        String accountNumberValue = "ACCOUNT1234567890";
         String amountValue = "invalidDouble";
         String signValue = "  ";
         String generateDateValue = "20231027";
         String invoiceRefValue = "invoiceRef";
         String refValue = "ref123";
-        String line = " ".repeat(21) + accountNumberValue + " ".repeat(15) + amountValue + signValue + " ".repeat(36) + generateDateValue + " ".repeat(116) + invoiceRefValue + " ".repeat(358) + refValue;
+        String line = " " + accountNumberValue + " ".repeat(15) + amountValue + signValue + " ".repeat(36) + generateDateValue + " ".repeat(116) + invoiceRefValue + " ".repeat(358) + refValue;
         lines.add(line);
 
-        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.eq(""), Mockito.eq(invoiceRefValue), Mockito.eq(accountNumberValue), Mockito.any(Date.class), Mockito.eq(refValue)))
+        Mockito.when(cashAllocationDomain.getCashAllocationModel(Mockito.anyString(), Mockito.any(BigDecimal.class), Mockito.eq(""), Mockito.eq(invoiceRefValue), Mockito.eq(accountNumberValue.trim()), Mockito.any(Date.class), Mockito.eq(refValue)))
             .thenReturn(new CashAllocationModel());
-        Mockito.when(cashAllocationDomain.accountNumber).thenReturn(accountNumberValue);
 
         List<CashAllocationModel> result = cashAllocationDomain.cashAllocationModelList(lines, "DATA_REC_FILE");
 
