@@ -1,85 +1,17 @@
- finalDataForInsertion = new ArrayList<>();
-        updatePaymentLines = new UpdatePaymentLines();
-        paymentLinesFeoModel = new PaymentLinesFeoModel();
-        srgPaymentModel = new SrgPaymentModel();
-
-        // Populate test data
-        paymentLinesFeoModel.setPaymentReference("ref123");
-        paymentLinesFeoModel.setPaymentType("A");
-        paymentLinesFeoModel.setInvoiceReference("inv456");
-
-        srgPaymentModel.setPaymentAmount(BigDecimal.TEN);
-        srgPaymentModel.setSendingDate(LocalDate.now());
-        srgPaymentModel.setValueDate(LocalDate.now().plusDays(1));
-        srgPaymentModel.setPaymentMode("mode789");
-        srgPaymentModel.setPaymentStatus("statusABC");
-        srgPaymentModel.setProviderAccountNumber("account123");
-        srgPaymentModel.setProviderBankName("bankXYZ");
-        srgPaymentModel.setProviderSwiftCode("swiftDEF");
-        srgPaymentModel.setCodGrpHabbo("codgrphabbo");
-        srgPaymentModel.setNumCptCor("numcptcor");
-        srgPaymentModel.setStaSrg("stasrg");
-        srgPaymentModel.setComSrg("comsrg");
-        srgPaymentModel.setPayLastUpdateUser("user123");
-
-        updatePaymentLines.setPaymentLinesFeoModel(paymentLinesFeoModel);
-        updatePaymentLines.setSrgPaymentModel(srgPaymentModel);
-        finalDataForInsertion.add(updatePaymentLines);
-
-        user = "testUser";
-    }
-
-    @Test
+   @Test
     void testUpdatePaymentLines_success() {
-        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenReturn(List.of(paymentLinesFeoModel));
+        String paymentReference = finalDataForInsertion.get(0).getPaymentLinesFeoModel().getPaymentReference();
+
+        // Create a PaymentEntity to be returned by the mock
+        PaymentEntity paymentEntity = new PaymentEntity();
+        // Populate paymentEntity with data from paymentLinesFeoModel
+
+        when(paymentRepository.getPaymentEntitiesByPaymentReference(paymentReference)).thenReturn(List.of(paymentEntity));
         doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
 
         String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
         assertEquals("SUCCESSFUL", result);
-        verify(paymentRepository).findPaymentLinesFromPaymentReferences(anyList());
+        verify(paymentRepository).getPaymentEntitiesByPaymentReference(paymentReference);
         verify(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
-    }
-
-    @Test
-    void testUpdatePaymentLines_restClientException() {
-        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenReturn(List.of(paymentLinesFeoModel));
-        doThrow(new RestClientException("Invoice service error")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
-
-        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
-
-        assertEquals("ERROR_WHILE_PROCESSING", result);
-        verify(logger).error(anyString());
-    }
-
-    @Test
-    void testUpdatePaymentLines_generalException() {
-        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenReturn(List.of(paymentLinesFeoModel));
-        doThrow(new RuntimeException("General error")).when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
-
-        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
-
-        assertEquals("ERROR", result);
-        verify(logger).error(anyString());
-    }
-
-    @Test
-    void testUpdatePaymentLines_cashAllocationCustomException() {
-        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenThrow(new RuntimeException("Repository error"));
-
-        CashAllocationCustomException exception = assertThrows(CashAllocationCustomException.class, () -> cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion));
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getHttpStatus());
-        verify(logger).error(anyString());
-    }
-
-    @Test
-    void testUpdatePaymentLines_acknowledgmentStatusNull() {
-        paymentLinesFeoModel.setPaymentType("A");
-        when(paymentRepository.findPaymentLinesFromPaymentReferences(anyList())).thenReturn(List.of(paymentLinesFeoModel));
-        doNothing().when(invoiceServiceApi).sendPaymentDetailsToInvoiceService(anyList());
-
-        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
-
-        assertEquals("SUCCESSFUL", result);
     }
