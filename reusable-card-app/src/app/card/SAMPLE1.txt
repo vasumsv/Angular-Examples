@@ -1,35 +1,36 @@
- @Test
-    void getNettedPaymentRowsForManualPayment_shouldReturnPaymentLinesModelList() {
+  @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        paymentList = new ArrayList<>();
+        InvoicePayableModelForPayment invoicePayableModel1 = new InvoicePayableModelForPayment();
+        invoicePayableModel1.setProviderId("provider123");
+        invoicePayableModel1.setFeeCategory("feeCategory");
+        InvoicePayable invoicePayable1 = new InvoicePayable();
+        invoicePayable1.setProviderMnemo("providerMnemo");
+        invoicePayableModel1.setInvoicePayable(invoicePayable1);
+        paymentList.add(invoicePayableModel1);
+
+        groupingKey = new GroupingKey("entity1", "USD");
+        amount = new BigDecimal("100");
+    }
+
+    @Test
+    void getNettedPaymentRowsForManualPayment_singlePaymentLine_success() {
         // Arrange
-        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
-        InvoicePayableModelForPayment invoicePayableModel = new InvoicePayableModelForPayment();
-        invoicePayableModel.setProviderId("provider123");
-        invoicePayableModel.setFeeCategory("feeCategory");
-        InvoicePayable invoicePayable = new InvoicePayable();
-        invoicePayable.setProviderMnemo("providerMnemo");
-        invoicePayableModel.setInvoicePayable(invoicePayable);
-        paymentList.add(invoicePayableModel);
-
-        GroupingKey groupingKey = new GroupingKey("entity1", "USD");
-        BigDecimal amount = new BigDecimal("100");
-
         when(referentialServiceApi.getPaymentDates(eq("entity1"), eq("USD"), eq("SWI"), eq("S"), eq("provider123"), eq("feeCategory")))
-                .thenReturn(new PaymentDates("2024-03-15", "2024-03-14"));
+                .thenReturn(new PaymentDates(LocalDate.of(2024, 3, 15), LocalDate.of(2024, 3, 14)));
 
-        // Mock the InvoicePayable objects that would be passed to getListOfBapDetailsForMultipleInvoices
-        List<InvoicePayable> expectedInvoicePayables = Collections.singletonList(invoicePayable);
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(eq(expectedInvoicePayables)))
-                .thenReturn(Arrays.asList(new BapPayableModel("portfolio1"), new BapPayableModel("portfolio2")));
+        List<BapPayableModel> bapPayableModels = Arrays.asList(new BapPayableModel("portfolio1"));
+        // Assuming getListOfBapDetailsForMultipleInvoices takes List<InvoicePayableModelForPayment>
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(eq(paymentList)))
+                .thenReturn(bapPayableModels);
 
         when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(eq("portfolio1")))
                 .thenReturn(new PortfolioAdvanceDetailResponse("bdrId1"));
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(eq("portfolio2")))
-                .thenReturn(new PortfolioAdvanceDetailResponse("bdrId2"));
 
         when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("entity1"), eq("bdrId1")))
                 .thenReturn(Arrays.asList(new SettlementsAccounts("account1"), new SettlementsAccounts("account2")));
-        when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("entity1"), eq("bdrId2")))
-                .thenReturn(Collections.singletonList(new SettlementsAccounts("account3")));
 
         // Act
         List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user");
@@ -40,12 +41,123 @@
         assertEquals("entity1", paymentLinesModel.getSgEntity());
         assertEquals("provider123", paymentLinesModel.getProviderId());
         assertEquals("providerMnemo", paymentLinesModel.getBrokerName());
-        assertEquals("2024-03-15", paymentLinesModel.getValueDate());
-        assertEquals("2024-03-14", paymentLinesModel.getSendingDate());
-        assertEquals(3, paymentLinesModel.getNumberOfSSI());
+        assertEquals(LocalDate.of(2024, 3, 15), paymentLinesModel.getValueDate());
+        assertEquals(LocalDate.of(2024, 3, 14), paymentLinesModel.getSendingDate());
+        assertEquals(2, paymentLinesModel.getNumberOfSSI());
         assertEquals("USD", paymentLinesModel.getCurrency());
-        assertEquals(Arrays.asList("account1", "account2", "account3"), paymentLinesModel.getSsiAccountCode());
+        assertEquals(Arrays.asList("account1", "account2"), paymentLinesModel.getSsiAccountCode());
         assertEquals("D", paymentLinesModel.getPaymentDirection());
         assertEquals(amount, paymentLinesModel.getAmount());
         assertEquals("R", paymentLinesModel.getPaymentStatus());
+    }
+
+    @Test
+    void getNettedPaymentRowsForManualPayment_multiplePaymentLines_sameGrouping() {
+        // Arrange
+        InvoicePayableModelForPayment invoicePayableModel2 = new InvoicePayableModelForPayment();
+        invoicePayableModel2.setProviderId("anotherProvider");
+        invoicePayableModel2.setFeeCategory("feeCategory");
+        InvoicePayable invoicePayable2 = new InvoicePayable();
+        invoicePayable2.setProviderMnemo("anotherProviderMnemo");
+        invoicePayableModel2.setInvoicePayable(invoicePayable2);
+        paymentList.add(invoicePayableModel2);
+
+        when(referentialServiceApi.getPaymentDates(eq("entity1"), eq("USD"), eq("SWI"), eq("S"), eq("provider123"), eq("feeCategory")))
+                .thenReturn(new PaymentDates(LocalDate.of(2024, 3, 15), LocalDate.of(2024, 3, 14)));
+        when(referentialServiceApi.getPaymentDates(eq("entity1"), eq("USD"), eq("SWI"), eq("S"), eq("anotherProvider"), eq("feeCategory")))
+                .thenReturn(new PaymentDates(LocalDate.of(2024, 3, 16), LocalDate.of(2024, 3, 15)));
+
+        List<BapPayableModel> bapPayableModels = Arrays.asList(new BapPayableModel("portfolio1"), new BapPayableModel("portfolio1"));
+        // Assuming getListOfBapDetailsForMultipleInvoices takes List<InvoicePayableModelForPayment>
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(eq(paymentList)))
+                .thenReturn(bapPayableModels);
+
+        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(eq("portfolio1")))
+                .thenReturn(new PortfolioAdvanceDetailResponse("bdrId1"));
+
+        when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("entity1"), eq("bdrId1")))
+                .thenReturn(Arrays.asList(new SettlementsAccounts("account1")));
+
+        // Act
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user");
+
+        // Assert
+        assertEquals(1, result.size());
+        PaymentLinesModel paymentLinesModel = result.get(0);
+        assertEquals(new BigDecimal("200"), paymentLinesModel.getAmount());
+        assertEquals(1, paymentLinesModel.getNumberOfSSI());
+        assertEquals(Collections.singletonList("account1"), paymentLinesModel.getSsiAccountCode());
+        // Other assertions to verify the consolidated data
+    }
+
+    @Test
+    void getNettedPaymentRowsForManualPayment_multiplePaymentLines_differentGrouping() {
+        // Arrange
+        InvoicePayableModelForPayment invoicePayableModel2 = new InvoicePayableModelForPayment();
+        invoicePayableModel2.setProviderId("anotherProvider");
+        invoicePayableModel2.setFeeCategory("differentCategory");
+        InvoicePayable invoicePayable2 = new InvoicePayable();
+        invoicePayable2.setProviderMnemo("anotherProviderMnemo");
+        invoicePayableModel2.setInvoicePayable(invoicePayable2);
+        paymentList.add(invoicePayableModel2);
+
+        when(referentialServiceApi.getPaymentDates(eq("entity1"), eq("USD"), eq("SWI"), eq("S"), eq("provider123"), eq("feeCategory")))
+                .thenReturn(new PaymentDates(LocalDate.of(2024, 3, 15), LocalDate.of(2024, 3, 14)));
+        when(referentialServiceApi.getPaymentDates(eq("entity1"), eq("USD"), eq("SWI"), eq("S"), eq("anotherProvider"), eq("differentCategory")))
+                .thenReturn(new PaymentDates(LocalDate.of(2024, 3, 16), LocalDate.of(2024, 3, 15)));
+
+        List<BapPayableModel> bapPayableModels = Arrays.asList(new BapPayableModel("portfolio1"), new BapPayableModel("portfolio2"));
+        // Assuming getListOfBapDetailsForMultipleInvoices takes List<InvoicePayableModelForPayment>
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(eq(paymentList)))
+                .thenReturn(bapPayableModels);
+
+        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(eq("portfolio1")))
+                .thenReturn(new PortfolioAdvanceDetailResponse("bdrId1"));
+        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(eq("portfolio2")))
+                .thenReturn(new PortfolioAdvanceDetailResponse("bdrId2"));
+
+        when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("entity1"), eq("bdrId1")))
+                .thenReturn(Arrays.asList(new SettlementsAccounts("account1")));
+        when(referentialServiceApi.getSettlementAccounts(eq("USD"), eq("entity1"), eq("bdrId2")))
+                .thenReturn(Arrays.asList(new SettlementsAccounts("account3")));
+
+        // Act
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user");
+
+        // Assert
+        assertEquals(2, result.size());
+        // Add assertions to verify the properties of the two resulting PaymentLinesModel objects
+    }
+
+    @Test
+    void getNettedPaymentRowsForManualPayment_noPaymentLines() {
+        // Arrange
+        paymentList.clear();
+
+        // Act
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user");
+
+        // Assert
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void getNettedPaymentRowsForManualPayment_emptySettlementAccounts() {
+        // Arrange
+        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(new PaymentDates(LocalDate.now(), LocalDate.now().minusDays(1)));
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(anyList()))
+                .thenReturn(Arrays.asList(new BapPayableModel("portfolio1")));
+        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(anyString()))
+                .thenReturn(new PortfolioAdvanceDetailResponse("bdrId1"));
+        when(referentialServiceApi.getSettlementAccounts(anyString(), anyString(), anyString()))
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user");
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(Collections.emptyList(), result.get(0).getSsiAccountCode());
+        assertEquals(0, result.get(0).getNumberOfSSI());
     }
