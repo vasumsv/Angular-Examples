@@ -1,72 +1,40 @@
-  @Test
-    void updatePaymentLines_shouldProcessPaymentLines_whenPaymentTypeIsA() {
+ @Test
+    void getNettedPaymentRowsForManualPayment_ValidData_ReturnsPaymentLinesModel() {
         // Arrange
-        String user = "testUser";
-        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
-        UpdatePaymentLines updatePaymentLines = new UpdatePaymentLines();
-        updatePaymentLines.setPaymentReferences(new String[]{"ref1"});
-        finalDataForInsertion.add(updatePaymentLines);
+        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
+        //Add dummy data to paymentList, so that paymentList.get(0).getProviderId() and paymentList.get(0).getFeeCategory() does not throw index out of bound exception
+        paymentList.add(new InvoicePayableModelForPayment());
+        paymentList.add(new InvoicePayableModelForPayment());
 
-        List<SrgPaymentModel> paymentLines = new ArrayList<>();
-        SrgPaymentModel paymentModel = new SrgPaymentModel();
-        paymentModel.setPaymentReference("ref1");
-        paymentModel.setPaymentCurrency("USD");
-        paymentModel.setSgEntity("SG1");
-        paymentModel.setFeeCategory("CAT1");
-        paymentModel.setSsiDet("SSI1");
-        paymentLines.add(paymentModel);
+        Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
+        GroupingKey groupingKey = new GroupingKey("entity1", "USD");
+        aggregateAmount.put(groupingKey, new BigDecimal("100"));
 
-        List<PaymentLinesFeoModel> paymentLinesFeoModelList = new ArrayList<>();
-        PaymentLinesFeoModel paymentLinesFeoModel = new PaymentLinesFeoModel();
-        paymentLinesFeoModel.setSendingDate(LocalDate.now());
-        paymentLinesFeoModel.setValueDate(LocalDate.now());
-        paymentLinesFeoModel.setSsi("SSI1");
-        paymentLinesFeoModel.setPaymentType("A");
-        paymentLinesFeoModel.setPaymentMode("MODE1");
-        paymentLinesFeoModelList.add(paymentLinesFeoModel);
+        Map<GroupingKey, Integer> aggregateInvoiceCount = new HashMap<>();
+        aggregateInvoiceCount.put(groupingKey, 2);
 
-        when(srgMapper.mapNew(finalDataForInsertion)).thenReturn(paymentLinesFeoModelList);
-        when(paymentRepository.getPaymentEntitiesByPaymentReference("ref1")).thenReturn(paymentLines);
+        Map<GroupingKey, String> aggregateInvoiceReferences = new HashMap<>();
+        aggregateInvoiceReferences.put(groupingKey, "INV1,INV2,");
 
-        // Create a List<PaymentEntity> to return
-        List<PaymentEntity> paymentEntities = new ArrayList<>();
-        PaymentEntity paymentEntity = new PaymentEntity(); // Assuming PaymentEntity has a default constructor
-        // Set properties of paymentEntity if necessary
-        paymentEntities.add(paymentEntity);
+        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(new PaymentDates("2023-10-26", "2023-10-27"));
 
-        when(srgMapper.map(paymentLines)).thenReturn(paymentEntities); // Use paymentEntities here
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(anyList()))
+                .thenReturn(Arrays.asList(new BapPayableModel("portfolio1"), new BapPayableModel("portfolio2")));
 
-        TrglbdrResponse accounts = new TrglbdrResponse();
-        when(referentialServiceApi.getAccountDetailsFromBdrForPayment(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(accounts);
+        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(anyString()))
+                .thenReturn(new PortfolioAdvanceDetailResponse("BDR1"));
 
-        UserDetailsModel userDetailsModel = new UserDetailsModel();
-        userDetailsModel.setIni("UI");
-        when(referentialServiceApi.getUserInitials(user)).thenReturn(userDetailsModel);
-
-        PaymentModeModel paymentModeModel = new PaymentModeModel();
-        when(referentialServiceApi.getPaymentModeDetails("MODE1")).thenReturn(paymentModeModel);
-
-        List<SsiResponse> ssiResponses = new ArrayList<>();
-        SsiResponse ssiResponse = new SsiResponse();
-        ssiResponse.setAccountNumber("SSI1");
-        ssiResponse.setBankName("Bank1");
-        ssiResponse.setSwiftCode("SWIFT1");
-        ssiResponses.add(ssiResponse);
-        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiResponses);
+        when(referentialServiceApi.getSettlementAccounts(anyString(), anyString(), anyString()))
+                .thenReturn(Arrays.asList(new SettlementsAccounts("account1"), new SettlementsAccounts("account2")));
 
         // Act
-        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
-
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user1");
         // Assert
-        assertEquals("Success", result); // Assuming "Success" is returned on successful update
-
-        // Verify that the lines 1443 to 1462 were executed
-        assertEquals(LocalDate.now(), paymentModel.getValueDate());
-        assertEquals(LocalDate.now(), paymentModel.getSendingDate());
-        assertEquals("SSI1", paymentModel.getSsiDet());
-        assertEquals("UI", paymentModel.getValidationUser());
-        assertEquals(LocalDate.now(), paymentModel.getLastUpdatedDate());
-        assertEquals("UI", paymentModel.getPayLastUpdateUser());
-        assertEquals("Bank1", paymentModel.getProviderBankName());
-        assertEquals("SWIFT1", paymentModel.getProviderBankSwift());
+        assertEquals(1, result.size());
+        PaymentLinesModel paymentLinesModel = result.get(0);
+        assertEquals("entity1", paymentLinesModel.getSgEntity());
+        assertEquals("USD", paymentLinesModel.getCurrency());
+        assertEquals(2, paymentLinesModel.getNumberOfSSI());
+        assertEquals(new BigDecimal("100"), paymentLinesModel.getAmount());
     }
