@@ -1,9 +1,4 @@
-  private final CashAllocationDomain cashAllocationDomain = Mockito.spy(new CashAllocationDomain());
-    private final SrgMapper srgMapper = Mockito.mock(SrgMapper.class);
-    private final PaymentRepository paymentRepository = Mockito.mock(PaymentRepository.class);
-    private final ReferentialServiceApi referentialServiceApi = Mockito.mock(ReferentialServiceApi.class);
-
-    @Test
+ @Test
     void updatePaymentLines_shouldProcessPaymentLines_whenPaymentTypeIsA() {
         // Arrange
         String user = "testUser";
