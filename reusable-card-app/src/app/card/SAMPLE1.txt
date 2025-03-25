@@ -1,5 +1,5 @@
  @Test
-    public void testGetPaymentLinesFromPaymentReference() {
+    public void testGetPaymentLinesFromPaymentReference() throws Exception { // Note the 'throws Exception'
         // Arrange
         String[] paymentReferences = {"REF1", "REF2"};
 
@@ -23,7 +23,13 @@
 
         List<SrgPaymentModel> srgPaymentModels = Arrays.asList(srgPaymentModel);
 
-        when(cashAllocationDomain.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
+        // Access the private method using reflection
+        Method findPaymentLinesMethod = CashAllocationDomain.class.getDeclaredMethod("findPaymentLinesFromPaymentReferences", String[].class);
+        findPaymentLinesMethod.setAccessible(true); // Make it accessible
+
+        // Invoke the private method
+        List<SrgPaymentModel> privateResult = (List<SrgPaymentModel>) findPaymentLinesMethod.invoke(cashAllocationDomain, (Object) paymentReferences);
+
         when(cashAllocationDomain.getSsiDetails("PROVIDER123", "USD", "SGENTITY", "FEE")).thenReturn(Arrays.asList("SSI1", "SSI2"));
 
         // Act
