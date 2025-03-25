@@ -1,5 +1,4 @@
-
-    @Test
+   @Test
     void updatePaymentLines_shouldProcessPaymentLines_whenPaymentTypeIsA() {
         // Arrange
         String user = "testUser";
@@ -28,7 +27,7 @@
 
         when(srgMapper.mapNew(finalDataForInsertion)).thenReturn(paymentLinesFeoModelList);
         when(paymentRepository.getPaymentEntitiesByPaymentReference("ref1")).thenReturn(paymentLines);
-        when(srgMapper.map(paymentLines)).thenReturn(paymentLines);
+        when(srgMapper.map(paymentLines)).thenReturn(paymentLines); // Assuming map returns List<SrgPaymentModel>
 
         TrglbdrResponse accounts = new TrglbdrResponse();
         when(referentialServiceApi.getAccountDetailsFromBdrForPayment(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(accounts);
@@ -54,11 +53,13 @@
         // Assert
         assertEquals("Success", result); // Assuming "Success" is returned on successful update
 
-        // Verify that the lines 1443 to 1462 were executed (based on the available setters)
+        // Verify that the lines 1443 to 1462 were executed
         assertEquals(LocalDate.now(), paymentModel.getValueDate());
         assertEquals(LocalDate.now(), paymentModel.getSendingDate());
         assertEquals("SSI1", paymentModel.getSsiDet());
-        // Cannot directly verify validationUser, lastUpdatedDate, payLastUpdateUser,
-        // providerBankName, providerBankSwift here as there are no direct setters
-        // in the provided SrgPaymentModel for these fields.
+        assertEquals("UI", paymentModel.getValidationUser());
+        assertEquals(LocalDate.now(), paymentModel.getLastUpdatedDate());
+        assertEquals("UI", paymentModel.getPayLastUpdateUser());
+        assertEquals("Bank1", paymentModel.getProviderBankName());
+        assertEquals("SWIFT1", paymentModel.getProviderBankSwift());
     }
