@@ -1,13 +1,68 @@
-// Assert
-assertNotNull(aggregateAmount);
-assertEquals(1, aggregateAmount.size());
-GroupingKey expectedKey = new GroupingKey("entity1", "USD");
-assertEquals(BigDecimal.valueOf(100), aggregateAmount.get(expectedKey));
+   @InjectMocks
+    private CashAllocationDomain cashAllocationDomain;
 
-assertNotNull(aggregateInvoiceCount);
-assertEquals(1, aggregateInvoiceCount.size());
-assertEquals(1, aggregateInvoiceCount.get(expectedKey)); // Assuming one invoice
+    @Mock
+    private SrgMapper srgMapper;
 
-assertNotNull(aggregateInvoiceReferences);
-assertEquals(1, aggregateInvoiceReferences.size());
-assertEquals("ABC123DEF,", aggregateInvoiceReferences.get(expectedKey));
+    @Mock
+    private PaymentRepository paymentRepository;
+
+    @Mock
+    private ReferentialServiceApi referentialServiceApi;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void updatePaymentLines_BasicCoverage_NoExceptions() {
+        // Arrange
+        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
+        UpdatePaymentLines updatePaymentLines = new UpdatePaymentLines();
+        updatePaymentLines.setPaymentReferences(new String[]{"PAYREF1"});
+        finalDataForInsertion.add(updatePaymentLines);
+
+        List<PaymentLinesFeoModel> paymentLinesFeoModelList = new ArrayList<>();
+        PaymentLinesFeoModel paymentLinesFeoModel = new PaymentLinesFeoModel();
+        paymentLinesFeoModel.setSendingDate(LocalDateTime.now());
+        paymentLinesFeoModel.setValueDate(LocalDate.now());
+        paymentLinesFeoModel.setEntityBdrId("ENTITY1");
+        paymentLinesFeoModel.setFeeBdrId("FEE1");
+        paymentLinesFeoModel.setCurrency("USD");
+        paymentLinesFeoModel.setInvoiceType("INVOICE");
+        paymentLinesFeoModel.setPaymentMode("MODE1");
+        paymentLinesFeoModel.setProviderId("PROVIDER1");
+        paymentLinesFeoModel.setSsi("SSI1");
+        paymentLinesFeoModel.setPaymentType("A");
+        paymentLinesFeoModelList.add(paymentLinesFeoModel);
+
+        List<PaymentEntity> paymentEntities = new ArrayList<>();
+        PaymentEntity paymentEntity = new PaymentEntity();
+        paymentEntity.setPaymentReference("PAYREF1");
+        paymentEntities.add(paymentEntity);
+
+        List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
+        SrgPaymentModel srgPaymentModel = new SrgPaymentModel();
+        srgPaymentModel.setPaymentReference("PAYREF1");
+        srgPaymentModels.add(srgPaymentModel);
+
+        TrglbdrResponse trglbdrResponse = new TrglbdrResponse();
+        UserDetailsModel userDetailsModel = new UserDetailsModel();
+        userDetailsModel.setIni("USER1");
+        PaymentModeModel paymentModeModel = new PaymentModeModel();
+        SsiResponse ssiResponse = new SsiResponse();
+        List<SsiResponse> ssiResponseList = new ArrayList<>();
+        ssiResponseList.add(ssiResponse);
+
+        when(srgMapper.mapNew(anyList())).thenReturn(paymentLinesFeoModelList);
+        when(paymentRepository.getPaymentEntitiesByPaymentReference(anyString())).thenReturn(paymentEntities);
+        when(srgMapper.map(anyList())).thenReturn(srgPaymentModels);
+        when(referentialServiceApi.getAccountDetailsFromBdrForPayment(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(trglbdrResponse);
+        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(userDetailsModel);
+        when(referentialServiceApi.getPaymentModeDetails(anyString())).thenReturn(paymentModeModel);
+        when(referentialServiceApi.getSsiDetails(anyString(), anyString())).thenReturn(ssiResponseList);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> cashAllocationDomain.updatePaymentLines("user1", finalDataForInsertion));
+    }
