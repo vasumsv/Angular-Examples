@@ -1,45 +1,41 @@
-@Test
+    @Test
     public void testGetPaymentLinesFromPaymentReference_DirtyTest_FullCoverage() {
         // Arrange
         String[] paymentReferences = {"REF1", "REF2"};
 
         // Mock data
         List<CashAllocationModel> paymentLines = new ArrayList<>();
-        CashAllocationModel paymentModel1 = new CashAllocationModel();
-        paymentModel1.setProviderBdrId("BDR1");
-        paymentModel1.setPaymentCurrency("USD");
-        paymentModel1.setSgEntity("SG1");
-        paymentModel1.setFeeCategory("FEE1");
-        paymentModel1.setInvoiceReference("INV1,INV2");
-        paymentModel1.setId(1L);
-        paymentModel1.setProviderName("Provider1");
-        paymentModel1.setValueDate("2023-10-27");
-        paymentModel1.setSendingDate("2023-10-26");
-        paymentModel1.setPaymentAmount(100.0);
-        paymentModel1.setPaymentType("Type1");
-        paymentModel1.setDebitCredit("Debit");
-        paymentModel1.setPaymentMode("Mode1");
-        paymentModel1.setPaymentStatus("Status1");
-        paymentModel1.setRcCode("RC1");
-        paymentModel1.setComment("Comment1");
+        CashAllocationModel paymentModel1 = CashAllocationModel.builder()
+                .id(UUID.randomUUID())
+                .counterPartyId("CP1")
+                .accountNumber("ACCT1")
+                .currency("USD")
+                .amount(BigDecimal.valueOf(100.0))
+                .supllimentary("SUP1")
+                .invoiceReferenceReceived("INV1,INV2")
+                .invoiceMatched("MATCHED1")
+                .status("STATUS1")
+                .valueDate(LocalDate.now())
+                .paymentDate(LocalDate.now().minusDays(1))
+                .version(1)
+                .actionPerformedBy("USER1")
+                .build();
 
-        CashAllocationModel paymentModel2 = new CashAllocationModel();
-        paymentModel2.setProviderBdrId("BDR2");
-        paymentModel2.setPaymentCurrency("EUR");
-        paymentModel2.setSgEntity("SG2");
-        paymentModel2.setFeeCategory("FEE2");
-        paymentModel2.setInvoiceReference("INV3");
-        paymentModel2.setId(2L);
-        paymentModel2.setProviderName("Provider2");
-        paymentModel2.setValueDate("2023-10-28");
-        paymentModel2.setSendingDate("2023-10-25");
-        paymentModel2.setPaymentAmount(200.0);
-        paymentModel2.setPaymentType("Type2");
-        paymentModel2.setDebitCredit("Credit");
-        paymentModel2.setPaymentMode("Mode2");
-        paymentModel2.setPaymentStatus("Status2");
-        paymentModel2.setRcCode("RC2");
-        paymentModel2.setComment("Comment2");
+        CashAllocationModel paymentModel2 = CashAllocationModel.builder()
+                .id(UUID.randomUUID())
+                .counterPartyId("CP2")
+                .accountNumber("ACCT2")
+                .currency("EUR")
+                .amount(BigDecimal.valueOf(200.0))
+                .supllimentary("SUP2")
+                .invoiceReferenceReceived("INV3")
+                .invoiceMatched("MATCHED2")
+                .status("STATUS2")
+                .valueDate(LocalDate.now().plusDays(1))
+                .paymentDate(LocalDate.now().minusDays(2))
+                .version(2)
+                .actionPerformedBy("USER2")
+                .build();
 
         paymentLines.add(paymentModel1);
         paymentLines.add(paymentModel2);
