@@ -1,34 +1,30 @@
-  @Test
-    public void testGetPaymentLinesFromPaymentReference_DirtyTest_ForceCoverage() {
+
+    @Test
+    public void testGetPaymentLinesFromPaymentReference_DirtyTest_ForceMockUsage() {
         // Arrange
-        String[] paymentReferences = {"REF1"}; // Single reference to simplify
+        String[] paymentReferences = {"REF1"};
 
-        // Mock data - Create a model that might lead to SSI details being fetched
-        List<CashAllocationModel> paymentLines = new ArrayList<>();
-        CashAllocationModel paymentModel1 = CashAllocationModel.builder()
+        // Mock initial retrieval of CashAllocationModel (assuming it happens in your method)
+        List<CashAllocationModel> initialPaymentModels = new ArrayList<>();
+        CashAllocationModel modelForAutoMatch = CashAllocationModel.builder()
                 .id(UUID.randomUUID())
-                .counterPartyId("CP1")
-                .accountNumber("ACCT1")
-                .currency("USD")
-                .amount(BigDecimal.valueOf(100.0))
-                .supllimentary("SUP1")
-                .invoiceReferenceReceived("INV_WITH_MULTIPLE,REFS") // Might trigger SSI logic
-                .invoiceMatched("MATCHED1")
-                .status("STATUS1")
+                .invoiceReferenceReceived("AUTO_MATCH_REQUIRED") // Trigger condition?
                 .valueDate(LocalDate.now())
-                .paymentDate(LocalDate.now().minusDays(1))
-                .version(1)
-                .actionPerformedBy("USER1")
                 .build();
-        paymentLines.add(paymentModel1);
+        initialPaymentModels.add(modelForAutoMatch);
 
-        // Mock repository - Ensure it returns something
+        when(cashAllocationRepositoryApi.findPaymentDetailsFor(any(String[].class)))
+                .thenReturn(initialPaymentModels);
+
+        // Mock for findPaymentLinesForAutoMatching (now potentially used)
+        List<CashAllocationModel> autoMatchResults = new ArrayList<>();
+        autoMatchResults.add(CashAllocationModel.builder().id(UUID.randomUUID()).build());
         when(cashAllocationRepositoryApi.findPaymentLinesForAutoMatching(any(List.class), any(List.class), any(String.class), any(LocalDate.class)))
-                .thenReturn(paymentLines);
+                .thenReturn(autoMatchResults);
 
-        // Mock getSsiDetails - Now it should be called if invoiceReference has commas
+        // Mock for getSsiDetails (might be called based on "AUTO_MATCH_REQUIRED" or other logic)
         List<String> ssiDetails = new ArrayList<>();
-        ssiDetails.add("SSI1");
+        ssiDetails.add("SSI_DETAIL");
         when(cashAllocationDomain.getSsiDetails(any(String.class), any(String.class), any(String.class), any(String.class)))
                 .thenReturn(ssiDetails);
 
