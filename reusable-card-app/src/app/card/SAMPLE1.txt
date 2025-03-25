@@ -1,9 +1,11 @@
- @Test
+
+    @Test
     void fetchNettedRows_ValidPaymentList_ProcessesDataCorrectly() throws Exception {
         // Arrange
         List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
         InvoicePayableModelForPayment invoice = new InvoicePayableModelForPayment();
         invoice.setInvoiceReference("ABC123DEF");
+        invoice.setInvoiceType("INVOICE"); // Set the invoiceType here
         paymentList.add(invoice);
 
         Map<GroupingKey, BigDecimal> aggregateAmount = new ConcurrentHashMap<>();
