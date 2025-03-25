@@ -1,11 +1,13 @@
-
-    @Test
+@Test
     void fetchNettedRows_ValidPaymentList_ProcessesDataCorrectly() throws Exception {
         // Arrange
         List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
         InvoicePayableModelForPayment invoice = new InvoicePayableModelForPayment();
         invoice.setInvoiceReference("ABC123DEF");
-        invoice.setInvoiceType("INVOICE"); // Set the invoiceType here
+        invoice.setInvoiceType("INVOICE");
+        invoice.setAmount(BigDecimal.valueOf(100));
+        invoice.setSgEntity("entity1");
+        invoice.setCurrency("USD");
         paymentList.add(invoice);
 
         Map<GroupingKey, BigDecimal> aggregateAmount = new ConcurrentHashMap<>();
@@ -21,8 +23,15 @@
 
         // Assert
         // Add assertions based on the expected behavior of fetchNettedRows
-        // For example, if it populates the maps, you can assert their contents
         assertNotNull(aggregateAmount);
         assertNotNull(aggregateInvoiceCount);
         assertNotNull(aggregateInvoiceReferences);
+
+        // Add assertions to verify the contents of the maps
+        assertEquals(1, aggregateAmount.size());
+        assertEquals(1, aggregateInvoiceCount.size());
+        assertEquals(1, aggregateInvoiceReferences.size());
+
+        // Add more assertions based on the logic of fetchNettedRows
+        // For example, if it groups by entity and currency, you can assert the keys and values
     }
