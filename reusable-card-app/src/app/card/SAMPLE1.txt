@@ -1,14 +1,16 @@
- @Test
+  @Test
     public void testTransferFile_Reflection() throws Exception {
         AbDomain abDomain = new AbDomain();
         Method method = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        method.setAccessible(true); // Make the private method accessible
+        method.setAccessible(true);
 
         // Prepare test data
         List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
         CashAllocationModel model = new CashAllocationModel();
         model.setInvoiceMatched("RSF-123");
         model.setCounterPartyId("1234");
+        // Set the createdDate to a non-null Date
+        model.setCreatedDate(new Date()); // Or any other valid Date
         cashAllocationModelList.add(model);
 
         // Call the private method using reflection
