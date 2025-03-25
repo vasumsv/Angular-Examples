@@ -1,71 +1,56 @@
+ @Test
+    public void testGetPaymentLinesFromPaymentReference() {
+        // Arrange
+        String[] paymentReferences = {"REF1", "REF2"};
 
-    @Test
-    void testGetPaymentLinesFromPaymentReference_EmptyInput() {
-        String[] emptyReferences = new String[0];
-        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(emptyReferences);
-        assertTrue(result.isEmpty());
-    }
+        SrgPaymentModel srgPaymentModel = new SrgPaymentModel();
+        srgPaymentModel.setId(1L);
+        srgPaymentModel.setProviderBdrId("PROVIDER123");
+        srgPaymentModel.setPaymentCurrency("USD");
+        srgPaymentModel.setSgEntity("SGENTITY");
+        srgPaymentModel.setFeeCategory("FEE");
+        srgPaymentModel.setInvoiceReference("INV1,INV2");
+        srgPaymentModel.setProviderName("BrokerA");
+        srgPaymentModel.setValueDate("2023-10-27");
+        srgPaymentModel.setSendingDate("2023-10-26");
+        srgPaymentModel.setPaymentAmount(100.0);
+        srgPaymentModel.setPaymentType("TYPE");
+        srgPaymentModel.setDebitCredit("CR");
+        srgPaymentModel.setPaymentMode("MODE");
+        srgPaymentModel.setPaymentStatus("STATUS");
+        srgPaymentModel.setRcCode("RC123");
+        srgPaymentModel.setComment("Comment");
 
-    @Test
-    void testGetPaymentLinesFromPaymentReference_SinglePayment() {
-        // Setup mock data
-        String[] refs = {"REF123"};
-        List<$rpPaymentModel> mockPayments = new ArrayList<>();
-        $rpPaymentModel payment = new $rpPaymentModel();
-        payment.setInvoiceReference("INV001;INV002");
-        payment.setProviderBdId("PROV123");
-        // Set other required fields...
-        
-        mockPayments.add(payment);
-        
-        when(cashAllocationRepositoryApi.findPaymentLinesFromPaymentReferences(any()))
-            .thenReturn(mockPayments);
-        
-        // Execute
-        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(refs);
-        
-        // Verify basic mapping
+        List<SrgPaymentModel> srgPaymentModels = Arrays.asList(srgPaymentModel);
+
+        when(cashAllocationDomain.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
+        when(cashAllocationDomain.getSsiDetails("PROVIDER123", "USD", "SGENTITY", "FEE")).thenReturn(Arrays.asList("SSI1", "SSI2"));
+
+        // Act
+        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
+
+        // Assert
         assertEquals(1, result.size());
-        assertEquals(2, result.get(0).getNumberOfInvoices()); // Will fail due to code bug
-    }
-
-    @Test
-    void testInvoiceReferenceParsing() {
-        $rpPaymentModel payment = new $rpPaymentModel();
-        payment.setInvoiceReference("INV1_negow_INV2"); // Testing split with typo
-        // When split with `negow`, should produce 2 invoices
-        // Actual code uses typo'd split delimiter
-    }
-
-    @Test
-    void testExceptionHandling() {
-        when(cashAllocationRepositoryApi.findPaymentLinesFromPaymentReferences(any()))
-            .thenThrow(new RuntimeException("DB error"));
-        
-        String[] refs = {"REF123"};
-        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(refs);
-        verify(logger).error(contains("Exception Occurred"), any());
-    }
-
-    // Test for constant usage coverage
-    @Test
-    void testConstantValues() {
-        assertEquals("84581001555", CashAllocationDomain.ACCOUNT_NUMBER_1);
-        assertEquals("AUTOMATIC", CashAllocationDomain.AUTOMATIC);
-        // Repeat for other constants
-    }
-
-    // Test field mappings
-    @Test
-    void testPaymentLineModelMapping() {
-        $rpPaymentModel payment = new $rpPaymentModel();
-        payment.setPaymentAmount(1000.0);
-        payment.setPaymentCurrency("USD");
-        // Set all fields...
-        
-        PaymentLinesModel model = cashAllocationDomain.mapToModel(payment);
-        
-        assertEquals(1000.0, model.getAmount());
-        assertEquals("USD", model.getCustomer());
-        // Verify all field mappings
+        PaymentLinesModel paymentLinesModel = result.get(0);
+        assertEquals(1L, paymentLinesModel.getId());
+        assertEquals("BrokerA", paymentLinesModel.getBrokerName());
+        assertEquals(2, paymentLinesModel.getNumberOfInvoices());
+        assertEquals(Arrays.asList("SSI1", "SSI2"), paymentLinesModel.getSsiAccountCode());
+        assertEquals(2, paymentLinesModel.getNumberOfSSI());
+        assertEquals("SGENTITY", paymentLinesModel.getSgEntity());
+        assertEquals("INV1,INV2", paymentLinesModel.getInvoiceReference());
+        assertEquals("FEE", paymentLinesModel.getFeeCategory());
+        assertEquals("PROVIDER123", paymentLinesModel.getProviderId());
+        assertEquals("2023-10-27", paymentLinesModel.getValueDate());
+        assertEquals("2023-10-26", paymentLinesModel.getSendingDate());
+        assertEquals(100.0, paymentLinesModel.getAmount());
+        assertEquals("USD", paymentLinesModel.getCurrency());
+        assertEquals("TYPE", paymentLinesModel.getInvoiceType());
+        assertEquals("INV", paymentLinesModel.getFeeType());
+        assertEquals("CR", paymentLinesModel.getPaymentDirection());
+        assertEquals("MODE", paymentLinesModel.getPaymentMode());
+        assertEquals("STATUS", paymentLinesModel.getPaymentStatus());
+        assertEquals("TYPE", paymentLinesModel.getPaymentType());
+        assertEquals("RC123", paymentLinesModel.getRc());
+        assertEquals("Comment", paymentLinesModel.getComment());
     }
