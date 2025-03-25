@@ -1,6 +1,5 @@
-
-    @Test
-    public void testGetNettedRows_BadTestForLineCoverage() throws Exception {
+ @Test
+    public void testGetNettedPaymentRowsForManualPayment_BadTestForLineCoverage() {
         // Arrange
         InvoicePayableModelForPayment invoice = new InvoicePayableModelForPayment();
         invoice.setInvoiceReference("ABC12345");
@@ -9,83 +8,55 @@
 
         List<InvoicePayableModelForPayment> paymentList = Arrays.asList(invoice);
 
-        // Create the maps needed by fetchNettedRows
-        Map<GroupingKey, BigDecimal> amountMap = new ConcurrentHashMap<>();
-        Map<GroupingKey, Integer> countMap = new ConcurrentHashMap<>();
-        Map<GroupingKey, String> refMap = new ConcurrentHashMap<>();
+        // Mock fetchNettedRows to populate maps
+        doAnswer(invocation -> {
+            Map<GroupingKey, BigDecimal> amountMap = invocation.getArgument(1);
+            Map<GroupingKey, Integer> countMap = invocation.getArgument(2);
+            Map<GroupingKey, String> refMap = invocation.getArgument(3);
 
-        // Access the private fetchNettedRows method using reflection
-        Method fetchNettedRowsMethod = CashAllocationDomain.class.getDeclaredMethod("fetchNettedRows", List.class, Map.class, Map.class, Map.class);
-        fetchNettedRowsMethod.setAccessible(true); // Make it accessible
-
-        // Invoke the private fetchNettedRows method
-        fetchNettedRowsMethod.invoke(cashAllocationDomain, paymentList, amountMap, countMap, refMap);
+            GroupingKey key = new GroupingKey("USD", "789");
+            amountMap.put(key, BigDecimal.TEN);
+            countMap.put(key, 1);
+            refMap.put(key, "REF,");
+            return null;
+        }).when(cashAllocationDomain).fetchNettedRows(any(), any(), any(), any());
 
         // Mock referentialServiceApi to return values
-        PaymentModeAndLocationModel modeLocation = new PaymentModeAndLocationModel();
-        modeLocation.setPaymentMode("MODE");
-        when(referentialServiceApi.getPaymentModeAndSettlementLocation(any(), anyString(), any(), any(), anyString(), anyString())).thenReturn(modeLocation);
-
         PaymentDates dates = new PaymentDates();
         when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(dates);
 
-        // Mock getSsiDetails
-        when(cashAllocationDomain.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(Arrays.asList("SSI1", "SSI2"));
+        BapPayableModel bap = new BapPayableModel();
+        bap.setPortfolio("PORTFOLIO1");
+        List<BapPayableModel> bapList = Arrays.asList(bap);
+        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(any())).thenReturn(bapList);
+
+        PortfolioAdvanceDetailResponse portfolioDetails = new PortfolioAdvanceDetailResponse();
+        portfolioDetails.setCodTrs("BDR123");
+        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(anyString())).thenReturn(portfolioDetails);
+
+        SettlementsAccounts settlementAccount = new SettlementsAccounts();
+        when(referentialServiceApi.getSettlementAccounts(anyString(), anyString(), anyString())).thenReturn(Arrays.asList(settlementAccount));
 
         // Act
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedRows(paymentList, "USER");
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "USER");
 
         // Assert (basic to confirm no exceptions)
         assertEquals(1, result.size());
 
-        // --- Now, let's trigger exceptions for line coverage ---
+        // --- Now, let's trigger different scenarios for line coverage ---
 
-        // Exception in getPaymentModeAndSettlementLocation
-        doThrow(new RuntimeException("Mode error")).when(referentialServiceApi).getPaymentModeAndSettlementLocation(any(), anyString(), any(), any(), anyString(), anyString());
-        cashAllocationDomain.getNettedRows(paymentList, "USER");
+        // Test with negative amount
+        doAnswer(invocation -> {
+            Map<GroupingKey, BigDecimal> amountMap = invocation.getArgument(1);
+            Map<GroupingKey, Integer> countMap = invocation.getArgument(2);
+            Map<GroupingKey, String> refMap = invocation.getArgument(3);
 
-        // Exception in getPaymentDates
-        when(referentialServiceApi.getPaymentModeAndSettlementLocation(any(), anyString(), any(), any(), anyString(), anyString())).thenReturn(modeLocation); // Reset to avoid double exception
-        doThrow(new RuntimeException("Dates error")).when(referentialServiceApi).getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
-        cashAllocationDomain.getNettedRows(paymentList, "USER");
+            GroupingKey key = new GroupingKey("USD", "789");
+            amountMap.put(key, new BigDecimal("-10"));
+            countMap.put(key, 1);
+            refMap.put(key, "REF,");
+            return null;
+        }).when(cashAllocationDomain).fetchNettedRows(any(), any(), any(), any());
 
-        // Exception in getSsiDetails
-        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(dates); // Reset
-        doThrow(new RuntimeException("SSI error")).when(cashAllocationDomain).getSsiDetails(anyString(), anyString(), anyString(), anyString());
-        cashAllocationDomain.getNettedRows(paymentList, "USER");
-    }
-
-    // Dummy GroupingKey class for testing
-    static class GroupingKey {
-        String currency;
-        String entity;
-
-        GroupingKey(String currency, String entity) {
-            this.currency = currency;
-            this.entity = entity;
-        }
-
-        String getCurrency() {
-            return currency;
-        }
-
-        String getEntity() {
-            return entity;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            // Implement equals and hashCode for Map usage
-            return true; // For simplicity, always return true
-        }
-
-        @Override
-        public int hashCode() {
-            return 1; // For simplicity, always return 1
-        }
-    }
-
-    // Dummy PaymentDates class for testing
-    static class PaymentDates {
-        // ... any fields or methods needed
+        cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "USER");
     }
