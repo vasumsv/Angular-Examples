@@ -1,35 +1,46 @@
+  @Test
+    void testGetPaymentLinesFromPaymentReference_WithValidData() {
+        // Mocking data
+        SrgPaymentModel paymentModel = new SrgPaymentModel();
+        paymentModel.setGetInvoiceReference("INV123;INV456");
+        paymentModel.setGetProviderBdrId("BDR001");
+        paymentModel.setGetPaymentCurrency("USD");
+        paymentModel.setGetSgEntity("SG001");
+        paymentModel.setGetFeeCategory("Category1");
+        paymentModel.setGetComment("Sample Comment");
+
+        List<SrgPaymentModel> mockPayments = Collections.singletonList(paymentModel);
+
+        when(someDependency.findPaymentLinesFromPaymentReference(anyString()))
+            .thenReturn(mockPayments);
+
+        when(someDependency.getSsiDetails(anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(Arrays.asList("SSI123", "SSI456"));
+
+        // Execute method
+        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference("REF123");
+
+        // Assertions
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("INV123", result.get(0).getInvoiceReference());
+        assertEquals("BDR001", result.get(0).getProviderBdrId());
+        assertEquals("USD", result.get(0).getPaymentCurrency());
+        assertEquals("SG001", result.get(0).getSgEntity());
+        assertEquals("Sample Comment", result.get(0).getComment());
+
+        // Verify method calls
+        verify(someDependency).findPaymentLinesFromPaymentReference("REF123");
+        verify(someDependency).getSsiDetails(anyString(), anyString(), anyString(), anyString());
+    }
 
     @Test
-    public void testGetPaymentLinesFromPaymentReference_DirtyTest_ForceMockUsage() {
-        // Arrange
-        String[] paymentReferences = {"REF1"};
+    void testGetPaymentLinesFromPaymentReference_WithEmptyList() {
+        when(someDependency.findPaymentLinesFromPaymentReference(anyString()))
+            .thenReturn(Collections.emptyList());
 
-        // Mock initial retrieval of CashAllocationModel (assuming it happens in your method)
-        List<CashAllocationModel> initialPaymentModels = new ArrayList<>();
-        CashAllocationModel modelForAutoMatch = CashAllocationModel.builder()
-                .id(UUID.randomUUID())
-                .invoiceReferenceReceived("AUTO_MATCH_REQUIRED") // Trigger condition?
-                .valueDate(LocalDate.now())
-                .build();
-        initialPaymentModels.add(modelForAutoMatch);
+        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference("REF123");
 
-        when(cashAllocationRepositoryApi.findPaymentDetailsFor(any(String[].class)))
-                .thenReturn(initialPaymentModels);
-
-        // Mock for findPaymentLinesForAutoMatching (now potentially used)
-        List<CashAllocationModel> autoMatchResults = new ArrayList<>();
-        autoMatchResults.add(CashAllocationModel.builder().id(UUID.randomUUID()).build());
-        when(cashAllocationRepositoryApi.findPaymentLinesForAutoMatching(any(List.class), any(List.class), any(String.class), any(LocalDate.class)))
-                .thenReturn(autoMatchResults);
-
-        // Mock for getSsiDetails (might be called based on "AUTO_MATCH_REQUIRED" or other logic)
-        List<String> ssiDetails = new ArrayList<>();
-        ssiDetails.add("SSI_DETAIL");
-        when(cashAllocationDomain.getSsiDetails(any(String.class), any(String.class), any(String.class), any(String.class)))
-                .thenReturn(ssiDetails);
-
-        // Act
-        cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
-
-        // No assertions, just aiming for line coverage
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
