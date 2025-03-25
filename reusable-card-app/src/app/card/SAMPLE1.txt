@@ -1,5 +1,4 @@
-
-    @Test
+  @Test
     void updatePaymentLines_CoverageLines1467To1482_NoException() {
         // Arrange
         List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
@@ -18,8 +17,8 @@
         paymentLinesFeoModel.setPaymentMode("MODE1");
         paymentLinesFeoModel.setProviderId("PROVIDER1");
         paymentLinesFeoModel.setSsi("SSI1");
-        paymentLinesFeoModel.setPaymentType("A");
-        paymentLinesFeoModel.setSsiDet("SSI1"); // Set ssiDet
+        paymentLinesFeoModel.setPaymentType("A"); // Important: Set Payment Type to "A"
+        paymentLinesFeoModel.setSsiDet("SSI_ACCOUNT"); // Set a specific SSI account number
         paymentLinesFeoModel.setPaymentReference("PAYREF1");
         paymentLinesFeoModel.setPaymentRequest(new PaymentRequest());
         paymentLinesFeoModel.setPaymentAmount(BigDecimal.valueOf(100));
@@ -39,7 +38,7 @@
         paymentModeModel.setPaymentModeCode("MODE_CODE");
 
         SsiResponse ssiResponse = new SsiResponse();
-        ssiResponse.setAccountNumber("SSI1");
+        ssiResponse.setAccountNumber("SSI_ACCOUNT"); // Match ssiDet
         ssiResponse.setBankName("BANK1");
         ssiResponse.setSwiftCode("SWIFT1");
         List<SsiResponse> ssiResponseList = new ArrayList<>();
