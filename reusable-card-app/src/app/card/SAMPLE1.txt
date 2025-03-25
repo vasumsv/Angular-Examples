@@ -1,24 +1,14 @@
- @Test
-    public void testUploadPaymentAbFileViaReferential_line188() throws IOException {
-        AbDomain abDomain = new AbDomain();
-
-        // Create a temporary file
-        File tempFile = File.createTempFile("test", ".txt");
-        tempFile.deleteOnExit(); // Ensure it's deleted after the test
-
-        // Write some content to the file
-        Files.write(tempFile.toPath(), "Test content".getBytes());
-
-        // Call the method
-        abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
-
-        // Line 188 will be covered when the ByteArrayResource is created
-    }
-
-
     @Test
-    public void testUploadPaymentAbFileViaReferential_fileDeleteSuccess() throws IOException {
+    public void testUploadPaymentAbFileViaReferential_fileDeleteSuccess() throws IOException, NoSuchFieldException, IllegalAccessException {
         AbDomain abDomain = new AbDomain();
+
+        // Create a mock ReferentialServiceApi
+        ReferentialServiceApi mockReferentialServiceApi = new MockReferentialServiceApi();
+
+        // Use reflection to set the referentialServiceApi field
+        Field field = AbDomain.class.getDeclaredField("referentialServiceApi");
+        field.setAccessible(true);
+        field.set(abDomain, mockReferentialServiceApi);
 
         // Create a temporary file
         File tempFile = File.createTempFile("test", ".txt");
@@ -29,6 +19,4 @@
 
         // Call the method
         abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
-
-        // Lines 195 and 196 will be covered if the file is successfully deleted
     }
