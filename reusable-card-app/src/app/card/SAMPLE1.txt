@@ -1,4 +1,4 @@
-   @Test
+  @Test
     void updatePaymentLines_shouldProcessPaymentLines_whenPaymentTypeIsA() {
         // Arrange
         String user = "testUser";
@@ -27,7 +27,14 @@
 
         when(srgMapper.mapNew(finalDataForInsertion)).thenReturn(paymentLinesFeoModelList);
         when(paymentRepository.getPaymentEntitiesByPaymentReference("ref1")).thenReturn(paymentLines);
-        when(srgMapper.map(paymentLines)).thenReturn(paymentLines); // Assuming map returns List<SrgPaymentModel>
+
+        // Create a List<PaymentEntity> to return
+        List<PaymentEntity> paymentEntities = new ArrayList<>();
+        PaymentEntity paymentEntity = new PaymentEntity(); // Assuming PaymentEntity has a default constructor
+        // Set properties of paymentEntity if necessary
+        paymentEntities.add(paymentEntity);
+
+        when(srgMapper.map(paymentLines)).thenReturn(paymentEntities); // Use paymentEntities here
 
         TrglbdrResponse accounts = new TrglbdrResponse();
         when(referentialServiceApi.getAccountDetailsFromBdrForPayment(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(accounts);
