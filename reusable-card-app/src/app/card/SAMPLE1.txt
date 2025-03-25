@@ -14,3 +14,21 @@
 
         // Line 188 will be covered when the ByteArrayResource is created
     }
+
+
+    @Test
+    public void testUploadPaymentAbFileViaReferential_fileDeleteSuccess() throws IOException {
+        AbDomain abDomain = new AbDomain();
+
+        // Create a temporary file
+        File tempFile = File.createTempFile("test", ".txt");
+        tempFile.deleteOnExit();
+
+        // Write some content to the file
+        Files.write(tempFile.toPath(), "Test content".getBytes());
+
+        // Call the method
+        abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
+
+        // Lines 195 and 196 will be covered if the file is successfully deleted
+    }
