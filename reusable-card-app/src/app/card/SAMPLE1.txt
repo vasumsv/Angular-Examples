@@ -1,10 +1,15 @@
- @Test
+
+    @Test
     void getNettedPaymentRowsForManualPayment_ValidData_ReturnsPaymentLinesModel() {
         // Arrange
         List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
-        //Add dummy data to paymentList, so that paymentList.get(0).getProviderId() and paymentList.get(0).getFeeCategory() does not throw index out of bound exception
-        paymentList.add(new InvoicePayableModelForPayment());
-        paymentList.add(new InvoicePayableModelForPayment());
+        // Add dummy data with invoiceType set to avoid NullPointerException
+        InvoicePayableModelForPayment invoice1 = new InvoicePayableModelForPayment();
+        invoice1.setInvoiceType("INVOICE"); // Set a non-null invoiceType
+        InvoicePayableModelForPayment invoice2 = new InvoicePayableModelForPayment();
+        invoice2.setInvoiceType("CREDIT_NOTE"); // Set a non-null invoiceType
+        paymentList.add(invoice1);
+        paymentList.add(invoice2);
 
         Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
         GroupingKey groupingKey = new GroupingKey("entity1", "USD");
@@ -30,6 +35,7 @@
 
         // Act
         List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user1");
+
         // Assert
         assertEquals(1, result.size());
         PaymentLinesModel paymentLinesModel = result.get(0);
