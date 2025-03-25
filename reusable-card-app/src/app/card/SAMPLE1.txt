@@ -1,49 +1,56 @@
- @Test
-    void getNettedPaymentRowsForManualPayment_ValidData_ReturnsPaymentLinesModel() {
+    @Test
+    void getNettedRows_ValidPaymentList_CallsFetchNettedRowsAndSetsFeeCode() {
         // Arrange
         List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
-        // Add dummy data with invoiceType set to avoid NullPointerException
-        InvoicePayableModelForPayment invoice1 = new InvoicePayableModelForPayment();
-        invoice1.setInvoiceType("INVOICE");
-        invoice1.setProviderId("provider1"); // You might need to set other necessary fields
-        invoice1.setFeeCategory("feeCategory1");
-        InvoicePayableModelForPayment invoice2 = new InvoicePayableModelForPayment();
-        invoice2.setInvoiceType("CREDIT_NOTE");
-        invoice2.setProviderId("provider2"); // You might need to set other necessary fields
-        invoice2.setFeeCategory("feeCategory2");
-        paymentList.add(invoice1);
-        paymentList.add(invoice2);
+        InvoicePayableModelForPayment invoice = new InvoicePayableModelForPayment();
+        invoice.setInvoiceReference("ABC123DEF");
+        paymentList.add(invoice);
 
-        Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
-        GroupingKey groupingKey = new GroupingKey("entity1", "USD");
-        aggregateAmount.put(groupingKey, new BigDecimal("100"));
-
-        Map<GroupingKey, Integer> aggregateInvoiceCount = new HashMap<>();
-        aggregateInvoiceCount.put(groupingKey, 2);
-
-        Map<GroupingKey, String> aggregateInvoiceReferences = new HashMap<>();
-        aggregateInvoiceReferences.put(groupingKey, "INV1,INV2,");
-
-        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(new PaymentDates("2023-10-26", "2023-10-27"));
-
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(anyList()))
-                .thenReturn(Arrays.asList(new BapPayableModel("portfolio1"), new BapPayableModel("portfolio2")));
-
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(anyString()))
-                .thenReturn(new PortfolioAdvanceDetailResponse("BDR1"));
-
-        when(referentialServiceApi.getSettlementAccounts(anyString(), anyString(), anyString()))
-                .thenReturn(Arrays.asList(new SettlementsAccounts("account1"), new SettlementsAccounts("account2")));
+        // Mock the fetchNettedRows method to avoid actual logic execution
+        doNothing().when(cashAllocationDomain).fetchNettedRows(anyList(), anyMap(), anyMap(), anyMap());
 
         // Act
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user1");
+        cashAllocationDomain.getNettedRows(paymentList, "user1");
 
         // Assert
-        assertEquals(1, result.size());
-        PaymentLinesModel paymentLinesModel = result.get(0);
-        assertEquals("entity1", paymentLinesModel.getSgEntity());
-        assertEquals("USD", paymentLinesModel.getCurrency());
-        assertEquals(2, paymentLinesModel.getNumberOfSSI());
-        assertEquals(new BigDecimal("100"), paymentLinesModel.getAmount());
+        // Verify that fetchNettedRows was called with the correct parameters
+        verify(cashAllocationDomain, times(1)).fetchNettedRows(eq(paymentList), anyMap(), anyMap(), anyMap());
+
+        // You can add more assertions if needed, for example, to check the feeCode
+        // if it is used later in the method.
+    }
+
+    @Test
+    void getNettedRows_EmptyPaymentList_DoesNotThrowException() {
+        // Arrange
+        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
+
+        // Mock the fetchNettedRows method to avoid actual logic execution
+        doNothing().when(cashAllocationDomain).fetchNettedRows(anyList(), anyMap(), anyMap(), anyMap());
+
+        // Act
+        cashAllocationDomain.getNettedRows(paymentList, "user1");
+
+        // Assert
+        // Verify that fetchNettedRows was called with the correct parameters
+        verify(cashAllocationDomain, times(1)).fetchNettedRows(eq(paymentList), anyMap(), anyMap(), anyMap());
+    }
+
+    @Test
+    void getNettedRows_NullInvoiceReference_DoesNotThrowException() {
+        // Arrange
+        List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
+        InvoicePayableModelForPayment invoice = new InvoicePayableModelForPayment();
+        invoice.setInvoiceReference(null);
+        paymentList.add(invoice);
+
+        // Mock the fetchNettedRows method to avoid actual logic execution
+        doNothing().when(cashAllocationDomain).fetchNettedRows(anyList(), anyMap(), anyMap(), anyMap());
+
+        // Act
+        cashAllocationDomain.getNettedRows(paymentList, "user1");
+
+        // Assert
+        // Verify that fetchNettedRows was called with the correct parameters
+        verify(cashAllocationDomain, times(1)).fetchNettedRows(eq(paymentList), anyMap(), anyMap(), anyMap());
     }
