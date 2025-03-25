@@ -1,4 +1,5 @@
- @Test
+
+    @Test
     public void testGetNettedRows_BadTestForLineCoverage() throws Exception {
         // Arrange
         InvoicePayableModelForPayment invoice = new InvoicePayableModelForPayment();
@@ -8,18 +9,17 @@
 
         List<InvoicePayableModelForPayment> paymentList = Arrays.asList(invoice);
 
-        // Mock fetchNettedRows to populate maps
-        doAnswer(invocation -> {
-            Map<GroupingKey, BigDecimal> amountMap = invocation.getArgument(1);
-            Map<GroupingKey, Integer> countMap = invocation.getArgument(2);
-            Map<GroupingKey, String> refMap = invocation.getArgument(3);
+        // Create the maps needed by fetchNettedRows
+        Map<GroupingKey, BigDecimal> amountMap = new ConcurrentHashMap<>();
+        Map<GroupingKey, Integer> countMap = new ConcurrentHashMap<>();
+        Map<GroupingKey, String> refMap = new ConcurrentHashMap<>();
 
-            GroupingKey key = new GroupingKey("USD", "789");
-            amountMap.put(key, BigDecimal.TEN);
-            countMap.put(key, 1);
-            refMap.put(key, "REF");
-            return null;
-        }).when(cashAllocationDomain).fetchNettedRows(any(), any(), any(), any());
+        // Access the private fetchNettedRows method using reflection
+        Method fetchNettedRowsMethod = CashAllocationDomain.class.getDeclaredMethod("fetchNettedRows", List.class, Map.class, Map.class, Map.class);
+        fetchNettedRowsMethod.setAccessible(true); // Make it accessible
+
+        // Invoke the private fetchNettedRows method
+        fetchNettedRowsMethod.invoke(cashAllocationDomain, paymentList, amountMap, countMap, refMap);
 
         // Mock referentialServiceApi to return values
         PaymentModeAndLocationModel modeLocation = new PaymentModeAndLocationModel();
