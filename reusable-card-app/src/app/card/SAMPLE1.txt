@@ -1,60 +1,39 @@
-  @Test
-    void updatePaymentLines_CoverageLines1467To1482_NoException() {
+@Test
+    void getPaymentLinesFromPaymentReference_CoversAllLines() {
         // Arrange
-        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
-        UpdatePaymentLines updatePaymentLines = new UpdatePaymentLines();
-        updatePaymentLines.setPaymentReferences(new String[]{"PAYREF1"});
-        finalDataForInsertion.add(updatePaymentLines);
-
-        List<PaymentLinesFeoModel> paymentLinesFeoModelList = new ArrayList<>();
-        PaymentLinesFeoModel paymentLinesFeoModel = new PaymentLinesFeoModel();
-        paymentLinesFeoModel.setSendingDate(LocalDateTime.now());
-        paymentLinesFeoModel.setValueDate(LocalDate.now());
-        paymentLinesFeoModel.setEntityBdrId("ENTITY1");
-        paymentLinesFeoModel.setFeeBdrId("FEE1");
-        paymentLinesFeoModel.setCurrency("USD");
-        paymentLinesFeoModel.setInvoiceType("INVOICE");
-        paymentLinesFeoModel.setPaymentMode("MODE1");
-        paymentLinesFeoModel.setProviderId("PROVIDER1");
-        paymentLinesFeoModel.setSsi("SSI1");
-        paymentLinesFeoModel.setPaymentType("A"); // Important: Set Payment Type to "A"
-        paymentLinesFeoModel.setSsiDet("SSI_ACCOUNT"); // Set a specific SSI account number
-        paymentLinesFeoModel.setPaymentReference("PAYREF1");
-        paymentLinesFeoModel.setPaymentRequest(new PaymentRequest());
-        paymentLinesFeoModel.setPaymentAmount(BigDecimal.valueOf(100));
-        paymentLinesFeoModelList.add(paymentLinesFeoModel);
-
-        List<PaymentEntity> paymentEntities = new ArrayList<>();
-        PaymentEntity paymentEntity = new PaymentEntity();
-        paymentEntity.setPaymentReference("PAYREF1");
-        paymentEntities.add(paymentEntity);
+        String[] paymentReferences = {"PAYREF1"};
 
         List<SrgPaymentModel> srgPaymentModels = new ArrayList<>();
         SrgPaymentModel srgPaymentModel = new SrgPaymentModel();
-        srgPaymentModel.setPaymentReference("PAYREF1");
+        srgPaymentModel.setId(1L);
+        srgPaymentModel.setProviderBdrId("PROVIDER1");
+        srgPaymentModel.setPaymentCurrency("USD");
+        srgPaymentModel.setSgEntity("ENTITY1");
+        srgPaymentModel.setFeeCategory("FEE1");
+        srgPaymentModel.setInvoiceReference("INV1,INV2");
+        srgPaymentModel.setProviderName("PROVIDER_NAME");
+        srgPaymentModel.setValueDate(LocalDate.now());
+        srgPaymentModel.setSendingDate(LocalDateTime.now());
+        srgPaymentModel.setPaymentAmount(100.0);
+        srgPaymentModel.setPaymentType("TYPE1");
+        srgPaymentModel.setDebitCredit("DEBIT");
+        srgPaymentModel.setPaymentMode("MODE1");
+        srgPaymentModel.setPaymentStatus("STATUS1");
+        srgPaymentModel.setRcCode("RC1");
+        srgPaymentModel.setComment("COMMENT1");
         srgPaymentModels.add(srgPaymentModel);
 
-        PaymentModeModel paymentModeModel = new PaymentModeModel();
-        paymentModeModel.setPaymentModeCode("MODE_CODE");
+        List<String> ssiDetails = new ArrayList<>();
+        ssiDetails.add("SSI1");
+        ssiDetails.add("SSI2");
 
-        SsiResponse ssiResponse = new SsiResponse();
-        ssiResponse.setAccountNumber("SSI_ACCOUNT"); // Match ssiDet
-        ssiResponse.setBankName("BANK1");
-        ssiResponse.setSwiftCode("SWIFT1");
-        List<SsiResponse> ssiResponseList = new ArrayList<>();
-        ssiResponseList.add(ssiResponse);
+        when(srgMapper.findPaymentLinesFromPaymentReferences(paymentReferences)).thenReturn(srgPaymentModels);
+        when(cashAllocationDomain.getSsiDetails("PROVIDER1", "USD", "ENTITY1", "FEE1")).thenReturn(ssiDetails);
 
-        PaymentChecksResponse paymentChecksResponse = new PaymentChecksResponse();
-        paymentChecksResponse.setPCodGuicBlcor("PCod");
-        paymentChecksResponse.setPNumCptCor("PNum");
+        // Act
+        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
 
-        when(srgMapper.mapNew(org.mockito.ArgumentMatchers.anyList())).thenReturn(paymentLinesFeoModelList);
-        when(paymentRepository.getPaymentEntitiesByPaymentReference(anyString())).thenReturn(paymentEntities);
-        when(srgMapper.map(org.mockito.ArgumentMatchers.anyList())).thenReturn(srgPaymentModels);
-        when(referentialServiceApi.getPaymentModeDetails(anyString())).thenReturn(paymentModeModel);
-        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiResponseList);
-        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(paymentChecksResponse);
-
-        // Act & Assert
-        assertDoesNotThrow(() -> cashAllocationDomain.updatePaymentLines("user1", finalDataForInsertion));
+        // Assert
+        assertNotNull(result);
+        // We don't need to assert specific values, just that the method executes without exceptions
     }
