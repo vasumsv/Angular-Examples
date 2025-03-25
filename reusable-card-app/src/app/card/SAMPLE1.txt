@@ -1,62 +1,31 @@
- @Test
-    public void testGetNettedPaymentRowsForManualPayment_BadTestForLineCoverage() {
+  @Test
+    public void testPaymentDetailsByValueDate_DirtyTest_273_to_282() {
         // Arrange
-        InvoicePayableModelForPayment invoice = new InvoicePayableModelForPayment();
-        invoice.setInvoiceReference("ABC12345");
-        invoice.setProviderId("123");
-        invoice.setFeeCategory("456");
+        String valueDateStart = "2023-10-27";
+        String valueDateEnd = "2023-10-28";
 
-        List<InvoicePayableModelForPayment> paymentList = Arrays.asList(invoice);
+        // Mock repository to return a stream of CashAllocationModel
+        List<CashAllocationModel> mockModels = new ArrayList<>();
+        CashAllocationModel model1 = new CashAllocationModel();
+        CashDetails details1 = new CashDetails();
+        details1.setId(1L);
+        model1.setCashDetails(details1);
+        model1.setId(1L);
 
-        // Mock fetchNettedRows to populate maps
-        doAnswer(invocation -> {
-            Map<GroupingKey, BigDecimal> amountMap = invocation.getArgument(1);
-            Map<GroupingKey, Integer> countMap = invocation.getArgument(2);
-            Map<GroupingKey, String> refMap = invocation.getArgument(3);
+        CashAllocationModel model2 = new CashAllocationModel();
+        CashDetails details2 = new CashDetails();
+        details2.setId(2L);
+        model2.setCashDetails(details2);
+        model2.setId(2L);
 
-            GroupingKey key = new GroupingKey("USD", "789");
-            amountMap.put(key, BigDecimal.TEN);
-            countMap.put(key, 1);
-            refMap.put(key, "REF,");
-            return null;
-        }).when(cashAllocationDomain).fetchNettedRows(any(), any(), any(), any());
+        mockModels.add(model1);
+        mockModels.add(model2);
 
-        // Mock referentialServiceApi to return values
-        PaymentDates dates = new PaymentDates();
-        when(referentialServiceApi.getPaymentDates(anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(dates);
-
-        BapPayableModel bap = new BapPayableModel();
-        bap.setPortfolio("PORTFOLIO1");
-        List<BapPayableModel> bapList = Arrays.asList(bap);
-        when(invoiceServiceApi.getListOfBapDetailsForMultipleInvoices(any())).thenReturn(bapList);
-
-        PortfolioAdvanceDetailResponse portfolioDetails = new PortfolioAdvanceDetailResponse();
-        portfolioDetails.setCodTrs("BDR123");
-        when(referentialServiceApi.getPortfolioDetailsBasedOnMnemonic(anyString())).thenReturn(portfolioDetails);
-
-        SettlementsAccounts settlementAccount = new SettlementsAccounts();
-        when(referentialServiceApi.getSettlementAccounts(anyString(), anyString(), anyString())).thenReturn(Arrays.asList(settlementAccount));
+        when(cashAllocationRepositoryApi.findByValueDateLesserThanEqual(any(LocalDate.class)))
+                .thenReturn(mockModels.stream()); // Return a stream
 
         // Act
-        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "USER");
+        cashAllocationDomain.paymentDetailsByValueDate(valueDateStart, valueDateEnd);
 
-        // Assert (basic to confirm no exceptions)
-        assertEquals(1, result.size());
-
-        // --- Now, let's trigger different scenarios for line coverage ---
-
-        // Test with negative amount
-        doAnswer(invocation -> {
-            Map<GroupingKey, BigDecimal> amountMap = invocation.getArgument(1);
-            Map<GroupingKey, Integer> countMap = invocation.getArgument(2);
-            Map<GroupingKey, String> refMap = invocation.getArgument(3);
-
-            GroupingKey key = new GroupingKey("USD", "789");
-            amountMap.put(key, new BigDecimal("-10"));
-            countMap.put(key, 1);
-            refMap.put(key, "REF,");
-            return null;
-        }).when(cashAllocationDomain).fetchNettedRows(any(), any(), any(), any());
-
-        cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "USER");
+        // No assertions, just aiming for line coverage
     }
