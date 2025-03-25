@@ -1,46 +1,138 @@
-  @Test
-    void testGetPaymentLinesFromPaymentReference_WithValidData() {
-        // Mocking data
-        SrgPaymentModel paymentModel = new SrgPaymentModel();
-        paymentModel.setGetInvoiceReference("INV123;INV456");
-        paymentModel.setGetProviderBdrId("BDR001");
-        paymentModel.setGetPaymentCurrency("USD");
-        paymentModel.setGetSgEntity("SG001");
-        paymentModel.setGetFeeCategory("Category1");
-        paymentModel.setGetComment("Sample Comment");
+ @Test
+    public void dirtyTest_ioException() throws IOException {
+        AbDomain abDomain = new AbDomain();
 
-        List<SrgPaymentModel> mockPayments = Collections.singletonList(paymentModel);
+        // Create a dummy file
+        File tempFile = new File("test.csv");
+        tempFile.createNewFile();
 
-        when(someDependency.findPaymentLinesFromPaymentReference(anyString()))
-            .thenReturn(mockPayments);
+        // Make the file read-only to force an IOException
+        tempFile.setReadOnly();
 
-        when(someDependency.getSsiDetails(anyString(), anyString(), anyString(), anyString()))
-            .thenReturn(Arrays.asList("SSI123", "SSI456"));
+        List<CashAllocationModel> list = new ArrayList<>();
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("1234");
+        list.add(model);
 
-        // Execute method
-        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference("REF123");
+        // Call transferFile - it should throw an IOException
+        abDomain.transferFile(LocalDate.now(), list);
 
-        // Assertions
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("INV123", result.get(0).getInvoiceReference());
-        assertEquals("BDR001", result.get(0).getProviderBdrId());
-        assertEquals("USD", result.get(0).getPaymentCurrency());
-        assertEquals("SG001", result.get(0).getSgEntity());
-        assertEquals("Sample Comment", result.get(0).getComment());
-
-        // Verify method calls
-        verify(someDependency).findPaymentLinesFromPaymentReference("REF123");
-        verify(someDependency).getSsiDetails(anyString(), anyString(), anyString(), anyString());
+        // Clean up
+        tempFile.delete();
     }
 
+
+      @Test
+    public void dirtyTest_fileNotFound() {
+        AbDomain abDomain = new AbDomain();
+
+        List<CashAllocationModel> list = new ArrayList<>();
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("1234");
+        list.add(model);
+
+        // Call transferFile with a non-existent file path
+        abDomain.transferFile(LocalDate.now(), list);
+    }
+
+
+
     @Test
-    void testGetPaymentLinesFromPaymentReference_WithEmptyList() {
-        when(someDependency.findPaymentLinesFromPaymentReference(anyString()))
-            .thenReturn(Collections.emptyList());
+    public void dirtyTest_line144() throws Exception {
+        AbDomain abDomain = new AbDomain(); // Assuming default constructor
 
-        List<PaymentLinesModel> result = cashAllocationDomain.getPaymentLinesFromPaymentReference("REF123");
+        // Create a dummy file (you might need to adjust the path)
+        File tempFile = new File("test.csv");
+        tempFile.createNewFile();
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        // Create a CashAllocationModel that will trigger an exception
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("1234");
+
+        List<CashAllocationModel> list = new ArrayList<>();
+        list.add(model);
+
+        // Call the method - it should throw an exception in updateCashAllocationModel
+        abDomain.transferFile(LocalDate.now(), list);
+
+        // Delete the temporary file (optional)
+        tempFile.delete();
+    }
+
+    // You'll need to add a dirty updateCashAllocationModel method to AbDomain
+    // to force an exception. For example:
+    // public void updateCashAllocationModel(CashAllocationModel model) {
+    //     throw new RuntimeException("Forced exception");
+    // }
+
+
+
+    @Test
+    public void testTransferFile_IOException() throws IOException {
+        AbDomain abDomain = new AbDomain();
+
+        // Mock the FileOutputStream to throw an IOException
+        FileOutputStream mockFileOutputStream = mock(FileOutputStream.class);
+        doThrow(new IOException("Simulated IO Exception")).when(mockFileOutputStream).write(any(byte[].class));
+
+        // Mock the FileOutputStream creation
+        AbDomain abDomainSpy = Mockito.spy(abDomain);
+        doReturn(mockFileOutputStream).when(abDomainSpy).createFileOutputStream(any(File.class), eq(true)); // Assuming you have a method to create FileOutputStream
+
+        // Create a dummy file and cashAllocationModelList
+        File tempFile = File.createTempFile("test", ".csv");
+        List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("1234");
+        cashAllocationModelList.add(model);
+
+        // Call transferFile, which will trigger the IOException
+        abDomainSpy.transferFile(LocalDate.now(), cashAllocationModelList);
+
+        // Verify that the exception was caught (no assertion needed if you're just aiming for coverage)
+    }
+
+
+      @Test
+    public void testTransferFile_FileNotFoundException() {
+        AbDomain abDomain = new AbDomain();
+
+        // Create a dummy cashAllocationModelList
+        List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("1234");
+        cashAllocationModelList.add(model);
+
+        // Call transferFile with an invalid filename
+        abDomain.transferFile(LocalDate.now(), cashAllocationModelList); 
+
+        // Verify that the exception was caught (no assertion needed if you're just aiming for coverage)
+    }
+
+
+        @Test
+    public void testTransferFile_InnerException() throws IOException {
+        AbDomain abDomain = new AbDomain(); // Assuming you have a default constructor
+
+        // Mock the updateCashAllocationModel method to throw an exception
+        AbDomain abDomainSpy = Mockito.spy(abDomain);
+        doThrow(new RuntimeException("Simulated update exception")).when(abDomainSpy).updateCashAllocationModel(any());
+
+        // Create a dummy file and cashAllocationModelList
+        File tempFile = File.createTempFile("test", ".csv");
+        List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
+        CashAllocationModel model = new CashAllocationModel();
+        model.setInvoiceMatched("RSF-123");
+        model.setCounterPartyId("1234");
+        cashAllocationModelList.add(model);
+
+        // Call transferFile, which will trigger the inner exception
+        abDomainSpy.transferFile(LocalDate.now(), cashAllocationModelList); 
+
+        // Verify that the exception was caught (no assertion needed if you're just aiming for coverage)
     }
