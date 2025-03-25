@@ -1,22 +1,6 @@
-   @InjectMocks
-    private CashAllocationDomain cashAllocationDomain;
-
-    @Mock
-    private SrgMapper srgMapper;
-
-    @Mock
-    private PaymentRepository paymentRepository;
-
-    @Mock
-    private ReferentialServiceApi referentialServiceApi;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
 
     @Test
-    void updatePaymentLines_BasicCoverage_NoExceptions() {
+    void updatePaymentLines_CoverageLines1467To1482_NoException() {
         // Arrange
         List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
         UpdatePaymentLines updatePaymentLines = new UpdatePaymentLines();
@@ -35,6 +19,10 @@
         paymentLinesFeoModel.setProviderId("PROVIDER1");
         paymentLinesFeoModel.setSsi("SSI1");
         paymentLinesFeoModel.setPaymentType("A");
+        paymentLinesFeoModel.setSsiDet("SSI1"); // Set ssiDet
+        paymentLinesFeoModel.setPaymentReference("PAYREF1");
+        paymentLinesFeoModel.setPaymentRequest(new PaymentRequest());
+        paymentLinesFeoModel.setPaymentAmount(BigDecimal.valueOf(100));
         paymentLinesFeoModelList.add(paymentLinesFeoModel);
 
         List<PaymentEntity> paymentEntities = new ArrayList<>();
@@ -47,21 +35,26 @@
         srgPaymentModel.setPaymentReference("PAYREF1");
         srgPaymentModels.add(srgPaymentModel);
 
-        TrglbdrResponse trglbdrResponse = new TrglbdrResponse();
-        UserDetailsModel userDetailsModel = new UserDetailsModel();
-        userDetailsModel.setIni("USER1");
         PaymentModeModel paymentModeModel = new PaymentModeModel();
+        paymentModeModel.setPaymentModeCode("MODE_CODE");
+
         SsiResponse ssiResponse = new SsiResponse();
+        ssiResponse.setAccountNumber("SSI1");
+        ssiResponse.setBankName("BANK1");
+        ssiResponse.setSwiftCode("SWIFT1");
         List<SsiResponse> ssiResponseList = new ArrayList<>();
         ssiResponseList.add(ssiResponse);
 
-        when(srgMapper.mapNew(anyList())).thenReturn(paymentLinesFeoModelList);
+        PaymentChecksResponse paymentChecksResponse = new PaymentChecksResponse();
+        paymentChecksResponse.setPCodGuicBlcor("PCod");
+        paymentChecksResponse.setPNumCptCor("PNum");
+
+        when(srgMapper.mapNew(org.mockito.ArgumentMatchers.anyList())).thenReturn(paymentLinesFeoModelList);
         when(paymentRepository.getPaymentEntitiesByPaymentReference(anyString())).thenReturn(paymentEntities);
-        when(srgMapper.map(anyList())).thenReturn(srgPaymentModels);
-        when(referentialServiceApi.getAccountDetailsFromBdrForPayment(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(trglbdrResponse);
-        when(referentialServiceApi.getUserInitials(anyString())).thenReturn(userDetailsModel);
+        when(srgMapper.map(org.mockito.ArgumentMatchers.anyList())).thenReturn(srgPaymentModels);
         when(referentialServiceApi.getPaymentModeDetails(anyString())).thenReturn(paymentModeModel);
-        when(referentialServiceApi.getSsiDetails(anyString(), anyString())).thenReturn(ssiResponseList);
+        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiResponseList);
+        when(referentialServiceApi.doPaymentChecks(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(paymentChecksResponse);
 
         // Act & Assert
         assertDoesNotThrow(() -> cashAllocationDomain.updatePaymentLines("user1", finalDataForInsertion));
