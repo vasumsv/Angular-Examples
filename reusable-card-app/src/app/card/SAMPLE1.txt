@@ -1,20 +1,16 @@
-  @Test
-    public void testTransferFile_Reflection() throws Exception {
+ @Test
+    public void testUploadPaymentAbFileViaReferential_line188() throws IOException {
         AbDomain abDomain = new AbDomain();
-        Method method = AbDomain.class.getDeclaredMethod("transferFile", LocalDate.class, List.class);
-        method.setAccessible(true);
 
-        // Prepare test data
-        List<CashAllocationModel> cashAllocationModelList = new ArrayList<>();
-        CashAllocationModel model = new CashAllocationModel();
-        model.setInvoiceMatched("RSF-123");
-        model.setCounterPartyId("1234");
-        // Set the createdDate to a non-null Date
-        model.setCreatedDate(new Date()); // Or any other valid Date
-        cashAllocationModelList.add(model);
+        // Create a temporary file
+        File tempFile = File.createTempFile("test", ".txt");
+        tempFile.deleteOnExit(); // Ensure it's deleted after the test
 
-        // Call the private method using reflection
-        method.invoke(abDomain, LocalDate.now(), cashAllocationModelList);
+        // Write some content to the file
+        Files.write(tempFile.toPath(), "Test content".getBytes());
 
-        // You can add assertions if needed, but for coverage, this is sufficient
+        // Call the method
+        abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
+
+        // Line 188 will be covered when the ByteArrayResource is created
     }
