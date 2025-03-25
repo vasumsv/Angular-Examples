@@ -1,31 +1,62 @@
-  @Test
-    public void testPaymentDetailsByValueDate_DirtyTest_273_to_282() {
+@Test
+    public void testGetPaymentLinesFromPaymentReference_DirtyTest_FullCoverage() {
         // Arrange
-        String valueDateStart = "2023-10-27";
-        String valueDateEnd = "2023-10-28";
+        String[] paymentReferences = {"REF1", "REF2"};
 
-        // Mock repository to return a stream of CashAllocationModel
-        List<CashAllocationModel> mockModels = new ArrayList<>();
-        CashAllocationModel model1 = new CashAllocationModel();
-        CashDetails details1 = new CashDetails();
-        details1.setId(1L);
-        model1.setCashDetails(details1);
-        model1.setId(1L);
+        // Mock data
+        List<SrgPaymentModel> paymentLines = new ArrayList<>();
+        SrgPaymentModel paymentModel1 = new SrgPaymentModel();
+        paymentModel1.setProviderBdrId("BDR1");
+        paymentModel1.setPaymentCurrency("USD");
+        paymentModel1.setSgEntity("SG1");
+        paymentModel1.setFeeCategory("FEE1");
+        paymentModel1.setInvoiceReference("INV1,INV2");
+        paymentModel1.setId(1L);
+        paymentModel1.setProviderName("Provider1");
+        paymentModel1.setValueDate("2023-10-27");
+        paymentModel1.setSendingDate("2023-10-26");
+        paymentModel1.setPaymentAmount(100.0);
+        paymentModel1.setPaymentType("Type1");
+        paymentModel1.setDebitCredit("Debit");
+        paymentModel1.setPaymentMode("Mode1");
+        paymentModel1.setPaymentStatus("Status1");
+        paymentModel1.setRcCode("RC1");
+        paymentModel1.setComment("Comment1");
 
-        CashAllocationModel model2 = new CashAllocationModel();
-        CashDetails details2 = new CashDetails();
-        details2.setId(2L);
-        model2.setCashDetails(details2);
-        model2.setId(2L);
+        SrgPaymentModel paymentModel2 = new SrgPaymentModel();
+        paymentModel2.setProviderBdrId("BDR2");
+        paymentModel2.setPaymentCurrency("EUR");
+        paymentModel2.setSgEntity("SG2");
+        paymentModel2.setFeeCategory("FEE2");
+        paymentModel2.setInvoiceReference("INV3");
+        paymentModel2.setId(2L);
+        paymentModel2.setProviderName("Provider2");
+        paymentModel2.setValueDate("2023-10-28");
+        paymentModel2.setSendingDate("2023-10-25");
+        paymentModel2.setPaymentAmount(200.0);
+        paymentModel2.setPaymentType("Type2");
+        paymentModel2.setDebitCredit("Credit");
+        paymentModel2.setPaymentMode("Mode2");
+        paymentModel2.setPaymentStatus("Status2");
+        paymentModel2.setRcCode("RC2");
+        paymentModel2.setComment("Comment2");
 
-        mockModels.add(model1);
-        mockModels.add(model2);
+        paymentLines.add(paymentModel1);
+        paymentLines.add(paymentModel2);
 
-        when(cashAllocationRepositoryApi.findByValueDateLesserThanEqual(any(LocalDate.class)))
-                .thenReturn(mockModels.stream()); // Return a stream
+        // Mock repository method
+        when(cashAllocationRepositoryApi.findPaymentLinesFromPaymentReferences(any(String[].class)))
+                .thenReturn(paymentLines);
+
+        // Mock getSsiDetails
+        List<String> ssiDetails = new ArrayList<>();
+        ssiDetails.add("SSI1");
+        ssiDetails.add("SSI2");
+        when(cashAllocationDomain.getSsiDetails(any(String.class), any(String.class), any(String.class), any(String.class)))
+                .thenReturn(ssiDetails);
 
         // Act
-        cashAllocationDomain.paymentDetailsByValueDate(valueDateStart, valueDateEnd);
+        cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
 
         // No assertions, just aiming for line coverage
     }
