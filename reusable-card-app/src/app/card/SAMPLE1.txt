@@ -1,9 +1,9 @@
-    @Test
+  @Test
     public void testUploadPaymentAbFileViaReferential_fileDeleteSuccess() throws IOException, NoSuchFieldException, IllegalAccessException {
         AbDomain abDomain = new AbDomain();
 
-        // Create a mock ReferentialServiceApi
-        ReferentialServiceApi mockReferentialServiceApi = new MockReferentialServiceApi();
+        // Create a mock ReferentialServiceApi using Mockito
+        ReferentialServiceApi mockReferentialServiceApi = Mockito.mock(ReferentialServiceApi.class);
 
         // Use reflection to set the referentialServiceApi field
         Field field = AbDomain.class.getDeclaredField("referentialServiceApi");
@@ -19,4 +19,8 @@
 
         // Call the method
         abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
+
+        // You can optionally verify that the mock was called
+        Mockito.verify(mockReferentialServiceApi, times(1))
+                .uploadFileToGaiaServer(any(ByteArrayResource.class), anyString(), anyString());
     }
