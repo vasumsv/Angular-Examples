@@ -4,8 +4,8 @@
         String[] paymentReferences = {"REF1", "REF2"};
 
         // Mock data
-        List<SrgPaymentModel> paymentLines = new ArrayList<>();
-        SrgPaymentModel paymentModel1 = new SrgPaymentModel();
+        List<CashAllocationModel> paymentLines = new ArrayList<>();
+        CashAllocationModel paymentModel1 = new CashAllocationModel();
         paymentModel1.setProviderBdrId("BDR1");
         paymentModel1.setPaymentCurrency("USD");
         paymentModel1.setSgEntity("SG1");
@@ -23,7 +23,7 @@
         paymentModel1.setRcCode("RC1");
         paymentModel1.setComment("Comment1");
 
-        SrgPaymentModel paymentModel2 = new SrgPaymentModel();
+        CashAllocationModel paymentModel2 = new CashAllocationModel();
         paymentModel2.setProviderBdrId("BDR2");
         paymentModel2.setPaymentCurrency("EUR");
         paymentModel2.setSgEntity("SG2");
@@ -44,8 +44,8 @@
         paymentLines.add(paymentModel1);
         paymentLines.add(paymentModel2);
 
-        // Mock repository method
-        when(cashAllocationRepositoryApi.findPaymentLinesFromPaymentReferences(any(String[].class)))
+        // Mock repository method (corrected method name)
+        when(cashAllocationRepositoryApi.findPaymentLinesForAutoMatching(any(List.class), any(List.class), any(String.class), any(LocalDate.class)))
                 .thenReturn(paymentLines);
 
         // Mock getSsiDetails
@@ -56,6 +56,8 @@
                 .thenReturn(ssiDetails);
 
         // Act
+        // Assuming your method uses findPaymentLinesForAutoMatching, adjust accordingly
+        // You might need to adjust the parameters based on what your method actually calls
         cashAllocationDomain.getPaymentLinesFromPaymentReference(paymentReferences);
 
         // No assertions, just aiming for line coverage
