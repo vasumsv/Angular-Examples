@@ -1,13 +1,16 @@
-
-    @Test
+ @Test
     void getNettedPaymentRowsForManualPayment_ValidData_ReturnsPaymentLinesModel() {
         // Arrange
         List<InvoicePayableModelForPayment> paymentList = new ArrayList<>();
         // Add dummy data with invoiceType set to avoid NullPointerException
         InvoicePayableModelForPayment invoice1 = new InvoicePayableModelForPayment();
-        invoice1.setInvoiceType("INVOICE"); // Set a non-null invoiceType
+        invoice1.setInvoiceType("INVOICE");
+        invoice1.setProviderId("provider1"); // You might need to set other necessary fields
+        invoice1.setFeeCategory("feeCategory1");
         InvoicePayableModelForPayment invoice2 = new InvoicePayableModelForPayment();
-        invoice2.setInvoiceType("CREDIT_NOTE"); // Set a non-null invoiceType
+        invoice2.setInvoiceType("CREDIT_NOTE");
+        invoice2.setProviderId("provider2"); // You might need to set other necessary fields
+        invoice2.setFeeCategory("feeCategory2");
         paymentList.add(invoice1);
         paymentList.add(invoice2);
 
