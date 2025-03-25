@@ -1,5 +1,5 @@
- @Test
-    public void testUploadPaymentAbFileViaReferential_fileDeleteSuccess() throws IOException, NoSuchFieldException, IllegalAccessException {
+  @Test
+    public void testUploadPaymentAbFileViaReferential_line188() throws IOException, NoSuchFieldException, IllegalAccessException {
         AbDomain abDomain = new AbDomain();
 
         // Create a mock ReferentialServiceApi
@@ -12,7 +12,7 @@
 
         // Create a temporary file
         File tempFile = File.createTempFile("test", ".txt");
-        tempFile.deleteOnExit();
+        tempFile.deleteOnExit(); // Ensure it's deleted after the test
 
         // Write some content to the file
         Files.write(tempFile.toPath(), "Test content".getBytes());
@@ -20,7 +20,7 @@
         // Call the method
         abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
 
-        // Verify that the method was called with the correct arguments
+        // Verify that the method was called
         Mockito.verify(mockReferentialServiceApi).uploadFileToGaiaServer(
             any(org.springframework.core.io.ByteArrayResource.class),
             any(String.class),
