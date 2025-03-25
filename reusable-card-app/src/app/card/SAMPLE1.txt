@@ -1,37 +1,77 @@
-   @Test
-    void uploadPaymentAbFileViaReferential_shouldUploadFileAndLogSuccess() throws IOException {
-        // Arrange
-        String fileName = "test.txt";
-        File file = mock(File.class);
-        when(file.getName()).thenReturn(fileName);
-        when(file.toPath()).thenReturn(new File(fileName).toPath()); // Mocking a path
-        when(Files.readAllBytes(any())).thenReturn("test content".getBytes());
-        when(file.delete()).thenReturn(true);
-
-        // Act
-        abDomain.uploadPaymentAbFileViaReferential(fileName);
-
-        // Assert
-        verify(referentialServiceApi, times(1)).uploadFileToGaiaServer(any(ByteArrayResource.class), anyString(), anyString());
-        verify(file, times(1)).delete();
-        // You might want to assert the log output as well, but that requires more setup
-    }
+  private final CashAllocationDomain cashAllocationDomain = Mockito.spy(new CashAllocationDomain());
+    private final SrgMapper srgMapper = Mockito.mock(SrgMapper.class);
+    private final PaymentRepository paymentRepository = Mockito.mock(PaymentRepository.class);
+    private final ReferentialServiceApi referentialServiceApi = Mockito.mock(ReferentialServiceApi.class);
 
     @Test
-    void uploadPaymentAbFileViaReferential_shouldLogFailureIfFileNotDeleted() throws IOException {
+    void updatePaymentLines_shouldProcessPaymentLines_whenPaymentTypeIsA() {
         // Arrange
-        String fileName = "test.txt";
-        File file = mock(File.class);
-        when(file.getName()).thenReturn(fileName);
-        when(file.toPath()).thenReturn(new File(fileName).toPath()); // Mocking a path
-        when(Files.readAllBytes(any())).thenReturn("test content".getBytes());
-        when(file.delete()).thenReturn(false);
+        String user = "testUser";
+        List<UpdatePaymentLines> finalDataForInsertion = new ArrayList<>();
+        UpdatePaymentLines updatePaymentLines = new UpdatePaymentLines();
+        updatePaymentLines.setPaymentReferences(new String[]{"ref1"});
+        finalDataForInsertion.add(updatePaymentLines);
+
+        List<SrgPaymentModel> paymentLines = new ArrayList<>();
+        SrgPaymentModel paymentModel = new SrgPaymentModel();
+        paymentModel.setPaymentReference("ref1");
+        paymentModel.setEntityBdrId("entity1");
+        paymentModel.setFeeBdrId("fee1");
+        paymentModel.setCurrency("USD");
+        paymentModel.setInvoiceType("INV");
+        paymentModel.setPaymentMode("MODE1");
+        paymentModel.setProviderId("provider1");
+        paymentModel.setProviderBdrId("providerBdr1");
+        paymentModel.setPaymentCurrency("USD");
+        paymentModel.setSgEntity("SG1");
+        paymentModel.setFeeCategory("CAT1");
+        paymentModel.setSsiDet("SSI1");
+        paymentLines.add(paymentModel);
+
+        List<PaymentLinesFeoModel> paymentLinesFeoModelList = new ArrayList<>();
+        PaymentLinesFeoModel paymentLinesFeoModel = new PaymentLinesFeoModel();
+        paymentLinesFeoModel.setSendingDate(LocalDate.now());
+        paymentLinesFeoModel.setValueDate(LocalDate.now());
+        paymentLinesFeoModel.setSsi("SSI1");
+        paymentLinesFeoModel.setPaymentType("A");
+        paymentLinesFeoModel.setPaymentMode("MODE1");
+        paymentLinesFeoModelList.add(paymentLinesFeoModel);
+
+        when(srgMapper.mapNew(finalDataForInsertion)).thenReturn(paymentLinesFeoModelList);
+        when(paymentRepository.getPaymentEntitiesByPaymentReference("ref1")).thenReturn(paymentLines);
+        when(srgMapper.map(paymentLines)).thenReturn(paymentLines);
+
+        TrglbdrResponse accounts = new TrglbdrResponse();
+        when(referentialServiceApi.getAccountDetailsFromBdrForPayment(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(accounts);
+
+        UserDetailsModel userDetailsModel = new UserDetailsModel();
+        userDetailsModel.setIni("UI");
+        when(referentialServiceApi.getUserInitials(user)).thenReturn(userDetailsModel);
+
+        PaymentModeModel paymentModeModel = new PaymentModeModel();
+        when(referentialServiceApi.getPaymentModeDetails("MODE1")).thenReturn(paymentModeModel);
+
+        List<SsiResponse> ssiResponses = new ArrayList<>();
+        SsiResponse ssiResponse = new SsiResponse();
+        ssiResponse.setAccountNumber("SSI1");
+        ssiResponse.setBankName("Bank1");
+        ssiResponse.setSwiftCode("SWIFT1");
+        ssiResponses.add(ssiResponse);
+        when(referentialServiceApi.getSsiDetails(anyString(), anyString(), anyString(), anyString())).thenReturn(ssiResponses);
 
         // Act
-        abDomain.uploadPaymentAbFileViaReferential(fileName);
+        String result = cashAllocationDomain.updatePaymentLines(user, finalDataForInsertion);
 
         // Assert
-        verify(referentialServiceApi, times(1)).uploadFileToGaiaServer(any(ByteArrayResource.class), anyString(), anyString());
-        verify(file, times(1)).delete();
-        // You might want to assert the log output as well, but that requires more setup
+        assertEquals("Success", result); // Assuming "Success" is returned on successful update
+
+        // Verify that the lines 1443 to 1462 were executed
+        assertEquals(LocalDate.now(), paymentModel.getValueDate());
+        assertEquals(LocalDate.now(), paymentModel.getSendingDate());
+        assertEquals("SSI1", paymentModel.getSsiDet());
+        assertEquals("UI", paymentModel.getValidationUser());
+        assertEquals(LocalDate.now(), paymentModel.getLastUpdatedDate());
+        assertEquals("UI", paymentModel.getPayLastUpdateUser());
+        assertEquals("Bank1", paymentModel.getProviderBankName());
+        assertEquals("SWIFT1", paymentModel.getProviderBankSwift());
     }
