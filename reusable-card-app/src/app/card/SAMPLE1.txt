@@ -1,5 +1,12 @@
-  @Test
-    void testSendingPmtRequest_Success() {
+@BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        // Initialize responseEntity with a default value
+        srgAckApiClient.responseEntity = ResponseEntity.ok("Default Body");
+    }
+
+    @Test
+    void testSendingPmtRequest_Success() throws Exception {
         // Arrange
         SrgAckSentRequest request = new SrgAckSentRequest();
         String expectedBody = "Success Body";
@@ -8,21 +15,25 @@
         when(srgAckClient.sendSrgAckRequest(request)).thenReturn(response);
 
         // Act
-        String result = srgAckApiClient.sendingPmtRequest(request);
+        Method method = SrgAckApiClient.class.getDeclaredMethod("sendingPmtRequest", SrgAckSentRequest.class);
+        method.setAccessible(true);
+        String result = (String) method.invoke(srgAckApiClient, request);
 
         // Assert
         assertEquals(expectedBody, result);
     }
 
     @Test
-    void testSendingPmtRequest_Exception() {
+    void testSendingPmtRequest_Exception() throws Exception {
         // Arrange
         SrgAckSentRequest request = new SrgAckSentRequest();
 
         when(srgAckClient.sendSrgAckRequest(request)).thenThrow(new RuntimeException("Test Exception"));
 
         // Act
-        String result = srgAckApiClient.sendingPmtRequest(request);
+        Method method = SrgAckApiClient.class.getDeclaredMethod("sendingPmtRequest", SrgAckSentRequest.class);
+        method.setAccessible(true);
+        String result = (String) method.invoke(srgAckApiClient, request);
 
         // Assert
         assertEquals("Default Body", result); // Assuming default value is set in setUp
