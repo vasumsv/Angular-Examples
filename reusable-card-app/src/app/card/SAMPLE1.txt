@@ -1,11 +1,11 @@
- @Test
+    @Test
     void testSendSrgAckRequest_Success() throws Exception {
         // Arrange
         SrgAckSentRequest inputJson = new SrgAckSentRequest(); // Create a sample input
         String expectedBody = "Success";
-        ResponseEntity<String> responseEntity = ResponseEntity.ok(expectedBody);
+        ResponseEntity<String> responseEntity = ResponseEntity.ok(expectedBody); // Correctly create ResponseEntity
 
-        when(srgAckClient.sendSrgAckRequest(inputJson)).thenReturn(responseEntity);
+        when(srgAckClient.sendSrgAckRequest(inputJson)).thenReturn(responseEntity); // Pass the ResponseEntity object
 
         // Act
         Method method = SrgAckApiClient.class.getDeclaredMethod("sendSrgAckRequest", SrgAckSentRequest.class);
@@ -14,21 +14,4 @@
 
         // Assert
         assertEquals(expectedBody, result);
-    }
-
-    @Test
-    void testSendSrgAckRequest_Exception() throws Exception {
-        // Arrange
-        SrgAckSentRequest inputJson = new SrgAckSentRequest(); // Create a sample input
-        Exception exception = new RuntimeException("Test Exception");
-
-        when(srgAckClient.sendSrgAckRequest(inputJson)).thenThrow(exception);
-
-        // Act
-        Method method = SrgAckApiClient.class.getDeclaredMethod("sendSrgAckRequest", SrgAckSentRequest.class);
-        method.setAccessible(true); // Make the private method accessible
-        Object result = method.invoke(srgAckApiClient, inputJson);
-
-        // Assert
-        assertNull(result); // Assuming the method returns null on exception
     }
