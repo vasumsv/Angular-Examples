@@ -1,4 +1,4 @@
- @Test
+  @Test
     void testGetDummyPaymentsForToday() throws Exception {
         // Act
         Method method = SrgPmtApiClient.class.getDeclaredMethod("getDummyPaymentsForToday");
@@ -11,19 +11,19 @@
         SrgPaymentRequest srgPaymentRequest = (SrgPaymentRequest) ((List<?>) result).get(0);
 
         // Check a few key values (adjust based on your needs)
-        assertEquals("35547L", srgPaymentRequest.getSetId());
+        assertEquals("35547L", srgPaymentRequest.getSetid());
         assertEquals("100000001020000", srgPaymentRequest.getAmount());
         assertEquals("06997FE0A19758E", srgPaymentRequest.getMarcReference());
-        assertEquals("TYPFLX", srgPaymentRequest.getTypeFix());
+        assertEquals("TYPFLX", srgPaymentRequest.getTypefix());
         assertEquals("R18kby", srgPaymentRequest.getRibkby());
         assertEquals("2024-06-08", srgPaymentRequest.getValueDate());
         assertEquals("256L", srgPaymentRequest.getOrderingInstitutionIdentifier());
         assertEquals("3", srgPaymentRequest.getComplementationStatus());
-        assertEquals("KAULB", srgPaymentRequest.getSsIApproverInitials());
-        assertEquals("294340211", srgPaymentRequest.getSetSalNumber());
+        assertEquals("KAULB", srgPaymentRequest.getApproverInitials());
+        assertEquals("294340211", srgPaymentRequest.getSsINumber());
         assertEquals("TD506EFRPP112319", srgPaymentRequest.getComment());
         assertEquals("201778", srgPaymentRequest.getSenderReferenceId());
-        assertEquals("DESCO", srgPaymentRequest.getBackOffice());
+        assertEquals("DESCO", srgPaymentRequest.getBackoffice());
         assertEquals("126950L", srgPaymentRequest.getPortfolio());
         assertEquals("CTO", srgPaymentRequest.getDealType());
         assertEquals("TO_BE_ACCOUNTED", srgPaymentRequest.getAccountingIndicator());
@@ -48,5 +48,5 @@
         assertEquals("0", srgPaymentRequest.getValidationStatus());
         assertEquals("20230110", srgPaymentRequest.getApprovalDateTime());
         assertEquals("0", srgPaymentRequest.getAccountingIndicator());
-        assertEquals("KAULB", srgPaymentRequest.getSsIApproverInitials());
+        assertEquals("KAULB", srgPaymentRequest.getApproverInitials());
     }
