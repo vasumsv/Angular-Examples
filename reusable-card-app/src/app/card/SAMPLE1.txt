@@ -1,4 +1,7 @@
-       srgAckApiClient.responseEntity = ResponseEntity.ok("Default Body");
+        // Initialize responseEntity using reflection
+        Field responseEntityField = SrgAckApiClient.class.getDeclaredField("responseEntity");
+        responseEntityField.setAccessible(true);
+        responseEntityField.set(srgAckApiClient, ResponseEntity.ok("Default Body"));
     }
 
     @Test
