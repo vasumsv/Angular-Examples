@@ -1,29 +1,34 @@
-  @Test
-    public void testUploadPaymentAbFileViaReferential_line188() throws IOException, NoSuchFieldException, IllegalAccessException {
-        AbDomain abDomain = new AbDomain();
+ @Test
+    void testSendSrgAckRequest_Success() throws Exception {
+        // Arrange
+        SrgAckSentRequest inputJson = new SrgAckSentRequest(); // Create a sample input
+        String expectedBody = "Success";
+        ResponseEntity<String> responseEntity = ResponseEntity.ok(expectedBody);
 
-        // Create a mock ReferentialServiceApi
-        ReferentialServiceApi mockReferentialServiceApi = Mockito.mock(ReferentialServiceApi.class);
+        when(srgAckClient.sendSrgAckRequest(inputJson)).thenReturn(responseEntity);
 
-        // Use reflection to set the referentialServiceApi field
-        Field field = AbDomain.class.getDeclaredField("referentialServiceApi");
-        field.setAccessible(true);
-        field.set(abDomain, mockReferentialServiceApi);
+        // Act
+        Method method = SrgAckApiClient.class.getDeclaredMethod("sendSrgAckRequest", SrgAckSentRequest.class);
+        method.setAccessible(true); // Make the private method accessible
+        Object result = method.invoke(srgAckApiClient, inputJson);
 
-        // Create a temporary file
-        File tempFile = File.createTempFile("test", ".txt");
-        tempFile.deleteOnExit(); // Ensure it's deleted after the test
+        // Assert
+        assertEquals(expectedBody, result);
+    }
 
-        // Write some content to the file
-        Files.write(tempFile.toPath(), "Test content".getBytes());
+    @Test
+    void testSendSrgAckRequest_Exception() throws Exception {
+        // Arrange
+        SrgAckSentRequest inputJson = new SrgAckSentRequest(); // Create a sample input
+        Exception exception = new RuntimeException("Test Exception");
 
-        // Call the method
-        abDomain.uploadPaymentAbFileViaReferential(tempFile.getAbsolutePath());
+        when(srgAckClient.sendSrgAckRequest(inputJson)).thenThrow(exception);
 
-        // Verify that the method was called
-        Mockito.verify(mockReferentialServiceApi).uploadFileToGaiaServer(
-            any(org.springframework.core.io.ByteArrayResource.class),
-            any(String.class),
-            eq("PAYMENT_AB")
-        );
+        // Act
+        Method method = SrgAckApiClient.class.getDeclaredMethod("sendSrgAckRequest", SrgAckSentRequest.class);
+        method.setAccessible(true); // Make the private method accessible
+        Object result = method.invoke(srgAckApiClient, inputJson);
+
+        // Assert
+        assertNull(result); // Assuming the method returns null on exception
     }
