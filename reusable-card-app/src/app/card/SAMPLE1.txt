@@ -10,7 +10,7 @@
         // Act
         Method method = SrgAckApiClient.class.getDeclaredMethod("sendingPmtRequest", SrgAckSentRequest.class);
         method.setAccessible(true);
-        String result = (String) method.invoke(srgAckApiClient, request);
+        Object result = method.invoke(srgAckApiClient, request);
 
         // Assert
         assertEquals(expectedBody, result);
@@ -26,8 +26,8 @@
         // Act
         Method method = SrgAckApiClient.class.getDeclaredMethod("sendingPmtRequest", SrgAckSentRequest.class);
         method.setAccessible(true);
-        String result = (String) method.invoke(srgAckApiClient, request);
+        Object result = method.invoke(srgAckApiClient, request);
 
         // Assert
-        assertEquals("Default Body", result); // Assert that the String body is returned
+        assertEquals("Default Body", result); // Assert against the String body
     }
