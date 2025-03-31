@@ -1,31 +1,29 @@
-   @Test
-    void testSendSrgAckRequest_NotOkStatus() {
+  @Test
+    void testSendingPmtRequest_Success() {
         // Arrange
         SrgAckSentRequest request = new SrgAckSentRequest();
-        ResponseEntity<String> response = new ResponseEntity<>("Error Body", HttpStatus.BAD_REQUEST);
+        String expectedBody = "Success Body";
+        ResponseEntity<String> response = ResponseEntity.ok(expectedBody);
 
-        when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
-                .thenReturn(response);
+        when(srgAckClient.sendSrgAckRequest(request)).thenReturn(response);
 
-        // Act & Assert
-        CashAllocationCustomException exception = assertThrows(CashAllocationCustomException.class,
-                () -> srgAckApiClient.sendSrgAckRequest(request));
+        // Act
+        String result = srgAckApiClient.sendingPmtRequest(request);
 
-        assertEquals(HttpStatus.NO_CONTENT, exception.getHttpStatus());
-        assertEquals("Srg Ack Request Gave Error", exception.getMessage());
+        // Assert
+        assertEquals(expectedBody, result);
     }
 
     @Test
-    void testSendSrgAckRequest_RestClientException() {
+    void testSendingPmtRequest_Exception() {
         // Arrange
         SrgAckSentRequest request = new SrgAckSentRequest();
-        when(restTemplate.exchange(anyString(), any(), any(), eq(String.class)))
-                .thenThrow(new RestClientException("Test RestClientException"));
 
-        // Act & Assert
-        CashAllocationCustomException exception = assertThrows(CashAllocationCustomException.class,
-                () -> srgAckApiClient.sendSrgAckRequest(request));
+        when(srgAckClient.sendSrgAckRequest(request)).thenThrow(new RuntimeException("Test Exception"));
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatus());
-        assertEquals("New Error: http://localhost:50005/api/v1/srg-pmt-ack-client/get-ack: Test RestClientException", exception.getMessage());
+        // Act
+        String result = srgAckApiClient.sendingPmtRequest(request);
+
+        // Assert
+        assertEquals("Default Body", result); // Assuming default value is set in setUp
     }
