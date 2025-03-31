@@ -1,14 +1,52 @@
-   @Test
-    void testCreatePetJson_ValidationStatus_Q() throws Exception {
-        // Arrange
-        com.socgen.cash.allocation.entity.PetDetails petDetails = new com.socgen.cash.allocation.entity.PetDetails();
-        petDetails.setValidationStatus("Q");
-
+ @Test
+    void testGetDummyPaymentsForToday() throws Exception {
         // Act
-        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", com.socgen.cash.allocation.entity.PetDetails.class);
+        Method method = SrgPmtApiClient.class.getDeclaredMethod("getDummyPaymentsForToday");
         method.setAccessible(true);
-        Object result = method.invoke(srgPmtApiClient, petDetails);
+        Object result = method.invoke(srgPmtApiClient);
 
         // Assert
         assertNotNull(result);
+        assertEquals(1, ((List<?>) result).size()); // Check the list size
+        SrgPaymentRequest srgPaymentRequest = (SrgPaymentRequest) ((List<?>) result).get(0);
+
+        // Check a few key values (adjust based on your needs)
+        assertEquals("35547L", srgPaymentRequest.getSetId());
+        assertEquals("100000001020000", srgPaymentRequest.getAmount());
+        assertEquals("06997FE0A19758E", srgPaymentRequest.getMarcReference());
+        assertEquals("TYPFLX", srgPaymentRequest.getTypeFix());
+        assertEquals("R18kby", srgPaymentRequest.getRibkby());
+        assertEquals("2024-06-08", srgPaymentRequest.getValueDate());
+        assertEquals("256L", srgPaymentRequest.getOrderingInstitutionIdentifier());
+        assertEquals("3", srgPaymentRequest.getComplementationStatus());
+        assertEquals("KAULB", srgPaymentRequest.getSsIApproverInitials());
+        assertEquals("294340211", srgPaymentRequest.getSetSalNumber());
+        assertEquals("TD506EFRPP112319", srgPaymentRequest.getComment());
+        assertEquals("201778", srgPaymentRequest.getSenderReferenceId());
+        assertEquals("DESCO", srgPaymentRequest.getBackOffice());
+        assertEquals("126950L", srgPaymentRequest.getPortfolio());
+        assertEquals("CTO", srgPaymentRequest.getDealType());
+        assertEquals("TO_BE_ACCOUNTED", srgPaymentRequest.getAccountingIndicator());
+        assertEquals("Account", srgPaymentRequest.getBankFromTargetAccount());
+        assertEquals("275513834L", srgPaymentRequest.getBeneficiaryIdentifier());
+        assertEquals("USD", srgPaymentRequest.getCurrency());
+        assertEquals("10991581", srgPaymentRequest.getBeneficiaryBankAccountNumber());
+        assertEquals("9460L", srgPaymentRequest.getBeneficiaryBankIdentifier());
+        assertEquals(null, srgPaymentRequest.getIntermediaryIdentifier());
+        assertEquals(null, srgPaymentRequest.getCounterpartyAccountType());
+        assertEquals("3948L", srgPaymentRequest.getCorrespondingBeneficiaryIdentifier());
+        assertEquals("ABA0210000089", srgPaymentRequest.getCorrespondingBeneficiaryBankAccountNumber());
+        assertEquals(null, srgPaymentRequest.getCorrespondingBeneficiaryAccountType());
+        assertEquals(null, srgPaymentRequest.getCounterpartyAccountNumber());
+        assertEquals("0863545137", srgPaymentRequest.getProductFamily());
+        assertEquals("E-BRDK", srgPaymentRequest.getProductFamily());
+        assertEquals("07003", srgPaymentRequest.getTargetAccountCounter());
+        assertEquals("3948L", srgPaymentRequest.getThirdBankIdentifier());
+        assertEquals("SW1", srgPaymentRequest.getSettlementMode());
+        assertEquals("18001444580", srgPaymentRequest.getTargetAccountHour());
+        assertEquals("0921", srgPaymentRequest.getValidationHour());
+        assertEquals("0", srgPaymentRequest.getValidationStatus());
+        assertEquals("20230110", srgPaymentRequest.getApprovalDateTime());
+        assertEquals("0", srgPaymentRequest.getAccountingIndicator());
+        assertEquals("KAULB", srgPaymentRequest.getSsIApproverInitials());
     }
