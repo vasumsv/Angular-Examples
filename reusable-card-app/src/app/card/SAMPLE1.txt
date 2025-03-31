@@ -1,8 +1,4 @@
-@BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        // Initialize responseEntity with a default value
-        srgAckApiClient.responseEntity = ResponseEntity.ok("Default Body");
+       srgAckApiClient.responseEntity = ResponseEntity.ok("Default Body");
     }
 
     @Test
