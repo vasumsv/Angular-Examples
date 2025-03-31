@@ -1,13 +1,13 @@
-  @Test
+ @Test
     void testCreatePetJson_ValidationStatus_Q() throws Exception {
         // Arrange
-        PetDetails petDetails = new PetDetails();
-        petDetails.setValidationStatus("Q");
+        SrgPaymentRequest pmtDetails = new SrgPaymentRequest();
+        pmtDetails.setValidationStatus("Q");
 
         // Act
-        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", PetDetails.class);
+        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", SrgPaymentRequest.class);
         method.setAccessible(true);
-        Object result = method.invoke(srgPmtApiClient, petDetails);
+        Object result = method.invoke(srgPmtApiClient, pmtDetails);
 
         // Assert
         assertNotNull(result); // Check if the method returns a result
@@ -16,13 +16,13 @@
     @Test
     void testCreatePetJson_ValidationStatus_W() throws Exception {
         // Arrange
-        PetDetails petDetails = new PetDetails();
-        petDetails.setValidationStatus("W");
+        SrgPaymentRequest pmtDetails = new SrgPaymentRequest();
+        pmtDetails.setValidationStatus("W");
 
         // Act
-        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", PetDetails.class);
+        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", SrgPaymentRequest.class);
         method.setAccessible(true);
-        Object result = method.invoke(srgPmtApiClient, petDetails);
+        Object result = method.invoke(srgPmtApiClient, pmtDetails);
 
         // Assert
         assertNotNull(result); // Check if the method returns a result
@@ -31,13 +31,13 @@
     @Test
     void testCreatePetJson_AccountingIndicator_N() throws Exception {
         // Arrange
-        PetDetails petDetails = new PetDetails();
-        petDetails.setAccountingIndicator("N");
+        SrgPaymentRequest pmtDetails = new SrgPaymentRequest();
+        pmtDetails.setAccountingIndicator("N");
 
         // Act
-        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", PetDetails.class);
+        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", SrgPaymentRequest.class);
         method.setAccessible(true);
-        Object result = method.invoke(srgPmtApiClient, petDetails);
+        Object result = method.invoke(srgPmtApiClient, pmtDetails);
 
         // Assert
         assertNotNull(result); // Check if the method returns a result
@@ -46,13 +46,13 @@
     @Test
     void testCreatePetJson_AccountingIndicator_T() throws Exception {
         // Arrange
-        PetDetails petDetails = new PetDetails();
-        petDetails.setAccountingIndicator("T");
+        SrgPaymentRequest pmtDetails = new SrgPaymentRequest();
+        pmtDetails.setAccountingIndicator("T");
 
         // Act
-        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", PetDetails.class);
+        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", SrgPaymentRequest.class);
         method.setAccessible(true);
-        Object result = method.invoke(srgPmtApiClient, petDetails);
+        Object result = method.invoke(srgPmtApiClient, pmtDetails);
 
         // Assert
         assertNotNull(result); // Check if the method returns a result
@@ -61,14 +61,14 @@
     @Test
     void testCreatePetJson_DealType_CA_And_0() throws Exception {
         // Arrange
-        PetDetails petDetails = new PetDetails();
-        petDetails.setDealType("CA");
-        petDetails.setGetDealType("0");
+        SrgPaymentRequest pmtDetails = new SrgPaymentRequest();
+        pmtDetails.setDealType("CA");
+        pmtDetails.setGetDealType("0");
 
         // Act
-        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", PetDetails.class);
+        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", SrgPaymentRequest.class);
         method.setAccessible(true);
-        Object result = method.invoke(srgPmtApiClient, petDetails);
+        Object result = method.invoke(srgPmtApiClient, pmtDetails);
 
         // Assert
         assertNotNull(result); // Check if the method returns a result
@@ -77,14 +77,14 @@
     @Test
     void testCreatePetJson_DealType_NotCA_Or_Not0() throws Exception {
         // Arrange
-        PetDetails petDetails = new PetDetails();
-        petDetails.setDealType("CB"); // or any other value except CA
-        petDetails.setGetDealType("1"); // or any other value except 0
+        SrgPaymentRequest pmtDetails = new SrgPaymentRequest();
+        pmtDetails.setDealType("CB"); // or any other value except CA
+        pmtDetails.setGetDealType("1"); // or any other value except 0
 
         // Act
-        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", PetDetails.class);
+        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", SrgPaymentRequest.class);
         method.setAccessible(true);
-        Object result = method.invoke(srgPmtApiClient, petDetails);
+        Object result = method.invoke(srgPmtApiClient, pmtDetails);
 
         // Assert
         assertNotNull(result); // Check if the method returns a result
