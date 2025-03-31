@@ -1,33 +1,98 @@
-   @Test
-    void testSendingPmtRequest_Success() throws Exception {
+ @Test
+    void testFetchAckDetails_ApiResponseNull() {
         // Arrange
-        SrgAckSentRequest request = new SrgAckSentRequest();
-        String expectedBody = "Success Body";
-        ResponseEntity<String> response = ResponseEntity.ok(expectedBody);
+        LocalDate today = LocalDate.now();
+        List<PaymentLineDetailsForInvoice> paymentDetails = new ArrayList<>();
+        PaymentLineDetailsForInvoice paymentDetail = new PaymentLineDetailsForInvoice();
+        SrgPaymentRequest srgPaymentRequest = new SrgPaymentRequest();
+        srgPaymentRequest.setPaymentReference("ref123");
+        paymentDetail.setSrgPaymentRequest(srgPaymentRequest);
+        paymentDetails.add(paymentDetail);
 
-        when(srgAckClient.sendSrgAckRequest(request)).thenReturn(response);
+        when(paymentRepository.getPaymentLinesForToday(today)).thenReturn(paymentDetails);
+        when(srgAckClient.sendingPmtRequest(any(SrgAckSentRequest.class))).thenReturn(null); // Simulate null apiResponse
 
         // Act
-        Method method = SrgAckApiClient.class.getDeclaredMethod("sendingPmtRequest", SrgAckSentRequest.class);
-        method.setAccessible(true);
-        Object result = method.invoke(srgAckApiClient, request);
+        srgAckApiClient.fetchAckDetails();
 
         // Assert
-        assertEquals(expectedBody, result);
+        verify(paymentRepository, never()).updateCommentsAndFlowStatus(any(PaymentLineDetailsForInvoice.class));
     }
 
     @Test
-    void testSendingPmtRequest_Exception() throws Exception {
+    void testFetchAckDetails_DataNotNullAndNotEmpty_Accepted() {
         // Arrange
-        SrgAckSentRequest request = new SrgAckSentRequest();
+        LocalDate today = LocalDate.now();
+        List<PaymentLineDetailsForInvoice> paymentDetails = new ArrayList<>();
+        PaymentLineDetailsForInvoice paymentDetail = new PaymentLineDetailsForInvoice();
+        SrgPaymentRequest srgPaymentRequest = new SrgPaymentRequest();
+        srgPaymentRequest.setPaymentReference("ref123");
+        paymentDetail.setSrgPaymentRequest(srgPaymentRequest);
+        paymentDetails.add(paymentDetail);
 
-        when(srgAckClient.sendSrgAckRequest(request)).thenThrow(new RuntimeException("Test Exception"));
+        SrgAckResponseModel responseModel = new SrgAckResponseModel();
+        SrgAckResponseModel.Data data = new SrgAckResponseModel.Data();
+        data.setFlowStatus("ACCEPTED");
+        responseModel.setData(List.of(data));
+
+        when(paymentRepository.getPaymentLinesForToday(today)).thenReturn(paymentDetails);
+        when(srgAckClient.sendingPmtRequest(any(SrgAckSentRequest.class))).thenReturn(responseModel);
 
         // Act
-        Method method = SrgAckApiClient.class.getDeclaredMethod("sendingPmtRequest", SrgAckSentRequest.class);
-        method.setAccessible(true);
-        Object result = method.invoke(srgAckApiClient, request);
+        srgAckApiClient.fetchAckDetails();
 
         // Assert
-        assertEquals("Default Body", result); // Assert against the String body
+        assertEquals("ACCEPTED", paymentDetail.getAckStatus());
+    }
+
+    @Test
+    void testFetchAckDetails_DataNotNullAndNotEmpty_Rejected() {
+        // Arrange
+        LocalDate today = LocalDate.now();
+        List<PaymentLineDetailsForInvoice> paymentDetails = new ArrayList<>();
+        PaymentLineDetailsForInvoice paymentDetail = new PaymentLineDetailsForInvoice();
+        SrgPaymentRequest srgPaymentRequest = new SrgPaymentRequest();
+        srgPaymentRequest.setPaymentReference("ref123");
+        paymentDetail.setSrgPaymentRequest(srgPaymentRequest);
+        paymentDetails.add(paymentDetail);
+
+        SrgAckResponseModel responseModel = new SrgAckResponseModel();
+        SrgAckResponseModel.Data data = new SrgAckResponseModel.Data();
+        data.setFlowStatus("REJECTED");
+        data.setErrorMessage("Test Error Message");
+        responseModel.setData(List.of(data));
+
+        when(paymentRepository.getPaymentLinesForToday(today)).thenReturn(paymentDetails);
+        when(srgAckClient.sendingPmtRequest(any(SrgAckSentRequest.class))).thenReturn(responseModel);
+
+        // Act
+        srgAckApiClient.fetchAckDetails();
+
+        // Assert
+        assertEquals("REJECTED", paymentDetail.getAckStatus());
+        assertEquals("Test Error Message", paymentDetail.getComsg());
+    }
+
+    @Test
+    void testFetchAckDetails_DataNullOrEmpty() {
+        // Arrange
+        LocalDate today = LocalDate.now();
+        List<PaymentLineDetailsForInvoice> paymentDetails = new ArrayList<>();
+        PaymentLineDetailsForInvoice paymentDetail = new PaymentLineDetailsForInvoice();
+        SrgPaymentRequest srgPaymentRequest = new SrgPaymentRequest();
+        srgPaymentRequest.setPaymentReference("ref123");
+        paymentDetail.setSrgPaymentRequest(srgPaymentRequest);
+        paymentDetails.add(paymentDetail);
+
+        SrgAckResponseModel responseModel = new SrgAckResponseModel();
+        responseModel.setData(new ArrayList<>()); // Empty data list
+
+        when(paymentRepository.getPaymentLinesForToday(today)).thenReturn(paymentDetails);
+        when(srgAckClient.sendingPmtRequest(any(SrgAckSentRequest.class))).thenReturn(responseModel);
+
+        // Act
+        srgAckApiClient.fetchAckDetails();
+
+        // Assert
+        verify(paymentRepository, never()).updateCommentsAndFlowStatus(any(PaymentLineDetailsForInvoice.class));
     }
