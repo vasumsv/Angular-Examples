@@ -1,24 +1,19 @@
-    // Initialize responseEntity using reflection
-        Field responseEntityField = SrgAckApiClient.class.getDeclaredField("responseEntity");
-        responseEntityField.setAccessible(true);
-        responseEntityField.set(srgAckApiClient, ResponseEntity.ok("Default Body"));
-    }
-
-    @Test
+   @Test
     void testSendingPmtRequest_Success() throws Exception {
         // Arrange
         SrgAckSentRequest request = new SrgAckSentRequest();
-        SrgAckSentResponse expectedResponse = new SrgAckSentResponse(); // Assuming you have a dummy SrgAckSentResponse object
+        String expectedBody = "Success Body";
+        ResponseEntity<String> response = ResponseEntity.ok(expectedBody);
 
-        when(srgAckClient.sendSrgAckRequest(request)).thenReturn(ResponseEntity.ok(expectedResponse));
+        when(srgAckClient.sendSrgAckRequest(request)).thenReturn(response);
 
         // Act
         Method method = SrgAckApiClient.class.getDeclaredMethod("sendingPmtRequest", SrgAckSentRequest.class);
         method.setAccessible(true);
-        SrgAckSentResponse result = (SrgAckSentResponse) method.invoke(srgAckApiClient, request);
+        String result = (String) method.invoke(srgAckApiClient, request);
 
         // Assert
-        assertNotNull(result);
+        assertEquals(expectedBody, result);
     }
 
     @Test
@@ -31,8 +26,8 @@
         // Act
         Method method = SrgAckApiClient.class.getDeclaredMethod("sendingPmtRequest", SrgAckSentRequest.class);
         method.setAccessible(true);
-        SrgAckSentResponse result = (SrgAckSentResponse) method.invoke(srgAckApiClient, request);
+        String result = (String) method.invoke(srgAckApiClient, request);
 
         // Assert
-        assertNotNull(result);
+        assertEquals("Default Body", result); // Assert that the String body is returned
     }
