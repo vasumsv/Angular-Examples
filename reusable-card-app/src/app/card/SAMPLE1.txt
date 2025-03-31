@@ -1,18 +1,14 @@
    @Test
     void testCreatePetJson_ValidationStatus_Q() throws Exception {
         // Arrange
-        SrgPaymentRequest pmtDetails = new SrgPaymentRequest();
-        pmtDetails.setValidationStatus("Q");
-
-        // Debugging: Inspect these objects
-        System.out.println("SrgPmtApiClient Class: " + SrgPmtApiClient.class);
-        System.out.println("SrgPaymentRequest Class: " + SrgPaymentRequest.class);
+        com.socgen.cash.allocation.entity.PetDetails petDetails = new com.socgen.cash.allocation.entity.PetDetails();
+        petDetails.setValidationStatus("Q");
 
         // Act
-        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", SrgPaymentRequest.class);
+        Method method = SrgPmtApiClient.class.getDeclaredMethod("createPetJson", com.socgen.cash.allocation.entity.PetDetails.class);
         method.setAccessible(true);
-        Object result = method.invoke(srgPmtApiClient, pmtDetails);
+        Object result = method.invoke(srgPmtApiClient, petDetails);
 
         // Assert
-        assertNotNull(result); // Check if the method returns a result
+        assertNotNull(result);
     }
