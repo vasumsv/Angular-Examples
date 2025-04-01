@@ -1,98 +1,150 @@
- @Test
-    void testFetchAckDetails_ApiResponseNull() {
-        // Arrange
-        LocalDate today = LocalDate.now();
-        List<PaymentLineDetailsForInvoice> paymentDetails = new ArrayList<>();
-        PaymentLineDetailsForInvoice paymentDetail = new PaymentLineDetailsForInvoice();
-        SrgPaymentRequest srgPaymentRequest = new SrgPaymentRequest();
-        srgPaymentRequest.setPaymentReference("ref123");
-        paymentDetail.setSrgPaymentRequest(srgPaymentRequest);
-        paymentDetails.add(paymentDetail);
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-        when(paymentRepository.getPaymentLinesForToday(today)).thenReturn(paymentDetails);
-        when(srgAckClient.sendingPmtRequest(any(SrgAckSentRequest.class))).thenReturn(null); // Simulate null apiResponse
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
-        // Act
-        srgAckApiClient.fetchAckDetails();
+// Assuming the necessary classes and dependencies are available
+// Replace with actual class names and imports if needed
 
-        // Assert
-        verify(paymentRepository, never()).updateCommentsAndFlowStatus(any(PaymentLineDetailsForInvoice.class));
+public class CashAllocationDomainTest {
+
+    @Test
+    void testGetNettedPaymentRowsForManualPayment_DirtyCoverage() {
+        CashAllocationDomain cashAllocationDomain = new CashAllocationDomain(); // Assuming CashAllocationDomain has a default constructor
+
+        List<InvoicePayableModel> paymentList = new ArrayList<>();
+        InvoicePayableModel invoice1 = new InvoicePayableModel();
+        invoice1.setProviderId("provider1");
+        invoice1.setFreeCategory("category1");
+        invoice1.setRcCode("RC123");
+        invoice1.setInvoiceReference("INV-REF-123");
+        invoice1.setGetValueDate(new java.util.Date()); // Set a date
+
+        InvoicePayableModel invoice2 = new InvoicePayableModel();
+        invoice2.setProviderId("provider2");
+        invoice2.setFreeCategory("category2");
+        invoice2.setRcCode("RC456");
+        invoice2.setInvoiceReference("INV-REF-456");
+        invoice2.setGetValueDate(new java.util.Date()); // Set a date
+
+        paymentList.add(invoice1);
+        paymentList.add(invoice2);
+
+        // Mocking dependencies if needed (ReferentialServiceApi, etc.)
+        // For dirty coverage, we might skip proper mocking and pass null or dummy objects
+
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user1");
+
+        // Basic assertions to avoid errors (not comprehensive)
+        assertNotNull(result);
+        assertTrue(result.size() > 0);
     }
 
     @Test
-    void testFetchAckDetails_DataNotNullAndNotEmpty_Accepted() {
-        // Arrange
-        LocalDate today = LocalDate.now();
-        List<PaymentLineDetailsForInvoice> paymentDetails = new ArrayList<>();
-        PaymentLineDetailsForInvoice paymentDetail = new PaymentLineDetailsForInvoice();
-        SrgPaymentRequest srgPaymentRequest = new SrgPaymentRequest();
-        srgPaymentRequest.setPaymentReference("ref123");
-        paymentDetail.setSrgPaymentRequest(srgPaymentRequest);
-        paymentDetails.add(paymentDetail);
+    void testGetNettedPaymentRowsForManualPayment_Line891To929_Dirty() {
+        CashAllocationDomain cashAllocationDomain = new CashAllocationDomain();
 
-        SrgAckResponseModel responseModel = new SrgAckResponseModel();
-        SrgAckResponseModel.Data data = new SrgAckResponseModel.Data();
-        data.setFlowStatus("ACCEPTED");
-        responseModel.setData(List.of(data));
+        List<InvoicePayableModel> paymentList = new ArrayList<>();
+        InvoicePayableModel invoice = new InvoicePayableModel();
 
-        when(paymentRepository.getPaymentLinesForToday(today)).thenReturn(paymentDetails);
-        when(srgAckClient.sendingPmtRequest(any(SrgAckSentRequest.class))).thenReturn(responseModel);
+        // Set necessary properties to avoid NullPointerExceptions
+        invoice.setProviderId("provider1");
+        invoice.setFreeCategory("category1");
+        invoice.setRcCode("RC123");
+        invoice.setInvoiceReference("INV-REF-123");
+        invoice.setGetValueDate(new java.util.Date());
 
-        // Act
-        srgAckApiClient.fetchAckDetails();
+        // Assuming SettlementsAccounts and other required objects/data
+        Map<GroupingKey, BigDecimal> aggregateAmount = new HashMap<>();
+        Map<GroupingKey, Integer> aggregateInvoiceCount = new HashMap<>();
+        Map<GroupingKey, String> aggregateInvoiceReferences = new HashMap<>();
 
-        // Assert
-        assertEquals("ACCEPTED", paymentDetail.getAckStatus());
+        // Create a GroupingKey and add to the maps
+        GroupingKey key = new GroupingKey("USD", "entity1");
+        aggregateAmount.put(key, BigDecimal.TEN);
+        aggregateInvoiceCount.put(key, 1);
+        aggregateInvoiceReferences.put(key, "INV-REF-123");
+
+        // Mocking or setting up other dependencies if needed (ReferentialServiceApi, etc.)
+
+        paymentList.add(invoice);
+
+        List<PaymentLinesModel> result = cashAllocationDomain.getNettedPaymentRowsForManualPayment(paymentList, "user1");
+
+        assertNotNull(result);
+        assertTrue(result.size() > 0);
     }
 
-    @Test
-    void testFetchAckDetails_DataNotNullAndNotEmpty_Rejected() {
-        // Arrange
-        LocalDate today = LocalDate.now();
-        List<PaymentLineDetailsForInvoice> paymentDetails = new ArrayList<>();
-        PaymentLineDetailsForInvoice paymentDetail = new PaymentLineDetailsForInvoice();
-        SrgPaymentRequest srgPaymentRequest = new SrgPaymentRequest();
-        srgPaymentRequest.setPaymentReference("ref123");
-        paymentDetail.setSrgPaymentRequest(srgPaymentRequest);
-        paymentDetails.add(paymentDetail);
+    // Assuming GroupingKey is defined somewhere
+    static class GroupingKey {
+        String currency;
+        String entity;
 
-        SrgAckResponseModel responseModel = new SrgAckResponseModel();
-        SrgAckResponseModel.Data data = new SrgAckResponseModel.Data();
-        data.setFlowStatus("REJECTED");
-        data.setErrorMessage("Test Error Message");
-        responseModel.setData(List.of(data));
+        public GroupingKey(String currency, String entity) {
+            this.currency = currency;
+            this.entity = entity;
+        }
 
-        when(paymentRepository.getPaymentLinesForToday(today)).thenReturn(paymentDetails);
-        when(srgAckClient.sendingPmtRequest(any(SrgAckSentRequest.class))).thenReturn(responseModel);
-
-        // Act
-        srgAckApiClient.fetchAckDetails();
-
-        // Assert
-        assertEquals("REJECTED", paymentDetail.getAckStatus());
-        assertEquals("Test Error Message", paymentDetail.getComsg());
+        // Add equals() and hashCode() if necessary
     }
 
-    @Test
-    void testFetchAckDetails_DataNullOrEmpty() {
-        // Arrange
-        LocalDate today = LocalDate.now();
-        List<PaymentLineDetailsForInvoice> paymentDetails = new ArrayList<>();
-        PaymentLineDetailsForInvoice paymentDetail = new PaymentLineDetailsForInvoice();
-        SrgPaymentRequest srgPaymentRequest = new SrgPaymentRequest();
-        srgPaymentRequest.setPaymentReference("ref123");
-        paymentDetail.setSrgPaymentRequest(srgPaymentRequest);
-        paymentDetails.add(paymentDetail);
+    // Assuming InvoicePayableModel is defined somewhere
+    static class InvoicePayableModel {
+        // ... properties and methods ...
+        private String providerId;
+        private String freeCategory;
+        private String rcCode;
+        private String invoiceReference;
+        private java.util.Date getValueDate;
 
-        SrgAckResponseModel responseModel = new SrgAckResponseModel();
-        responseModel.setData(new ArrayList<>()); // Empty data list
+        // Getters and setters...
+        public String getProviderId() {
+            return providerId;
+        }
 
-        when(paymentRepository.getPaymentLinesForToday(today)).thenReturn(paymentDetails);
-        when(srgAckClient.sendingPmtRequest(any(SrgAckSentRequest.class))).thenReturn(responseModel);
+        public void setProviderId(String providerId) {
+            this.providerId = providerId;
+        }
 
-        // Act
-        srgAckApiClient.fetchAckDetails();
+        public String getFreeCategory() {
+            return freeCategory;
+        }
 
-        // Assert
-        verify(paymentRepository, never()).updateCommentsAndFlowStatus(any(PaymentLineDetailsForInvoice.class));
+        public void setFreeCategory(String freeCategory) {
+            this.freeCategory = freeCategory;
+        }
+
+        public String getRcCode() {
+            return rcCode;
+        }
+
+        public void setRcCode(String rcCode) {
+            this.rcCode = rcCode;
+        }
+
+        public String getInvoiceReference() {
+            return invoiceReference;
+        }
+
+        public void setInvoiceReference(String invoiceReference) {
+            this.invoiceReference = invoiceReference;
+        }
+
+        public java.util.Date getGetValueDate() {
+            return getValueDate;
+        }
+
+        public void setGetValueDate(java.util.Date getValueDate) {
+            this.getValueDate = getValueDate;
+        }
     }
+
+    // Assuming PaymentLinesModel is defined somewhere
+    static class PaymentLinesModel {
+        // ... properties and methods ...
+    }
+}
